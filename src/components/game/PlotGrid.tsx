@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ interface PlotGridProps {
   plots: GardenPlot[];
   plantTypes: PlantType[];
   coins: number;
-  onHarvestPlant: (plotNumber: number) => void;
+  onHarvestPlant: (plotNumber: number, plantType: PlantType) => void;
   onUnlockPlot: (plotNumber: number) => void;
 }
 
@@ -53,8 +52,11 @@ export const PlotGrid = ({
       setShowPlantSelector(true);
       console.log(`🌱 Ouverture du sélecteur de plantes pour parcelle ${plot.plot_number}`);
     } else if (state === 'ready') {
-      console.log(`🌾 Tentative de récolte sur parcelle ${plot.plot_number}`);
-      onHarvestPlant(plot.plot_number);
+      const plantType = plantTypes.find(pt => pt.id === plot.plant_type);
+      if (plantType) {
+        console.log(`🌾 Tentative de récolte sur parcelle ${plot.plot_number}`);
+        onHarvestPlant(plot.plot_number, plantType);
+      }
     } else {
       console.log(`⏰ Plante en croissance sur parcelle ${plot.plot_number}`);
     }
