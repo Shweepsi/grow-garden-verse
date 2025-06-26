@@ -46,6 +46,10 @@ export const PlantSelector = ({
     return Math.floor(baseReward * multipliers.harvest);
   };
 
+  const getAdjustedGrowthTime = (baseGrowthSeconds: number): number => {
+    return EconomyService.getAdjustedGrowthTime(baseGrowthSeconds, multipliers.growth);
+  };
+
   const formatGrowthTime = (seconds: number): string => {
     if (seconds < 60) {
       return `${seconds}s`;
@@ -88,17 +92,30 @@ export const PlantSelector = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Multiplicateur actif */}
-          {multipliers.harvest > 1 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-              <div className="flex items-center gap-2 text-green-700">
-                <TrendingUp className="h-3 w-3" />
-                <span className="text-xs font-medium">
-                  Bonus de récolte actif: +{Math.round((multipliers.harvest - 1) * 100)}%
-                </span>
+          {/* Bonus actifs */}
+          <div className="flex flex-wrap gap-2">
+            {multipliers.harvest > 1 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg px-2 py-1">
+                <div className="flex items-center gap-1 text-green-700">
+                  <TrendingUp className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    Récolte +{Math.round((multipliers.harvest - 1) * 100)}%
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            
+            {multipliers.growth > 1 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1">
+                <div className="flex items-center gap-1 text-blue-700">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    Croissance +{Math.round((multipliers.growth - 1) * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Plantes disponibles */}
           {availablePlants.length > 0 && (
@@ -111,6 +128,7 @@ export const PlantSelector = ({
                 {availablePlants.map((plantType) => {
                   const cost = getPlantCost(plantType);
                   const reward = getPlantReward(plantType);
+                  const adjustedGrowthTime = getAdjustedGrowthTime(plantType.base_growth_seconds);
                   const canAfford = EconomyService.canAffordPlant(coins, cost);
 
                   return (
@@ -127,16 +145,24 @@ export const PlantSelector = ({
                           
                           <h4 className="font-medium text-xs">{plantType.display_name}</h4>
                           
-                          {/* Niveau et Temps */}
+                          {/* Niveau */}
                           <div className="flex items-center justify-center gap-1 text-xs">
                             <Badge variant="outline" className="text-xs bg-blue-100 font-semibold px-1 py-0">
                               Niv.{plantType.level_required}
                             </Badge>
                           </div>
                           
+                          {/* Temps avec bonus */}
                           <div className="flex items-center justify-center gap-1 text-gray-600 text-xs">
                             <Clock className="h-2 w-2" />
-                            {formatGrowthTime(plantType.base_growth_seconds)}
+                            <span className={multipliers.growth > 1 ? 'line-through text-gray-400' : ''}>
+                              {formatGrowthTime(plantType.base_growth_seconds)}
+                            </span>
+                            {multipliers.growth > 1 && (
+                              <span className="text-blue-600 font-medium">
+                                {formatGrowthTime(adjustedGrowthTime)}
+                              </span>
+                            )}
                           </div>
 
                           {/* Économie très compacte */}
@@ -160,13 +186,6 @@ export const PlantSelector = ({
                               </div>
                             </div>
                           </div>
-
-                          {/* Statut compact */}
-                          <div className={`text-xs font-medium ${
-                            canAfford ? 'text-green-600' : 'text-red-500'
-                          }`}>
-                            {canAfford ? '✓' : '✗'}
-                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -185,9 +204,6 @@ export const PlantSelector = ({
               
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                 {lockedPlants.map((plantType) => {
-                  const cost = getPlantCost(plantType);
-                  const reward = getPlantReward(plantType);
-
                   return (
                     <Card
                       key={plantType.id}
