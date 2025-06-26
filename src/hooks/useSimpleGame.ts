@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,16 +21,18 @@ export const useSimpleGame = () => {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      const [gardenResult, plotsResult, plantTypesResult] = await Promise.all([
+      const [gardenResult, plotsResult, plantTypesResult, activeEffectsResult] = await Promise.all([
         supabase.from('player_gardens').select('*').eq('user_id', user.id).single(),
         supabase.from('garden_plots').select('*').eq('user_id', user.id).order('plot_number'),
-        supabase.from('plant_types').select('*')
+        supabase.from('plant_types').select('*'),
+        supabase.from('active_effects').select('*').eq('user_id', user.id)
       ]);
 
       return {
         garden: gardenResult.data,
         plots: plotsResult.data || [],
-        plantTypes: plantTypesResult.data || []
+        plantTypes: plantTypesResult.data || [],
+        activeEffects: activeEffectsResult.data || []
       };
     },
     enabled: !!user?.id
@@ -48,11 +49,37 @@ export const useSimpleGame = () => {
     }
   }, [gameData]);
 
-  // Plant seed mutation
+  // Plant seed mutation (enhanced to check inventory)
   const plantSeedMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId }: { plotNumber: number; plantTypeId: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
+      // Find the plant type to get the seed name
+      const plantType = gameState.plantTypes.find(pt => pt.id === plantTypeId);
+      if (!plantType) throw new Error('Plant type not found');
+
+      const seedName = `${plantType.name}_seed`;
+
+      // Check if user has the seed in inventory
+      const { data: inventoryItem, error: inventoryError } = await supabase
+        .from('player_inventory_items')
+        .select(`
+          id,
+          quantity,
+          shop_item:shop_items (
+            name
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('shop_items.name', seedName)
+        .gt('quantity', 0)
+        .single();
+
+      if (inventoryError || !inventoryItem) {
+        throw new Error('Vous n\'avez pas cette graine dans votre inventaire');
+      }
+
+      // Plant the seed
       const { error } = await supabase
         .from('garden_plots')
         .update({
@@ -66,18 +93,32 @@ export const useSimpleGame = () => {
         .eq('plot_number', plotNumber);
 
       if (error) throw error;
+
+      // Decrease seed quantity
+      if (inventoryItem.quantity <= 1) {
+        await supabase
+          .from('player_inventory_items')
+          .delete()
+          .eq('id', inventoryItem.id);
+      } else {
+        await supabase
+          .from('player_inventory_items')
+          .update({ quantity: inventoryItem.quantity - 1 })
+          .eq('id', inventoryItem.id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       toast.success('Graine plantée avec succès !');
     },
     onError: (error) => {
-      toast.error('Erreur lors de la plantation');
+      toast.error(error.message || 'Erreur lors de la plantation');
       console.error(error);
     }
   });
 
-  // Water plant mutation
+  // Water plant mutation (enhanced with effects)
   const waterPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -88,7 +129,17 @@ export const useSimpleGame = () => {
       const plantType = gameState.plantTypes.find(pt => pt.id === plot.plant_type);
       if (!plantType) throw new Error('Plant type not found');
 
-      const newWaterCount = plot.plant_water_count + 1;
+      // Check for growth boost effects
+      const { data: growthBoost } = await supabase
+        .from('active_effects')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('effect_type', 'growth_boost')
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      const waterMultiplier = growthBoost ? growthBoost.effect_value : 1;
+      const newWaterCount = plot.plant_water_count + (1 * waterMultiplier);
       const shouldAdvanceStage = newWaterCount >= plantType.water_per_stage;
 
       const { error } = await supabase
@@ -114,7 +165,7 @@ export const useSimpleGame = () => {
     }
   });
 
-  // Harvest plant mutation
+  // Harvest plant mutation (enhanced with effects)
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -129,7 +180,17 @@ export const useSimpleGame = () => {
         throw new Error('Plant not ready for harvest');
       }
 
-      const harvestReward = plantType.growth_stages * 10;
+      // Check for harvest multiplier effects
+      const { data: harvestMultiplier } = await supabase
+        .from('active_effects')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('effect_type', 'harvest_multiplier')
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      const multiplier = harvestMultiplier ? harvestMultiplier.effect_value : 1;
+      const harvestReward = Math.floor(plantType.growth_stages * 10 * multiplier);
 
       // Update plot and garden in transaction
       const { error: plotError } = await supabase
@@ -164,7 +225,7 @@ export const useSimpleGame = () => {
           user_id: user.id,
           amount: harvestReward,
           transaction_type: 'harvest',
-          description: `Récolte de ${plantType.display_name}`
+          description: `Récolte de ${plantType.display_name}${multiplier > 1 ? ' (bonus x' + multiplier + ')' : ''}`
         });
     },
     onSuccess: () => {
