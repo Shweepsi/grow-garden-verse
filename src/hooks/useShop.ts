@@ -41,7 +41,7 @@ export const useShop = () => {
     }
   });
 
-  // Purchase item mutation
+  // Purchase item mutation with promise support
   const purchaseItemMutation = useMutation({
     mutationFn: async ({ itemId, quantity = 1 }: { itemId: string; quantity?: number }) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -112,6 +112,8 @@ export const useShop = () => {
           description: `Achat de ${item.display_name} x${quantity}`
         })
       ]);
+
+      return { item, quantity, totalCost };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
@@ -123,6 +125,19 @@ export const useShop = () => {
     }
   });
 
+  // Promise-based purchase function
+  const purchaseItemAsync = (itemId: string, quantity = 1): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      purchaseItemMutation.mutate(
+        { itemId, quantity },
+        {
+          onSuccess: (data) => resolve(data),
+          onError: (error) => reject(error)
+        }
+      );
+    });
+  };
+
   const purchaseItem = (itemId: string, quantity = 1) => {
     purchaseItemMutation.mutate({ itemId, quantity });
   };
@@ -131,6 +146,7 @@ export const useShop = () => {
     shopItems,
     loading: isLoading,
     purchaseItem,
+    purchaseItemAsync,
     purchasing: purchaseItemMutation.isPending
   };
 };

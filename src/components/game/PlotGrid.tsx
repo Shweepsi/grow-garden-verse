@@ -4,12 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GardenPlot, PlantType } from '@/types/game';
-import { Lock, Droplets, Sprout, Gift, ShoppingCart } from 'lucide-react';
+import { Lock, Droplets, Sprout, Gift, ShoppingCart, Coins } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
 import { PlantTimer } from './PlantTimer';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { GameBalanceService } from '@/services/GameBalanceService';
 import { useInventory } from '@/hooks/useInventory';
+import { useShop } from '@/hooks/useShop';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -32,7 +33,9 @@ export const PlotGrid = ({
 }: PlotGridProps) => {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showSeedSelector, setShowSeedSelector] = useState(false);
+  const [buyingAndPlanting, setBuyingAndPlanting] = useState(false);
   const { seeds } = useInventory();
+  const { shopItems, purchaseItem, purchasing } = useShop();
 
   const getPlantState = (plot: GardenPlot) => {
     if (!plot.plant_type || !plot.planted_at) return 'empty';
@@ -53,10 +56,6 @@ export const PlotGrid = ({
     
     const state = getPlantState(plot);
     if (state === 'empty') {
-      if (seeds.length === 0) {
-        // No seeds available - show message
-        return;
-      }
       setSelectedPlot(plot.plot_number);
       setShowSeedSelector(true);
     } else if (state === 'growing') {
@@ -74,6 +73,41 @@ export const PlotGrid = ({
     }
   };
 
+  const handleBuyAndPlant = async (shopItemId: string, plantTypeId: string) => {
+    if (!selectedPlot) return;
+    
+    setBuyingAndPlanting(true);
+    try {
+      // Purchase the seed
+      await new Promise<void>((resolve, reject) => {
+        purchaseItem(shopItemId, 1);
+        
+        // Wait for purchase completion (we'll need to check if purchase was successful)
+        const checkPurchase = setInterval(() => {
+          if (!purchasing) {
+            clearInterval(checkPurchase);
+            resolve();
+          }
+        }, 100);
+        
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          clearInterval(checkPurchase);
+          reject(new Error('Purchase timeout'));
+        }, 5000);
+      });
+      
+      // Plant the seed immediately after purchase
+      onPlantSeed(selectedPlot, plantTypeId);
+      setShowSeedSelector(false);
+      setSelectedPlot(null);
+    } catch (error) {
+      console.error('Failed to buy and plant:', error);
+    } finally {
+      setBuyingAndPlanting(false);
+    }
+  };
+
   // Get available seeds with their plant type info
   const getAvailableSeeds = () => {
     return seeds.map(seed => {
@@ -87,7 +121,23 @@ export const PlotGrid = ({
     }).filter(seed => seed.plantType); // Only seeds with matching plant types
   };
 
+  // Get purchasable seeds from shop
+  const getPurchasableSeeds = () => {
+    return shopItems
+      .filter(item => item.item_type === 'seed')
+      .map(shopItem => {
+        const plantTypeName = shopItem.name.replace('_seed', '');
+        const plantType = plantTypes.find(pt => pt.name === plantTypeName);
+        return {
+          shopItem,
+          plantType
+        };
+      })
+      .filter(item => item.plantType);
+  };
+
   const availableSeeds = getAvailableSeeds();
+  const purchasableSeeds = getPurchasableSeeds();
 
   return (
     <>
@@ -127,18 +177,8 @@ export const PlotGrid = ({
                   <div className="text-center h-full flex flex-col justify-center">
                     {state === 'empty' ? (
                       <>
-                        {seeds.length > 0 ? (
-                          <>
-                            <Sprout className="h-6 w-6 text-green-400 mx-auto mb-2" />
-                            <p className="text-xs text-green-600">Planter</p>
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingCart className="h-6 w-6 text-orange-400 mx-auto mb-2" />
-                            <p className="text-xs text-orange-600">Pas de graines</p>
-                            <p className="text-xs text-gray-500 mt-1">Allez en boutique</p>
-                          </>
-                        )}
+                        <Sprout className="h-6 w-6 text-green-400 mx-auto mb-2" />
+                        <p className="text-xs text-green-600">Planter</p>
                       </>
                     ) : state === 'growing' ? (
                       <>
@@ -182,34 +222,95 @@ export const PlotGrid = ({
       </div>
 
       <Dialog open={showSeedSelector} onOpenChange={setShowSeedSelector}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Choisir une graine</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Sprout className="h-5 w-5 text-green-600" />
+              Choisir une graine
+              <div className="ml-auto flex items-center gap-1 text-sm text-yellow-600">
+                <Coins className="h-4 w-4" />
+                {coins}
+              </div>
+            </DialogTitle>
           </DialogHeader>
-          {availableSeeds.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              {availableSeeds.map((seedItem) => (
-                <Button
-                  key={seedItem.id}
-                  variant="outline"
-                  className="h-24 flex flex-col items-center justify-center"
-                  onClick={() => handleSeedSelect(seedItem.plantType!.id)}
-                >
-                  <span className="text-2xl mb-1">{seedItem.plantType!.emoji}</span>
-                  <span className="text-sm">{seedItem.plantType!.display_name}</span>
-                  <span className="text-xs text-gray-500">
-                    {seedItem.plantType!.base_growth_minutes || 60}min - Qté: {seedItem.quantity}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">Aucune graine disponible</p>
-              <p className="text-sm text-gray-500">Rendez-vous dans la boutique pour acheter des graines !</p>
-            </div>
-          )}
+          
+          <div className="max-h-96 overflow-y-auto space-y-4">
+            {/* Owned Seeds Section */}
+            {availableSeeds.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-2">
+                  🎒 Vos graines
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {availableSeeds.map((seedItem) => (
+                    <Button
+                      key={seedItem.id}
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center border-green-200 hover:border-green-400"
+                      onClick={() => handleSeedSelect(seedItem.plantType!.id)}
+                      disabled={buyingAndPlanting}
+                    >
+                      <span className="text-xl mb-1">{seedItem.plantType!.emoji}</span>
+                      <span className="text-xs text-center">{seedItem.plantType!.display_name}</span>
+                      <span className="text-xs text-green-600 font-medium">Qté: {seedItem.quantity}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Purchasable Seeds Section */}
+            {purchasableSeeds.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                  🛒 Acheter et planter
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {purchasableSeeds.map((item) => {
+                    const canAfford = coins >= item.shopItem.price;
+                    const isOwnedSeed = availableSeeds.some(seed => 
+                      seed.plantType?.id === item.plantType?.id
+                    );
+                    
+                    return (
+                      <Button
+                        key={item.shopItem.id}
+                        variant="outline"
+                        className={`h-24 flex flex-col items-center justify-center ${
+                          canAfford 
+                            ? 'border-blue-200 hover:border-blue-400' 
+                            : 'border-gray-200 opacity-50'
+                        } ${isOwnedSeed ? 'bg-green-50' : ''}`}
+                        onClick={() => handleBuyAndPlant(item.shopItem.id, item.plantType!.id)}
+                        disabled={!canAfford || purchasing || buyingAndPlanting}
+                      >
+                        <span className="text-xl mb-1">{item.plantType!.emoji}</span>
+                        <span className="text-xs text-center mb-1">{item.plantType!.display_name}</span>
+                        <span className={`text-xs font-medium flex items-center gap-1 ${
+                          canAfford ? 'text-blue-600' : 'text-gray-400'
+                        }`}>
+                          <Coins className="h-3 w-3" />
+                          {item.shopItem.price}
+                        </span>
+                        {isOwnedSeed && (
+                          <span className="text-xs text-green-600 mt-1">Déjà possédée</span>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {availableSeeds.length === 0 && purchasableSeeds.length === 0 && (
+              <div className="text-center py-8">
+                <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">Aucune graine disponible</p>
+                <p className="text-sm text-gray-500">Vérifiez la boutique pour de nouvelles graines !</p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
