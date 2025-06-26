@@ -1,4 +1,3 @@
-
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useGameData } from '@/hooks/useGameData';
 import { GameHeader } from '@/components/game/GameHeader';
@@ -21,6 +20,9 @@ export const UpgradesPage = () => {
   const playerLevel = gameData?.garden?.level || 1;
   const coins = gameData?.garden?.coins || 0;
   const gems = gameData?.garden?.gems || 0;
+
+  // Trier les améliorations par prix (du moins cher au plus cher)
+  const sortedUpgrades = [...availableUpgrades].sort((a, b) => a.cost_coins - b.cost_coins);
 
   const getEffectTypeColor = (effectType: string) => {
     if (effectType.includes('harvest')) return 'bg-yellow-500/20 text-yellow-700 border-yellow-300';
@@ -85,9 +87,9 @@ export const UpgradesPage = () => {
           </div>
         </div>
 
-        {/* Grille des améliorations */}
+        {/* Grille des améliorations triées par prix */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {availableUpgrades.map((upgrade) => {
+          {sortedUpgrades.map((upgrade) => {
             const isPurchased = isUpgradePurchased(upgrade.id);
             const isLocked = playerLevel < upgrade.level_required;
             const canBuy = canPurchase(upgrade);
