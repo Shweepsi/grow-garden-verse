@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -328,35 +329,4 @@
   .premium-card {
     backdrop-filter: blur(12px);
   }
-}
-
-/* Animations pour les récompenses */
-@keyframes fadeInUp {
-  0% {
-    opacity: 0;
-    transform: translateY(20px) scale(0.8);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes fadeOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.8);
-  }
-}
-
-.animate-fadeInUp {
-  animation: fadeInUp 0.5s ease-out;
-}
-
-.animate-fadeOut {
-  animation: fadeOut 0.5s ease-out;
 }

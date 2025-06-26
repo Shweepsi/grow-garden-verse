@@ -183,16 +183,12 @@ export const useDirectPlanting = () => {
       }
 
       const timeString = PlantGrowthService.formatTimeRemaining(adjustedGrowthTime);
-      // Retourner les données pour l'animation au lieu d'afficher un toast
-      return {
-        plantName: plantType.display_name,
-        timeString,
-        success: true
-      };
+      toast.success(`🌱 ${plantType.display_name} plantée ! Prête dans ${timeString}`);
+      
+      console.log('✅ Plantation terminée avec succès');
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      // Les animations seront gérées par le composant qui appelle cette mutation
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation:', error);
@@ -203,7 +199,6 @@ export const useDirectPlanting = () => {
   return {
     plantDirect: (plotNumber: number, plantTypeId: string, cost: number) => 
       plantDirectMutation.mutate({ plotNumber, plantTypeId, cost }),
-    isPlanting: plantDirectMutation.isPending,
-    plantDirectData: plantDirectMutation.data
+    isPlanting: plantDirectMutation.isPending
   };
 };
