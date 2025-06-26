@@ -1,13 +1,13 @@
+
 import { Coins, Sprout, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
-  AnimationContainer: React.ComponentType;
 }
 
-export const GameHeader = ({ garden, AnimationContainer }: GameHeaderProps) => {
+export const GameHeader = ({ garden }: GameHeaderProps) => {
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
@@ -63,7 +63,6 @@ export const GameHeader = ({ garden, AnimationContainer }: GameHeaderProps) => {
                     }
                   </span>
                 </div>
-                <AnimationContainer />
               </div>
               
               {/* Niveau */}
@@ -87,14 +86,13 @@ export const GameHeader = ({ garden, AnimationContainer }: GameHeaderProps) => {
                   {Math.floor(progressPercentage)}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden relative">
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 relative"
                   style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}
                 >
                   <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
                 </div>
-                <AnimationContainer />
               </div>
               <div className="flex items-center justify-between mt-1">
                 <span className="mobile-text-xs text-gray-500">

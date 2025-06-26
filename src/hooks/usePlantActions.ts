@@ -1,12 +1,12 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
 
-export const usePlantActions = (onCoinAnimation?: (amount: number) => void, onXPAnimation?: (amount: number) => void) => {
+export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
@@ -181,30 +181,36 @@ export const usePlantActions = (onCoinAnimation?: (amount: number) => void, onXP
         console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
       }
 
-      // Déclencher les animations
-      if (onCoinAnimation) {
-        onCoinAnimation(harvestReward);
-      }
-      if (onXPAnimation) {
-        onXPAnimation(expReward);
-      }
-
+      // Messages de succès - seulement pour level up
       if (newLevel > (garden.level || 1)) {
+        toast.success(`🎉 Niveau ${newLevel} atteint !`);
         console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
       }
 
       console.log('✅ Récolte terminée avec succès');
+      
+      // Retourner les données pour les animations
+      return {
+        harvestReward,
+        expReward,
+        plantName: plantType.display_name,
+        levelUp: newLevel > (garden.level || 1),
+        newLevel
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      // Les animations seront gérées par le composant qui appelle cette mutation
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la récolte:', error);
+      toast.error(error.message || 'Erreur lors de la récolte');
     }
   });
 
   return {
     harvestPlant: (plotNumber: number) => harvestPlantMutation.mutate(plotNumber),
-    isHarvesting: harvestPlantMutation.isPending
+    isHarvesting: harvestPlantMutation.isPending,
+    harvestData: harvestPlantMutation.data
   };
 };

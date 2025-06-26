@@ -1,7 +1,7 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
@@ -183,20 +183,27 @@ export const useDirectPlanting = () => {
       }
 
       const timeString = PlantGrowthService.formatTimeRemaining(adjustedGrowthTime);
-      
-      console.log('✅ Plantation terminée avec succès');
+      // Retourner les données pour l'animation au lieu d'afficher un toast
+      return {
+        plantName: plantType.display_name,
+        timeString,
+        success: true
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      // Les animations seront gérées par le composant qui appelle cette mutation
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation:', error);
+      toast.error(error.message || 'Erreur lors de la plantation');
     }
   });
 
   return {
     plantDirect: (plotNumber: number, plantTypeId: string, cost: number) => 
       plantDirectMutation.mutate({ plotNumber, plantTypeId, cost }),
-    isPlanting: plantDirectMutation.isPending
+    isPlanting: plantDirectMutation.isPending,
+    plantDirectData: plantDirectMutation.data
   };
 };

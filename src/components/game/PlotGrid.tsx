@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GardenPlot, PlantType } from '@/types/game';
@@ -9,7 +8,7 @@ import { PlantSelector } from './PlantSelector';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { GameBalanceService } from '@/services/GameBalanceService';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
-import { usePlantActions } from '@/hooks/usePlantActions';
+import { useAnimations } from '@/contexts/AnimationContext';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -17,8 +16,6 @@ interface PlotGridProps {
   coins: number;
   onHarvestPlant: (plotNumber: number) => void;
   onUnlockPlot: (plotNumber: number) => void;
-  onCoinAnimation?: (amount: number) => void;
-  onXPAnimation?: (amount: number) => void;
 }
 
 export const PlotGrid = ({ 
@@ -26,25 +23,24 @@ export const PlotGrid = ({
   plantTypes, 
   coins,
   onHarvestPlant, 
-  onUnlockPlot,
-  onCoinAnimation,
-  onXPAnimation
+  onUnlockPlot 
 }: PlotGridProps) => {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
-  const { plantDirect, isPlanting } = useDirectPlanting();
-  const { harvestPlant: localHarvestPlant } = usePlantActions(onCoinAnimation, onXPAnimation);
+  const { plantDirect, isPlanting, plantDirectData } = useDirectPlanting();
+  const { showCoinAnimation, showXPAnimation } = useAnimations();
 
   const getPlantState = (plot: GardenPlot) => {
+    // Validation stricte des données de la parcelle
     if (!plot.plant_type) return 'empty';
     
-    const growthTime = plot.growth_time_seconds || 3600;
+    const growthTime = plot.growth_time_seconds || 3600; // Défaut 1h si pas défini
     const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime);
     
     return isReady ? 'ready' : 'growing';
   };
 
-  const handlePlotClick = (plot: GardenPlot) => {
+  const handlePlotClick = (plot: GardenPlot, event?: React.MouseEvent) => {
     if (!plot.unlocked) {
       console.log(`🔒 Tentative de clic sur parcelle ${plot.plot_number} verrouillée`);
       return;
@@ -59,7 +55,13 @@ export const PlotGrid = ({
       console.log(`🌱 Ouverture du sélecteur de plantes pour parcelle ${plot.plot_number}`);
     } else if (state === 'ready') {
       console.log(`🌾 Tentative de récolte sur parcelle ${plot.plot_number}`);
-      localHarvestPlant(plot.plot_number);
+      
+      // Obtenir la position pour l'animation
+      const rect = event?.currentTarget.getBoundingClientRect();
+      const centerX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+      const centerY = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+      
+      onHarvestPlant(plot.plot_number);
     } else {
       console.log(`⏰ Plante en croissance sur parcelle ${plot.plot_number}`);
     }
@@ -68,6 +70,9 @@ export const PlotGrid = ({
   const handlePlantSelection = (plotNumber: number, plantTypeId: string, cost: number) => {
     console.log(`🌱 Plantation sélectionnée: parcelle ${plotNumber}, plante ${plantTypeId}, coût ${cost}`);
     plantDirect(plotNumber, plantTypeId, cost);
+    
+    // Animation pour le coût de plantation
+    showCoinAnimation(-cost);
   };
 
   const handleClosePlantSelector = () => {
@@ -90,7 +95,7 @@ export const PlotGrid = ({
               className={`aspect-square cursor-pointer transition-all duration-300 relative group touch-target ${
                 isPlanting ? 'pointer-events-none opacity-50' : ''
               }`}
-              onClick={() => !isPlanting ? handlePlotClick(plot) : null}
+              onClick={(e) => !isPlanting ? handlePlotClick(plot, e) : null}
             >
               <div className={`premium-card rounded-xl p-2 h-full flex flex-col items-center justify-center relative overflow-hidden ${
                 plot.unlocked 
@@ -100,6 +105,7 @@ export const PlotGrid = ({
                   : 'opacity-60'
               }`}>
                 
+                {/* Effet de brillance pour les plantes prêtes */}
                 {plot.unlocked && state === 'ready' && (
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shimmer"></div>
                 )}
@@ -180,6 +186,7 @@ export const PlotGrid = ({
                   </div>
                 )}
 
+                {/* Indicator for active state */}
                 {plot.unlocked && state !== 'empty' && (
                   <div className="absolute top-1.5 right-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full ${

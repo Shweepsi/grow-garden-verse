@@ -2,18 +2,28 @@
 import { GameHeader } from '@/components/game/GameHeader';
 import { PlotGrid } from '@/components/game/PlotGrid';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
-import { useAnimations } from '@/components/game/AnimationContainer';
+import { AnimationProvider, useAnimations } from '@/contexts/AnimationContext';
 import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 
-export const GardenPage = () => {
+const GardenContent = () => {
   const { 
     gameState, 
     loading, 
     harvestPlant, 
-    unlockPlot 
+    unlockPlot,
+    harvestData
   } = useRefactoredGame();
+  
+  const { showCoinAnimation, showXPAnimation } = useAnimations();
 
-  const { showCoinAnimation, showXPAnimation, AnimationContainer } = useAnimations();
+  // Déclencher les animations quand harvestData change
+  useEffect(() => {
+    if (harvestData) {
+      showCoinAnimation(harvestData.harvestReward);
+      showXPAnimation(harvestData.expReward);
+    }
+  }, [harvestData, showCoinAnimation, showXPAnimation]);
 
   if (loading) {
     return (
@@ -27,10 +37,7 @@ export const GardenPage = () => {
 
   return (
     <div className="min-h-screen garden-background">
-      <GameHeader 
-        garden={gameState.garden} 
-        AnimationContainer={AnimationContainer}
-      />
+      <GameHeader garden={gameState.garden} />
       
       <div className="pb-20 space-y-3">
         <PlotGrid
@@ -39,10 +46,16 @@ export const GardenPage = () => {
           coins={gameState.garden?.coins || 0}
           onHarvestPlant={harvestPlant}
           onUnlockPlot={unlockPlot}
-          onCoinAnimation={showCoinAnimation}
-          onXPAnimation={showXPAnimation}
         />
       </div>
     </div>
+  );
+};
+
+export const GardenPage = () => {
+  return (
+    <AnimationProvider>
+      <GardenContent />
+    </AnimationProvider>
   );
 };

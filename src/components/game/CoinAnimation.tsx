@@ -5,16 +5,17 @@ import { Coins } from 'lucide-react';
 interface CoinAnimationProps {
   amount: number;
   onComplete: () => void;
-  stackIndex: number;
+  startX?: number;
+  startY?: number;
 }
 
-export const CoinAnimation = ({ amount, onComplete, stackIndex }: CoinAnimationProps) => {
+export const CoinAnimation = ({ amount, onComplete, startX = 0, startY = 0 }: CoinAnimationProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 200);
+      onComplete();
     }, 2000);
 
     return () => clearTimeout(timer);
@@ -24,15 +25,16 @@ export const CoinAnimation = ({ amount, onComplete, stackIndex }: CoinAnimationP
 
   return (
     <div 
-      className="absolute left-full ml-2 pointer-events-none z-50 animate-fade-in"
+      className="fixed z-50 pointer-events-none"
       style={{ 
-        top: `${stackIndex * 20}px`,
-        transform: 'translateY(-50%)'
+        left: startX || '50%', 
+        top: startY || '50%',
+        transform: 'translate(-50%, -50%)'
       }}
     >
-      <div className="flex items-center space-x-1 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full shadow-lg animate-bounce">
-        <Coins className="h-3 w-3" />
-        <span className="font-bold text-xs">+{amount.toLocaleString()}</span>
+      <div className="animate-[fadeInUp_0.5s_ease-out,fadeOut_0.5s_ease-out_1.5s] flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full shadow-lg">
+        <Coins className="h-5 w-5" />
+        <span className="font-bold">+{amount.toLocaleString()}</span>
       </div>
     </div>
   );
