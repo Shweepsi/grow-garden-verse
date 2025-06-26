@@ -10,71 +10,6 @@ export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const plantSeedMutation = useMutation({
-    mutationFn: async ({ plotNumber, plantTypeId, seedPrice }: { plotNumber: number; plantTypeId: string; seedPrice: number }) => {
-      if (!user?.id) throw new Error('Not authenticated');
-
-      // Vérifier les fonds
-      const { data: garden } = await supabase
-        .from('player_gardens')
-        .select('coins')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!garden || garden.coins < seedPrice) {
-        throw new Error('Pas assez de pièces');
-      }
-
-      // Obtenir les infos de la plante
-      const { data: plantType } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', plantTypeId)
-        .single();
-
-      if (!plantType) throw new Error('Type de plante non trouvé');
-
-      // Planter la graine
-      await supabase
-        .from('garden_plots')
-        .update({
-          plant_type: plantTypeId,
-          planted_at: new Date().toISOString(),
-          growth_time_minutes: plantType.base_growth_minutes,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber);
-
-      // Déduire le coût
-      await supabase
-        .from('player_gardens')
-        .update({
-          coins: garden.coins - seedPrice,
-          last_played: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      // Enregistrer la transaction
-      await supabase
-        .from('coin_transactions')
-        .insert({
-          user_id: user.id,
-          amount: -seedPrice,
-          transaction_type: 'purchase',
-          description: `Achat de ${plantType.display_name}`
-        });
-
-      toast.success(`${plantType.display_name} plantée ! Elle sera prête dans ${PlantGrowthService.formatTimeRemaining(plantType.base_growth_minutes || 1)}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la plantation');
-    }
-  });
-
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -185,10 +120,7 @@ export const usePlantActions = () => {
   });
 
   return {
-    plantSeed: (plotNumber: number, plantTypeId: string, seedPrice: number) => 
-      plantSeedMutation.mutate({ plotNumber, plantTypeId, seedPrice }),
     harvestPlant: (plotNumber: number) => harvestPlantMutation.mutate(plotNumber),
-    isPlanting: plantSeedMutation.isPending,
     isHarvesting: harvestPlantMutation.isPending
   };
 };

@@ -3,34 +3,24 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { GameBalanceService } from '@/services/GameBalanceService';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
 
 export const useDirectPlanting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const buyAndPlantMutation = useMutation({
-    mutationFn: async ({ 
-      plotNumber, 
-      seedPrice, 
-      plantTypeId, 
-      seedName 
-    }: { 
-      plotNumber: number; 
-      seedPrice: number;
-      plantTypeId: string;
-      seedName: string;
-    }) => {
+  const plantDirectMutation = useMutation({
+    mutationFn: async ({ plotNumber, plantTypeId, cost }: { plotNumber: number; plantTypeId: string; cost: number }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Vérifier si l'utilisateur a assez de pièces
+      // Vérifier les fonds
       const { data: garden } = await supabase
         .from('player_gardens')
         .select('coins')
         .eq('user_id', user.id)
         .single();
 
-      if (!garden || garden.coins < seedPrice) {
+      if (!garden || garden.coins < cost) {
         throw new Error('Pas assez de pièces');
       }
 
@@ -43,58 +33,50 @@ export const useDirectPlanting = () => {
 
       if (!plantType) throw new Error('Type de plante non trouvé');
 
-      // Planter directement sans passer par l'inventaire
-      const { error: plantError } = await supabase
+      // Planter directement
+      await supabase
         .from('garden_plots')
         .update({
           plant_type: plantTypeId,
-          plant_stage: 0, // Commence à l'étape 0
-          plant_water_count: 0,
           planted_at: new Date().toISOString(),
-          growth_time_minutes: null, // Plus utilisé dans le nouveau système
-          last_watered: null,
+          growth_time_minutes: plantType.base_growth_minutes,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
         .eq('plot_number', plotNumber);
 
-      if (plantError) throw plantError;
-
-      // Déduire les pièces
-      const { error: coinsError } = await supabase
+      // Déduire le coût
+      await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins - seedPrice,
+          coins: garden.coins - cost,
           last_played: new Date().toISOString()
         })
         .eq('user_id', user.id);
-
-      if (coinsError) throw coinsError;
 
       // Enregistrer la transaction
       await supabase
         .from('coin_transactions')
         .insert({
           user_id: user.id,
-          amount: -seedPrice,
-          transaction_type: 'direct_purchase',
-          description: `Achat direct et plantation de ${seedName}`
+          amount: -cost,
+          transaction_type: 'plant_direct',
+          description: `Plantation directe de ${plantType.display_name}`
         });
 
-      return { plantType, seedPrice };
+      toast.success(`${plantType.display_name} plantée ! Elle sera prête dans ${PlantGrowthService.formatTimeRemaining(plantType.base_growth_minutes || 1)}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      toast.success('Graine achetée et plantée avec succès !');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'achat');
+      toast.error(error.message || 'Erreur lors de la plantation');
     }
   });
 
   return {
-    buyAndPlant: (plotNumber: number, seedPrice: number, plantTypeId: string, seedName: string) =>
-      buyAndPlantMutation.mutate({ plotNumber, seedPrice, plantTypeId, seedName }),
-    isBuying: buyAndPlantMutation.isPending
+    plantDirect: (plotNumber: number, plantTypeId: string, cost: number) => 
+      plantDirectMutation.mutate({ plotNumber, plantTypeId, cost }),
+    isPlanting: plantDirectMutation.isPending
   };
 };

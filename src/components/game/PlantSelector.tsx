@@ -4,37 +4,46 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlantType } from '@/types/game';
-import { ShopItem } from '@/hooks/useShop';
 import { Coins, Sparkles } from 'lucide-react';
-import { useDirectPlanting } from '@/hooks/useDirectPlanting';
+import { GameBalanceService } from '@/services/GameBalanceService';
 
-interface DirectSeedPurchaseProps {
+interface PlantSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   plotNumber: number;
-  availableSeeds: Array<{
-    shopItem: ShopItem;
-    plantType: PlantType;
-  }>;
+  plantTypes: PlantType[];
   coins: number;
+  onPlantDirect: (plotNumber: number, plantTypeId: string, cost: number) => void;
 }
 
-export const DirectSeedPurchase = ({ 
+export const PlantSelector = ({ 
   isOpen, 
   onClose, 
   plotNumber, 
-  availableSeeds,
-  coins 
-}: DirectSeedPurchaseProps) => {
-  const { buyAndPlant, isBuying } = useDirectPlanting();
+  plantTypes,
+  coins,
+  onPlantDirect
+}: PlantSelectorProps) => {
+  const [isPlanting, setIsPlanting] = useState(false);
 
-  const handlePurchase = async (seedItem: ShopItem, plantType: PlantType) => {
+  const handlePlant = async (plantType: PlantType) => {
+    const cost = getPlantCost(plantType.rarity || 'common');
+    if (coins < cost) return;
+
+    setIsPlanting(true);
     try {
-      await buyAndPlant(plotNumber, seedItem.price, plantType.id, seedItem.display_name);
+      await onPlantDirect(plotNumber, plantType.id, cost);
       onClose();
     } catch (error) {
-      console.error('Erreur lors de l\'achat:', error);
+      console.error('Erreur lors de la plantation:', error);
+    } finally {
+      setIsPlanting(false);
     }
+  };
+
+  const getPlantCost = (rarity: string): number => {
+    const priceRange = GameBalanceService.getSeedPriceRange(rarity);
+    return Math.floor((priceRange.min + priceRange.max) / 2);
   };
 
   const getRarityColor = (rarity: string) => {
@@ -59,13 +68,13 @@ export const DirectSeedPurchase = ({
     }
   };
 
-  // Grouper par rareté pour un affichage organisé
-  const seedsByRarity = availableSeeds.reduce((acc, seed) => {
-    const rarity = seed.shopItem.rarity || 'common';
+  // Grouper par rareté
+  const plantsByRarity = plantTypes.reduce((acc, plant) => {
+    const rarity = plant.rarity || 'common';
     if (!acc[rarity]) acc[rarity] = [];
-    acc[rarity].push(seed);
+    acc[rarity].push(plant);
     return acc;
-  }, {} as Record<string, typeof availableSeeds>);
+  }, {} as Record<string, PlantType[]>);
 
   const rarityOrder = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
 
@@ -75,7 +84,7 @@ export const DirectSeedPurchase = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-green-600" />
-            Choisir une graine - Parcelle {plotNumber}
+            Choisir une plante - Parcelle {plotNumber}
             <div className="ml-auto flex items-center gap-1 text-sm text-yellow-600">
               <Coins className="h-4 w-4" />
               {coins.toLocaleString()}
@@ -85,8 +94,8 @@ export const DirectSeedPurchase = ({
 
         <div className="space-y-6">
           {rarityOrder.map(rarity => {
-            const seeds = seedsByRarity[rarity];
-            if (!seeds?.length) return null;
+            const plants = plantsByRarity[rarity];
+            if (!plants?.length) return null;
 
             return (
               <div key={rarity}>
@@ -99,14 +108,14 @@ export const DirectSeedPurchase = ({
                 </h3>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {seeds.map(({ shopItem, plantType }) => {
-                    const canAfford = coins >= shopItem.price;
-                    const isExpensive = shopItem.price >= 1000000;
+                  {plants.map((plantType) => {
+                    const cost = getPlantCost(plantType.rarity || 'common');
+                    const canAfford = coins >= cost;
 
                     return (
                       <Card
-                        key={shopItem.id}
-                        className={`cursor-pointer transition-all hover:shadow-lg ${getRarityColor(shopItem.rarity)}`}
+                        key={plantType.id}
+                        className={`cursor-pointer transition-all hover:shadow-lg ${getRarityColor(plantType.rarity)}`}
                       >
                         <CardContent className="p-4">
                           <div className="text-center space-y-2">
@@ -115,30 +124,27 @@ export const DirectSeedPurchase = ({
                             <h4 className="font-medium text-sm">{plantType.display_name}</h4>
                             
                             <p className="text-xs text-gray-600 mb-2">
-                              {plantType.growth_stages} étapes • {shopItem.rarity}
+                              Croissance: {plantType.base_growth_minutes}min
                             </p>
 
                             <div className={`font-bold text-sm flex items-center justify-center gap-1 ${
                               canAfford ? 'text-green-600' : 'text-red-500'
                             }`}>
                               <Coins className="h-3 w-3" />
-                              {isExpensive 
-                                ? `${(shopItem.price / 1000000).toFixed(1)}M` 
-                                : shopItem.price.toLocaleString()
-                              }
+                              {cost.toLocaleString()}
                             </div>
 
                             <Button
                               size="sm"
-                              onClick={() => handlePurchase(shopItem, plantType)}
-                              disabled={!canAfford || isBuying}
+                              onClick={() => handlePlant(plantType)}
+                              disabled={!canAfford || isPlanting}
                               className={`w-full mt-2 ${
                                 canAfford 
                                   ? 'bg-green-600 hover:bg-green-700' 
                                   : 'bg-gray-400'
                               }`}
                             >
-                              {isBuying ? 'Achat...' : 'Acheter & Planter'}
+                              {isPlanting ? 'Plantation...' : 'Planter'}
                             </Button>
                           </div>
                         </CardContent>
@@ -149,15 +155,6 @@ export const DirectSeedPurchase = ({
               </div>
             );
           })}
-
-          {availableSeeds.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-2">Aucune graine disponible</p>
-              <p className="text-sm text-gray-500">
-                Les nouvelles graines arrivent bientôt !
-              </p>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>

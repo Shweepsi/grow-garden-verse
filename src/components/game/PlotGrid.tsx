@@ -3,18 +3,20 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GardenPlot, PlantType } from '@/types/game';
-import { Lock, Sprout, Gift } from 'lucide-react';
+import { Lock, Sprout, Gift, Wrench } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
-import { DirectSeedPurchase } from './DirectSeedPurchase';
+import { PlantSelector } from './PlantSelector';
+import { ToolSelector } from './ToolSelector';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { GameBalanceService } from '@/services/GameBalanceService';
 import { useShop } from '@/hooks/useShop';
+import { useDirectPlanting } from '@/hooks/useDirectPlanting';
+import { useToolApplication } from '@/hooks/useToolApplication';
 
 interface PlotGridProps {
   plots: GardenPlot[];
   plantTypes: PlantType[];
   coins: number;
-  onPlantSeed: (plotNumber: number, plantTypeId: string, seedPrice: number) => void;
   onHarvestPlant: (plotNumber: number) => void;
   onUnlockPlot: (plotNumber: number) => void;
 }
@@ -23,13 +25,15 @@ export const PlotGrid = ({
   plots, 
   plantTypes, 
   coins,
-  onPlantSeed,
   onHarvestPlant, 
   onUnlockPlot 
 }: PlotGridProps) => {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
-  const [showSeedSelector, setShowSeedSelector] = useState(false);
+  const [showPlantSelector, setShowPlantSelector] = useState(false);
+  const [showToolSelector, setShowToolSelector] = useState(false);
   const { shopItems } = useShop();
+  const { plantDirect } = useDirectPlanting();
+  const { applyTool } = useToolApplication();
 
   const getPlantState = (plot: GardenPlot) => {
     if (!plot.plant_type) return 'empty';
@@ -45,29 +49,21 @@ export const PlotGrid = ({
     const state = getPlantState(plot);
     if (state === 'empty') {
       setSelectedPlot(plot.plot_number);
-      setShowSeedSelector(true);
+      setShowPlantSelector(true);
     } else if (state === 'ready') {
       onHarvestPlant(plot.plot_number);
     }
   };
 
-  // Obtenir les graines disponibles avec leur type de plante correspondant
-  const getAvailableSeeds = () => {
-    return shopItems
-      .filter(item => item.item_type === 'seed')
-      .map(shopItem => {
-        const plantTypeName = shopItem.name.replace('_seed', '');
-        const plantType = plantTypes.find(pt => pt.name === plantTypeName);
-        return {
-          shopItem,
-          plantType
-        };
-      })
-      .filter(item => item.plantType)
-      .sort((a, b) => a.shopItem.price - b.shopItem.price);
+  const handleToolClick = (plot: GardenPlot, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!plot.unlocked) return;
+    
+    setSelectedPlot(plot.plot_number);
+    setShowToolSelector(true);
   };
 
-  const availableSeeds = getAvailableSeeds();
+  const availableTools = shopItems.filter(item => item.item_type === 'tool');
 
   return (
     <>
@@ -80,7 +76,7 @@ export const PlotGrid = ({
           return (
             <Card
               key={plot.id}
-              className={`aspect-square cursor-pointer transition-all ${
+              className={`aspect-square cursor-pointer transition-all relative ${
                 plot.unlocked 
                   ? 'hover:shadow-lg border-green-200 hover:border-green-400' 
                   : 'bg-gray-100 border-gray-200'
@@ -108,13 +104,23 @@ export const PlotGrid = ({
                     </Button>
                   </div>
                 ) : (
-                  <div className="text-center h-full flex flex-col justify-center">
+                  <div className="text-center h-full flex flex-col justify-center w-full relative">
+                    {/* Bouton outil en haut à droite */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-0 right-0 w-6 h-6 p-0 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                      onClick={(e) => handleToolClick(plot, e)}
+                    >
+                      <Wrench className="h-3 w-3 text-blue-600" />
+                    </Button>
+
                     {state === 'empty' ? (
                       <>
                         <Sprout className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                        <p className="text-xs text-green-600 font-medium">Planter une graine</p>
+                        <p className="text-xs text-green-600 font-medium">Planter une plante</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {availableSeeds.length} variétés disponibles
+                          {plantTypes.length} variétés disponibles
                         </p>
                       </>
                     ) : state === 'growing' ? (
@@ -146,16 +152,28 @@ export const PlotGrid = ({
         })}
       </div>
 
-      <DirectSeedPurchase
-        isOpen={showSeedSelector}
+      <PlantSelector
+        isOpen={showPlantSelector}
         onClose={() => {
-          setShowSeedSelector(false);
+          setShowPlantSelector(false);
           setSelectedPlot(null);
         }}
         plotNumber={selectedPlot || 1}
-        availableSeeds={availableSeeds}
+        plantTypes={plantTypes}
         coins={coins}
-        onPlantSeed={onPlantSeed}
+        onPlantDirect={plantDirect}
+      />
+
+      <ToolSelector
+        isOpen={showToolSelector}
+        onClose={() => {
+          setShowToolSelector(false);
+          setSelectedPlot(null);
+        }}
+        plotNumber={selectedPlot || 1}
+        tools={availableTools}
+        coins={coins}
+        onApplyTool={applyTool}
       />
     </>
   );
