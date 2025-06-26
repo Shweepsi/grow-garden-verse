@@ -2,8 +2,6 @@
 import { Coins, Sprout, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
-import { CoinAnimation } from './CoinAnimation';
-import { XPAnimation } from './XPAnimation';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
@@ -50,7 +48,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
           <div className="space-y-2">
             {/* Ligne 1: Coins et Niveau */}
             <div className="flex items-center justify-between space-x-2">
-              {/* Coins avec animation */}
+              {/* Coins */}
               <div className="relative group flex-1">
                 <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
                   <div className="w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
@@ -65,7 +63,6 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                     }
                   </span>
                 </div>
-                <CoinAnimation />
               </div>
               
               {/* Niveau */}
@@ -81,8 +78,8 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               </div>
             </div>
 
-            {/* Ligne 2: Barre d'XP avec pourcentage et animation */}
-            <div className="relative premium-card rounded-lg p-2">
+            {/* Ligne 2: Barre d'XP avec pourcentage */}
+            <div className="premium-card rounded-lg p-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="mobile-text-xs text-blue-600 font-medium">Expérience</span>
                 <span className="mobile-text-xs text-blue-600 font-bold">
@@ -105,7 +102,6 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                   {xpNeeded.toLocaleString()} XP
                 </span>
               </div>
-              <XPAnimation />
             </div>
           </div>
         </div>
