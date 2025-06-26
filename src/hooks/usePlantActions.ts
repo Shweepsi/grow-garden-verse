@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -86,11 +87,20 @@ export const usePlantActions = () => {
 
     const multipliers = getActiveMultipliers();
 
+    // Récupérer les données du jardin actuel
+    const { data: garden } = await supabase
+      .from('player_gardens')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!garden) throw new Error('Jardin non trouvé');
+
     // Calculer les récompenses avec les multiplicateurs
     const baseCoins = EconomyService.getHarvestReward(
       plantType.level_required || 1,
       plantType.base_growth_seconds || 60,
-      1, // Niveau joueur sera récupéré du contexte si nécessaire
+      garden.level || 1,
       multipliers.harvest
     );
 
@@ -112,10 +122,10 @@ export const usePlantActions = () => {
     const { data: updatedGarden, error: gardenError } = await supabase
       .from('player_gardens')
       .update({
-        coins: (garden?.coins || 0) + coinsReward,
-        experience: (garden?.experience || 0) + expReward,
-        gems: (garden?.gems || 0) + gemReward,
-        total_harvests: (garden?.total_harvests || 0) + 1,
+        coins: garden.coins + coinsReward,
+        experience: garden.experience + expReward,
+        gems: garden.gems + gemReward,
+        total_harvests: garden.total_harvests + 1,
         last_played: new Date().toISOString()
       })
       .eq('user_id', user.id)
