@@ -3,7 +3,7 @@ import { PlantType } from '@/types/game';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Sparkles, Lock, TrendingUp, Clock, Calculator } from 'lucide-react';
+import { Coins, Sparkles, Lock, TrendingUp, Clock } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
 
@@ -39,18 +39,9 @@ export const PlantSelector = ({
     );
   };
 
-  const getROI = (plantType: PlantType): number => {
-    return EconomyService.getROIPercentage(
-      plantType.level_required || 1,
-      plantType.base_growth_minutes || 60
-    );
-  };
-
-  const getProfitPerMinute = (plantType: PlantType): number => {
-    return EconomyService.getProfitPerMinute(
-      plantType.level_required || 1,
-      plantType.base_growth_minutes || 60
-    );
+  const handlePlantClick = (plantTypeId: string, cost: number) => {
+    onPlantDirect(plotNumber, plantTypeId, cost);
+    onClose(); // Fermer la modale après plantation
   };
 
   // Filtrer les plantes selon le niveau du joueur
@@ -88,8 +79,6 @@ export const PlantSelector = ({
                 {availablePlants.map((plantType) => {
                   const cost = getPlantCost(plantType);
                   const reward = getPlantReward(plantType);
-                  const roi = getROI(plantType);
-                  const profitPerMin = getProfitPerMinute(plantType);
                   const canAfford = coins >= cost;
 
                   return (
@@ -98,49 +87,43 @@ export const PlantSelector = ({
                       className={`cursor-pointer transition-all hover:shadow-lg border-green-200 ${
                         canAfford ? 'bg-green-50 hover:bg-green-100' : 'bg-gray-50 opacity-60'
                       }`}
-                      onClick={() => canAfford ? onPlantDirect(plotNumber, plantType.id, cost) : null}
+                      onClick={() => canAfford ? handlePlantClick(plantType.id, cost) : null}
                     >
                       <CardContent className="p-4">
-                        <div className="text-center space-y-2">
+                        <div className="text-center space-y-3">
                           <div className="text-3xl mb-2">{plantType.emoji}</div>
                           
                           <h4 className="font-medium text-sm">{plantType.display_name}</h4>
                           
+                          {/* Difficulté : Niveau et Temps */}
                           <div className="flex items-center justify-center gap-2 text-xs">
-                            <Badge variant="outline" className="text-xs bg-blue-100">
-                              Niv. {plantType.level_required}
+                            <Badge variant="outline" className="text-xs bg-blue-100 font-semibold">
+                              Niveau {plantType.level_required}
                             </Badge>
-                            <div className="flex items-center gap-1 text-gray-600">
+                            <div className="flex items-center gap-1 text-gray-600 font-medium">
                               <Clock className="h-3 w-3" />
                               {plantType.base_growth_minutes}min
                             </div>
                           </div>
 
-                          {/* Coût de plantation */}
-                          <div className="bg-red-50 p-2 rounded border border-red-200">
-                            <div className="text-xs text-red-600 font-medium">Coût</div>
-                            <div className="flex items-center justify-center gap-1 text-sm font-bold text-red-700">
-                              <Coins className="h-3 w-3" />
-                              {cost.toLocaleString()}
+                          {/* Économie simplifiée */}
+                          <div className="space-y-2">
+                            {/* Coût de plantation */}
+                            <div className="bg-red-50 p-2 rounded border border-red-200">
+                              <div className="text-xs text-red-600 font-medium mb-1">Coût</div>
+                              <div className="flex items-center justify-center gap-1 text-sm font-bold text-red-700">
+                                <Coins className="h-3 w-3" />
+                                {cost.toLocaleString()}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Gain à la récolte */}
-                          <div className="bg-green-50 p-2 rounded border border-green-200">
-                            <div className="text-xs text-green-600 font-medium">Gain</div>
-                            <div className="flex items-center justify-center gap-1 text-sm font-bold text-green-700">
-                              <TrendingUp className="h-3 w-3" />
-                              {reward.toLocaleString()}
-                            </div>
-                          </div>
-
-                          {/* Rentabilité */}
-                          <div className="bg-yellow-50 p-2 rounded border border-yellow-200">
-                            <div className="text-xs text-yellow-600 font-medium">Rentabilité</div>
-                            <div className="flex items-center justify-center gap-1 text-xs">
-                              <Calculator className="h-3 w-3" />
-                              <span className="font-bold text-yellow-700">+{roi}%</span>
-                              <span className="text-gray-600">({profitPerMin}/min)</span>
+                            {/* Gain à la récolte */}
+                            <div className="bg-green-50 p-2 rounded border border-green-200">
+                              <div className="text-xs text-green-600 font-medium mb-1">Gain</div>
+                              <div className="flex items-center justify-center gap-1 text-sm font-bold text-green-700">
+                                <TrendingUp className="h-3 w-3" />
+                                {reward.toLocaleString()}
+                              </div>
                             </div>
                           </div>
 
@@ -170,7 +153,6 @@ export const PlantSelector = ({
                 {lockedPlants.map((plantType) => {
                   const cost = getPlantCost(plantType);
                   const reward = getPlantReward(plantType);
-                  const roi = getROI(plantType);
 
                   return (
                     <Card
@@ -187,7 +169,7 @@ export const PlantSelector = ({
                           
                           <div className="flex items-center justify-center gap-1">
                             <Lock className="h-3 w-3 text-red-500" />
-                            <span className="text-xs text-red-500">
+                            <span className="text-xs text-red-500 font-medium">
                               Niveau {plantType.level_required} requis
                             </span>
                           </div>
@@ -195,7 +177,7 @@ export const PlantSelector = ({
                           <div className="text-xs text-gray-500 space-y-1">
                             <div>Coût: {cost.toLocaleString()} 🪙</div>
                             <div>Gain: {reward.toLocaleString()} 🪙</div>
-                            <div>ROI: +{roi}%</div>
+                            <div>Temps: {plantType.base_growth_minutes}min</div>
                           </div>
                         </div>
                       </CardContent>
