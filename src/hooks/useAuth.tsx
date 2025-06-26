@@ -32,7 +32,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (event === 'SIGNED_IN') {
           navigate('/garden');
-          toast.success('Connexion réussie !');
         }
       }
     );
