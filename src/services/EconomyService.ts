@@ -50,6 +50,7 @@ export class EconomyService {
   // Expérience avec multiplicateur d'amélioration
   static getExperienceReward(plantLevel: number, expMultiplier: number = 1): number {
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
+    if (!expMultiplier || expMultiplier < 0.1) expMultiplier = 1;
     // 15 EXP de base + 5 par niveau, avec multiplicateur
     const baseExp = 15 + (plantLevel * 5);
     return Math.floor(baseExp * expMultiplier);

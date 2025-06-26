@@ -1,9 +1,8 @@
-
 import { PlantType } from '@/types/game';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Sparkles, Lock, TrendingUp, Clock } from 'lucide-react';
+import { Coins, Sparkles, Lock, TrendingUp, Clock, Percent } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
 import { useUpgrades } from '@/hooks/useUpgrades';
@@ -33,6 +32,11 @@ export const PlantSelector = ({
   const multipliers = getActiveMultipliers();
 
   const getPlantCost = (plantType: PlantType): number => {
+    const baseCost = EconomyService.getPlantDirectCost(plantType.level_required || 1);
+    return EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction);
+  };
+
+  const getPlantBaseCost = (plantType: PlantType): number => {
     return EconomyService.getPlantDirectCost(plantType.level_required || 1);
   };
 
@@ -40,10 +44,11 @@ export const PlantSelector = ({
     const baseReward = EconomyService.getHarvestReward(
       plantType.level_required || 1,
       plantType.base_growth_seconds || 60,
-      playerLevel
+      playerLevel,
+      multipliers.harvest,
+      multipliers.plantCostReduction
     );
-    // Appliquer le multiplicateur de récolte
-    return Math.floor(baseReward * multipliers.harvest);
+    return baseReward;
   };
 
   const getAdjustedGrowthTime = (baseGrowthSeconds: number): number => {
@@ -115,6 +120,28 @@ export const PlantSelector = ({
                 </div>
               </div>
             )}
+
+            {multipliers.exp > 1 && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg px-2 py-1">
+                <div className="flex items-center gap-1 text-purple-700">
+                  <Sparkles className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    EXP +{Math.round((multipliers.exp - 1) * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {multipliers.plantCostReduction < 1 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg px-2 py-1">
+                <div className="flex items-center gap-1 text-orange-700">
+                  <Percent className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    Coût -{Math.round((1 - multipliers.plantCostReduction) * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Plantes disponibles */}
@@ -126,10 +153,12 @@ export const PlantSelector = ({
               
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                 {availablePlants.map((plantType) => {
-                  const cost = getPlantCost(plantType);
+                  const baseCost = getPlantBaseCost(plantType);
+                  const adjustedCost = getPlantCost(plantType);
                   const reward = getPlantReward(plantType);
                   const adjustedGrowthTime = getAdjustedGrowthTime(plantType.base_growth_seconds);
-                  const canAfford = EconomyService.canAffordPlant(coins, cost);
+                  const canAfford = EconomyService.canAffordPlant(coins, adjustedCost);
+                  const hasCostReduction = multipliers.plantCostReduction < 1;
 
                   return (
                     <Card
@@ -137,7 +166,7 @@ export const PlantSelector = ({
                       className={`cursor-pointer transition-all hover:shadow-md border-green-200 ${
                         canAfford ? 'bg-green-50 hover:bg-green-100' : 'bg-gray-50 opacity-60'
                       }`}
-                      onClick={() => canAfford ? handlePlantClick(plantType.id, cost) : null}
+                      onClick={() => canAfford ? handlePlantClick(plantType.id, adjustedCost) : null}
                     >
                       <CardContent className="p-2">
                         <div className="text-center space-y-2">
@@ -167,11 +196,23 @@ export const PlantSelector = ({
 
                           {/* Économie très compacte */}
                           <div className="space-y-1">
-                            {/* Coût */}
+                            {/* Coût avec réduction */}
                             <div className="bg-red-50 px-1 py-1 rounded border border-red-200">
                               <div className="flex items-center justify-center gap-1 text-xs font-bold text-red-700">
                                 <Coins className="h-2 w-2" />
-                                -{cost.toLocaleString()}
+                                {hasCostReduction ? (
+                                  <>
+                                    <span className="line-through text-gray-400">
+                                      -{baseCost.toLocaleString()}
+                                    </span>
+                                    <span className="text-red-700">
+                                      -{adjustedCost.toLocaleString()}
+                                    </span>
+                                    <span className="text-xs text-orange-600">✨</span>
+                                  </>
+                                ) : (
+                                  <>-{adjustedCost.toLocaleString()}</>
+                                )}
                               </div>
                             </div>
 

@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,7 +32,7 @@ export const usePlantActions = () => {
         console.log('💪 Multiplicateurs actifs:', multipliers);
       } catch (error) {
         console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
-        multipliers = { harvest: 1, growth: 1 };
+        multipliers = { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0 };
       }
 
       // Obtenir les infos de la parcelle avec jointure
@@ -94,22 +95,26 @@ export const usePlantActions = () => {
         throw new Error('Jardin non trouvé');
       }
 
-      // Calculer les récompenses avec validation renforcée
+      // Calculer les récompenses avec validation renforcée et tous les multiplicateurs
       const plantLevel = Math.max(1, plantType.level_required || 1);
       const baseGrowthSeconds = Math.max(1, plantType.base_growth_seconds || 60);
       const playerLevel = Math.max(1, garden.level || 1);
       const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
+      const expMultiplier = Math.max(0.1, multipliers.exp || 1);
+      const plantCostReduction = Math.max(0.1, multipliers.plantCostReduction || 1);
 
       const harvestReward = EconomyService.getHarvestReward(
         plantLevel,
         baseGrowthSeconds,
         playerLevel,
-        harvestMultiplier
+        harvestMultiplier,
+        plantCostReduction
       );
       
-      const expReward = EconomyService.getExperienceReward(plantLevel);
+      const expReward = EconomyService.getExperienceReward(plantLevel, expMultiplier);
       
       console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP`);
+      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier}, EXP: x${expMultiplier}, Coût: x${plantCostReduction}`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
