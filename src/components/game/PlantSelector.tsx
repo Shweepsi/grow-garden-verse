@@ -3,7 +3,7 @@ import { PlantType } from '@/types/game';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Sparkles, Lock, TrendingUp, Clock } from 'lucide-react';
+import { Coins, Sparkles, Lock, TrendingUp, Clock, DollarSign } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
 import { useUpgrades } from '@/hooks/useUpgrades';
@@ -33,7 +33,8 @@ export const PlantSelector = ({
   const multipliers = getActiveMultipliers();
 
   const getPlantCost = (plantType: PlantType): number => {
-    return EconomyService.getPlantDirectCost(plantType.level_required || 1);
+    const baseCost = EconomyService.getPlantDirectCost(plantType.level_required || 1);
+    return EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction);
   };
 
   const getPlantReward = (plantType: PlantType): number => {
@@ -115,6 +116,17 @@ export const PlantSelector = ({
                 </div>
               </div>
             )}
+
+            {multipliers.plantCostReduction < 1 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg px-2 py-1">
+                <div className="flex items-center gap-1 text-orange-700">
+                  <DollarSign className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    Coût -{Math.round((1 - multipliers.plantCostReduction) * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Plantes disponibles */}
@@ -167,11 +179,21 @@ export const PlantSelector = ({
 
                           {/* Économie très compacte */}
                           <div className="space-y-1">
-                            {/* Coût */}
+                            {/* Coût avec réduction */}
                             <div className="bg-red-50 px-1 py-1 rounded border border-red-200">
                               <div className="flex items-center justify-center gap-1 text-xs font-bold text-red-700">
                                 <Coins className="h-2 w-2" />
-                                -{cost.toLocaleString()}
+                                {multipliers.plantCostReduction < 1 && (
+                                  <span className="line-through text-gray-400">
+                                    -{EconomyService.getPlantDirectCost(plantType.level_required || 1).toLocaleString()}
+                                  </span>
+                                )}
+                                <span className={multipliers.plantCostReduction < 1 ? 'text-orange-600' : ''}>
+                                  -{cost.toLocaleString()}
+                                </span>
+                                {multipliers.plantCostReduction < 1 && (
+                                  <span className="text-xs text-orange-600">💰</span>
+                                )}
                               </div>
                             </div>
 

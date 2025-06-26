@@ -27,8 +27,7 @@ export class EconomyService {
     plantLevel: number, 
     growthTimeSeconds: number,
     playerLevel: number = 1,
-    harvestMultiplier: number = 1,
-    plantCostReduction: number = 1
+    harvestMultiplier: number = 1
   ): number {
     // Validation des paramètres
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
@@ -36,7 +35,7 @@ export class EconomyService {
     if (!playerLevel || playerLevel < 1) playerLevel = 1;
     if (!harvestMultiplier || harvestMultiplier < 0.1) harvestMultiplier = 1;
     
-    const baseCost = this.getPlantDirectCost(plantLevel) * plantCostReduction;
+    const baseCost = this.getPlantDirectCost(plantLevel);
     
     // Profit de base de 70% + bonus pour temps long + bonus niveau
     const baseProfit = baseCost * 1.7; // 70% de profit de base

@@ -2,210 +2,177 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { PlantType } from '@/types/game';
 import { EconomyService } from '@/services/EconomyService';
-import { useUpgrades } from '@/hooks/useUpgrades';
-import { useAnimations } from '@/contexts/AnimationContext';
+import { useUpgrades } from './useUpgrades';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
-  const { triggerCoinAnimation, triggerXpAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
-    mutationFn: async (plotNumber: number) => {
-      if (!user?.id) throw new Error('Not authenticated');
-
-      // Validation stricte du numéro de parcelle
-      if (!plotNumber || plotNumber < 1 || plotNumber > 9) {
-        throw new Error('Numéro de parcelle invalide');
-      }
-
-      console.log(`🌾 Début de la récolte pour la parcelle ${plotNumber}`);
-
-      // Obtenir les multiplicateurs actifs de manière sécurisée
-      let multipliers;
-      try {
-        multipliers = getActiveMultipliers();
-        console.log('💪 Multiplicateurs actifs:', multipliers);
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
-        multipliers = { harvest: 1, growth: 1 };
-      }
-
-      // Obtenir les infos de la parcelle avec jointure
-      const { data: plot, error: plotError } = await supabase
-        .from('garden_plots')
-        .select(`
-          *, 
-          plant_types(*)
-        `)
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber)
-        .single();
-
-      if (plotError) {
-        console.error('❌ Erreur parcelle:', plotError);
-        throw new Error(`Erreur lors de la récupération de la parcelle: ${plotError.message}`);
-      }
-      
-      if (!plot) {
-        throw new Error('Parcelle non trouvée');
-      }
-      
-      if (!plot.plant_type) {
-        throw new Error('Aucune plante à récolter sur cette parcelle');
-      }
-
-      const plantType = plot.plant_types;
-      if (!plantType) {
-        throw new Error('Type de plante introuvable');
-      }
-
-      console.log('🌱 Plante trouvée:', plantType.display_name);
-      
-      // Vérification robuste de la maturité
-      const growthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
-      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime);
-      
-      if (!isReady) {
-        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, growthTime);
-        const timeString = PlantGrowthService.formatTimeRemaining(timeRemaining);
-        console.log(`⏰ Plante pas encore prête, temps restant: ${timeString}`);
-        throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
-      }
-
-      console.log('✅ Plante prête pour la récolte');
-
-      // Obtenir les données du jardin
-      const { data: garden, error: gardenError } = await supabase
-        .from('player_gardens')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (gardenError) {
-        console.error('❌ Erreur jardin:', gardenError);
-        throw new Error(`Erreur lors de la récupération du jardin: ${gardenError.message}`);
-      }
-      
-      if (!garden) {
-        throw new Error('Jardin non trouvé');
-      }
-
-      // Calculer les récompenses avec validation renforcée
-      const plantLevel = Math.max(1, plantType.level_required || 1);
-      const baseGrowthSeconds = Math.max(1, plantType.base_growth_seconds || 60);
-      const playerLevel = Math.max(1, garden.level || 1);
-      const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
-
-      const harvestReward = EconomyService.getHarvestReward(
-        plantLevel,
-        baseGrowthSeconds,
-        playerLevel,
-        harvestMultiplier
-      );
-      
-      const expReward = EconomyService.getExperienceReward(plantLevel);
-      
-      console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP`);
-
-      const newExp = Math.max(0, (garden.experience || 0) + expReward);
-      const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
-      const newCoins = Math.max(0, (garden.coins || 0) + harvestReward);
-      const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
-
-      // Vider la parcelle en premier
-      const { error: updatePlotError } = await supabase
-        .from('garden_plots')
-        .update({
-          plant_type: null,
-          planted_at: null,
-          growth_time_seconds: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber);
-
-      if (updatePlotError) {
-        console.error('❌ Erreur mise à jour parcelle:', updatePlotError);
-        throw new Error(`Erreur lors de la vidange de la parcelle: ${updatePlotError.message}`);
-      }
-
-      console.log('🧹 Parcelle vidée avec succès');
-
-      // Mettre à jour les stats du jardin
-      const { error: updateGardenError } = await supabase
-        .from('player_gardens')
-        .update({
-          coins: newCoins,
-          experience: newExp,
-          level: newLevel,
-          total_harvests: newHarvests,
-          last_played: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (updateGardenError) {
-        console.error('❌ Erreur mise à jour jardin:', updateGardenError);
-        throw new Error(`Erreur lors de la mise à jour du jardin: ${updateGardenError.message}`);
-      }
-
-      console.log('🏡 Jardin mis à jour avec succès');
-
-      // Déclencher les animations de récompense
-      triggerCoinAnimation(harvestReward);
-      triggerXpAnimation(expReward);
-
-      // Enregistrer la transaction
-      try {
-        await supabase
-          .from('coin_transactions')
-          .insert({
-            user_id: user.id,
-            amount: harvestReward,
-            transaction_type: 'harvest',
-            description: `Récolte de ${plantType.display_name || plantType.name}`
-          });
-        console.log('💳 Transaction enregistrée');
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de l\'enregistrement de la transaction:', error);
-      }
-
-      // Enregistrer la découverte
-      try {
-        await supabase
-          .from('plant_discoveries')
-          .insert({
-            user_id: user.id,
-            plant_type_id: plantType.id,
-            discovery_method: 'harvest'
-          });
-        console.log('🔍 Découverte enregistrée');
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
-      }
-
-      // Garder seulement le toast de niveau supérieur
-      if (newLevel > (garden.level || 1)) {
-        toast.success(`🎉 Niveau ${newLevel} atteint !`);
-        console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
-      }
-
-      console.log('✅ Récolte terminée avec succès');
+    mutationFn: async ({ plotNumber, plantType }: { plotNumber: number; plantType: PlantType }) => {
+      return harvestPlant(plotNumber, plantType);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
     },
     onError: (error: any) => {
-      console.error('💥 Erreur lors de la récolte:', error);
-      toast.error(error.message || 'Erreur lors de la récolte');
+      toast.error('Erreur lors de la récolte', {
+        description: error.message || 'Veuillez réessayer'
+      });
     }
   });
 
+  const plantDirectMutation = useMutation({
+    mutationFn: async ({ plotNumber, plantTypeId, cost }: { plotNumber: number; plantTypeId: string; cost: number }) => {
+      if (!user?.id) throw new Error('Non authentifié');
+
+      // Vérifier les fonds
+      const { data: garden } = await supabase
+        .from('player_gardens')
+        .select('coins')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!garden) throw new Error('Jardin non trouvé');
+      if (garden.coins < cost) throw new Error('Pas assez de pièces');
+
+      // Planter directement
+      const { error: plantError } = await supabase
+        .from('garden_plots')
+        .update({
+          plant_type: plantTypeId,
+          planted_at: new Date().toISOString(),
+          growth_time_seconds: null
+        })
+        .eq('user_id', user.id)
+        .eq('plot_number', plotNumber);
+
+      if (plantError) throw plantError;
+
+      // Déduire le coût
+      const { error: gardenError } = await supabase
+        .from('player_gardens')
+        .update({ coins: garden.coins - cost })
+        .eq('user_id', user.id);
+
+      if (gardenError) throw gardenError;
+
+      // Enregistrer la transaction
+      await supabase
+        .from('coin_transactions')
+        .insert({
+          user_id: user.id,
+          amount: -cost,
+          transaction_type: 'plant',
+          description: `Plantation directe sur la parcelle ${plotNumber}`
+        });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      toast.success('Plante plantée !');
+    },
+    onError: (error: any) => {
+      toast.error('Erreur lors de la plantation', {
+        description: error.message || 'Veuillez réessayer'
+      });
+    }
+  });
+
+  const harvestPlant = async (plotNumber: number, plantType: PlantType) => {
+    if (!user?.id) throw new Error('Non authentifié');
+
+    const multipliers = getActiveMultipliers();
+
+    // Calculer les récompenses avec les multiplicateurs
+    const baseCoins = EconomyService.getHarvestReward(
+      plantType.level_required || 1,
+      plantType.base_growth_seconds || 60,
+      1, // Niveau joueur sera récupéré du contexte si nécessaire
+      multipliers.harvest
+    );
+
+    const baseExp = EconomyService.getExperienceReward(
+      plantType.level_required || 1,
+      multipliers.exp
+    );
+
+    // Calcul de la chance de gemmes
+    const gemChance = EconomyService.getGemChance(multipliers.gemChance);
+    const shouldGetGem = Math.random() < gemChance;
+    const gemReward = shouldGetGem ? 1 : 0;
+
+    // Récompenses finales
+    const coinsReward = Math.max(1, baseCoins);
+    const expReward = Math.max(1, baseExp);
+
+    // Mettre à jour le jardin du joueur
+    const { data: updatedGarden, error: gardenError } = await supabase
+      .from('player_gardens')
+      .update({
+        coins: (garden?.coins || 0) + coinsReward,
+        experience: (garden?.experience || 0) + expReward,
+        gems: (garden?.gems || 0) + gemReward,
+        total_harvests: (garden?.total_harvests || 0) + 1,
+        last_played: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .select('*')
+      .single();
+
+    if (gardenError) throw gardenError;
+
+    // Réinitialiser la parcelle
+    const { error: plotError } = await supabase
+      .from('garden_plots')
+      .update({
+        plant_type: null,
+        planted_at: null,
+        growth_time_seconds: null
+      })
+      .eq('user_id', user.id)
+      .eq('plot_number', plotNumber);
+
+    if (plotError) throw plotError;
+
+    // Enregistrer les transactions
+    await supabase
+      .from('coin_transactions')
+      .insert([
+        {
+          user_id: user.id,
+          amount: coinsReward,
+          transaction_type: 'harvest',
+          description: `Récolte de ${plantType.display_name} sur la parcelle ${plotNumber}`
+        },
+        {
+          user_id: user.id,
+          amount: gemReward,
+          transaction_type: 'gem_reward',
+          description: `Gemme trouvée lors de la récolte de ${plantType.display_name} sur la parcelle ${plotNumber}`
+        }
+      ]);
+
+    return updatedGarden;
+  };
+
+  const onHarvest = (plotNumber: number, plantType: PlantType) => {
+    harvestPlantMutation.mutate({ plotNumber, plantType });
+  };
+
+  const onPlantDirect = (plotNumber: number, plantTypeId: string, cost: number) => {
+    plantDirectMutation.mutate({ plotNumber, plantTypeId, cost });
+  };
+
+  const isHarvesting = harvestPlantMutation.isPending;
+  const isPlanting = plantDirectMutation.isPending;
+
   return {
-    harvestPlant: (plotNumber: number) => harvestPlantMutation.mutate(plotNumber),
-    isHarvesting: harvestPlantMutation.isPending
+    onHarvest,
+    onPlantDirect,
+    isHarvesting,
+    isPlanting
   };
 };
