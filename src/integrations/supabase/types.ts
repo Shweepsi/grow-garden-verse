@@ -96,45 +96,6 @@ export type Database = {
         }
         Relationships: []
       }
-      daily_objectives: {
-        Row: {
-          completed: boolean | null
-          created_at: string | null
-          current_progress: number | null
-          date_assigned: string | null
-          id: string
-          objective_type: string
-          reward_coins: number | null
-          reward_gems: number | null
-          target_value: number
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean | null
-          created_at?: string | null
-          current_progress?: number | null
-          date_assigned?: string | null
-          id?: string
-          objective_type: string
-          reward_coins?: number | null
-          reward_gems?: number | null
-          target_value: number
-          user_id: string
-        }
-        Update: {
-          completed?: boolean | null
-          created_at?: string | null
-          current_progress?: number | null
-          date_assigned?: string | null
-          id?: string
-          objective_type?: string
-          reward_coins?: number | null
-          reward_gems?: number | null
-          target_value?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
       garden_plots: {
         Row: {
           created_at: string
@@ -644,10 +605,6 @@ export type Database = {
     Functions: {
       cleanup_expired_effects: {
         Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_daily_objectives: {
-        Args: { target_user_id: string }
         Returns: undefined
       }
       get_plot_unlock_cost: {

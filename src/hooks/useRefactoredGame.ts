@@ -14,7 +14,6 @@ export const useRefactoredGame = () => {
       plots: gameData?.plots || [],
       plantTypes: gameData?.plantTypes || [],
       activeEffects: gameData?.activeEffects || [],
-      dailyObjectives: gameData?.dailyObjectives || [],
       loading: false
     },
     loading: isLoading,

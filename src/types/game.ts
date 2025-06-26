@@ -39,19 +39,6 @@ export interface PlayerGarden {
   permanent_multiplier: number;
 }
 
-export interface DailyObjective {
-  id: string;
-  user_id: string;
-  objective_type: string;
-  target_value: number;
-  current_progress: number;
-  reward_coins: number;
-  reward_gems: number;
-  completed: boolean;
-  date_assigned: string;
-  created_at: string;
-}
-
 export interface PlayerAchievement {
   id: string;
   user_id: string;
@@ -81,6 +68,5 @@ export interface GameState {
   plots: GardenPlot[];
   plantTypes: PlantType[];
   activeEffects: ActiveEffect[];
-  dailyObjectives: DailyObjective[];
   loading: boolean;
 }

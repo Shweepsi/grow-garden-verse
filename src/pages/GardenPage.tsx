@@ -1,7 +1,6 @@
 
 import { GameHeader } from '@/components/game/GameHeader';
 import { PlotGrid } from '@/components/game/PlotGrid';
-import { DailyObjectives } from '@/components/game/DailyObjectives';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { Loader2 } from 'lucide-react';
 
@@ -26,11 +25,6 @@ export const GardenPage = () => {
       <GameHeader garden={gameState.garden} />
       
       <div className="pb-20 space-y-4">
-        {/* Daily Objectives */}
-        <div className="px-4">
-          <DailyObjectives objectives={gameState.dailyObjectives} />
-        </div>
-
         {/* Garden Grid */}
         <PlotGrid
           plots={gameState.plots}
