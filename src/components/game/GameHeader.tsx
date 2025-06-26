@@ -1,13 +1,16 @@
-
 import { Coins, Sprout, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
+import { useAnimations } from '@/contexts/AnimationContext';
+import { FloatingNumber } from '@/components/animations/FloatingNumber';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
 }
 
 export const GameHeader = ({ garden }: GameHeaderProps) => {
+  const { animations } = useAnimations();
+
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
@@ -48,7 +51,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
           <div className="space-y-2">
             {/* Ligne 1: Coins et Niveau */}
             <div className="flex items-center justify-between space-x-2">
-              {/* Coins */}
+              {/* Coins avec zone d'animation */}
               <div className="relative group flex-1">
                 <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
                   <div className="w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
@@ -62,6 +65,16 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                       : (garden?.coins || 0).toLocaleString()
                     }
                   </span>
+                </div>
+                
+                {/* Zone d'animation pour les pièces */}
+                <div className="animation-zone">
+                  {animations
+                    .filter(anim => anim.type === 'coins')
+                    .map(anim => (
+                      <FloatingNumber key={anim.id} animation={anim} />
+                    ))
+                  }
                 </div>
               </div>
               
@@ -78,8 +91,8 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               </div>
             </div>
 
-            {/* Ligne 2: Barre d'XP avec pourcentage */}
-            <div className="premium-card rounded-lg p-2">
+            {/* Ligne 2: Barre d'XP avec pourcentage et animations */}
+            <div className="relative premium-card rounded-lg p-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="mobile-text-xs text-blue-600 font-medium">Expérience</span>
                 <span className="mobile-text-xs text-blue-600 font-bold">
@@ -101,6 +114,16 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 <span className="mobile-text-xs text-gray-500">
                   {xpNeeded.toLocaleString()} XP
                 </span>
+              </div>
+              
+              {/* Zone d'animation pour l'XP */}
+              <div className="animation-zone">
+                {animations
+                  .filter(anim => anim.type === 'experience')
+                  .map(anim => (
+                    <FloatingNumber key={anim.id} animation={anim} />
+                  ))
+                }
               </div>
             </div>
           </div>

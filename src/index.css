@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+/* ... keep existing code (définitions des variables CSS) */
 
 @layer base {
   :root {
@@ -90,6 +90,8 @@
 
 /* Premium Garden Theme Styles - Mobile First */
 @layer components {
+  /* ... keep existing code (garden-background, glassmorphism, premium-card styles) */
+
   .garden-background {
     background: linear-gradient(135deg, 
       #e8f5e8 0%, 
@@ -143,7 +145,42 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
-  /* Mobile optimized touch targets */
+  /* Zone d'animation pour les nombres flottants */
+  .animation-zone {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Animations des nombres flottants */
+  .floating-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 20;
+    animation: floatUp 2s ease-out forwards;
+  }
+
+  .floating-number.positive.coins {
+    color: #059669; /* green-600 */
+  }
+
+  .floating-number.negative.coins {
+    color: #dc2626; /* red-600 */
+  }
+
+  .floating-number.positive.experience {
+    color: #2563eb; /* blue-600 */
+  }
+
+  /* ... keep existing code (mobile optimized touch targets, sparkle-border, etc.) */
+
   .touch-target {
     min-height: 44px;
     min-width: 44px;
@@ -202,6 +239,8 @@
     );
     animation: shimmer 2s infinite;
   }
+
+  /* ... keep existing code (floating-particles, particle styles) */
 
   .floating-particles {
     position: fixed;
@@ -266,6 +305,8 @@
   .mobile-text-xl { font-size: 1.1rem; }
 }
 
+/* ... keep existing code (keyframes gradientShift, sparkleRotate, pulseGrow, shimmer) */
+
 @keyframes gradientShift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -300,7 +341,27 @@
   }
 }
 
-/* Mobile optimized scrollbar */
+/* Nouvelle animation pour les nombres flottants */
+@keyframes floatUp {
+  0% {
+    transform: translate(-50%, -50%) translateY(0px);
+    opacity: 1;
+    scale: 0.8;
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-20px);
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(-40px);
+    opacity: 0;
+    scale: 1.1;
+  }
+}
+
+/* ... keep existing code (scrollbar styles et mobile specific utilities) */
+
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -320,7 +381,6 @@
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.7), rgba(59, 130, 246, 0.7));
 }
 
-/* Mobile specific utilities */
 @media (max-width: 640px) {
   .glassmorphism {
     backdrop-filter: blur(12px);
