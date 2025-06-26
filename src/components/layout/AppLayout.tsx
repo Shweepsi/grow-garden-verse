@@ -13,8 +13,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+      <div className="min-h-screen garden-background flex items-center justify-center">
+        <div className="glassmorphism rounded-2xl p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        </div>
       </div>
     );
   }
@@ -24,8 +26,21 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100">
-      {children}
+    <div className="min-h-screen garden-background relative">
+      {/* Floating particles for ambiance */}
+      <div className="floating-particles">
+        <div className="particle"></div>
+        <div className="particle"></div>
+        <div className="particle"></div>
+        <div className="particle"></div>
+        <div className="particle"></div>
+      </div>
+      
+      {/* Main content */}
+      <div className="relative z-10">
+        {children}
+      </div>
+      
       <BottomNavigation />
     </div>
   );

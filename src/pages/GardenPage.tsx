@@ -14,18 +14,20 @@ export const GardenPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+      <div className="min-h-screen garden-background flex items-center justify-center">
+        <div className="glassmorphism rounded-2xl p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100">
+    <div className="min-h-screen garden-background">
       <GameHeader garden={gameState.garden} />
       
-      <div className="pb-20 space-y-4">
-        {/* Garden Grid */}
+      <div className="pb-24 space-y-4">
+        {/* Garden Grid with premium styling */}
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}

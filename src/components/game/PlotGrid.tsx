@@ -80,20 +80,32 @@ export const PlotGrid = ({
           const unlockCost = GameBalanceService.getUnlockCost(plot.plot_number);
           
           return (
-            <Card
+            <div
               key={plot.id}
-              className={`aspect-square cursor-pointer transition-all relative ${
-                plot.unlocked 
-                  ? 'hover:shadow-lg border-green-200 hover:border-green-400' 
-                  : 'bg-gray-100 border-gray-200'
-              } ${isPlanting ? 'pointer-events-none opacity-50' : ''}`}
+              className={`aspect-square cursor-pointer transition-all duration-300 relative group ${
+                isPlanting ? 'pointer-events-none opacity-50' : ''
+              }`}
               onClick={() => !isPlanting ? handlePlotClick(plot) : null}
             >
-              <CardContent className="p-3 h-full flex flex-col items-center justify-center">
+              <div className={`premium-card rounded-2xl p-4 h-full flex flex-col items-center justify-center relative overflow-hidden ${
+                plot.unlocked 
+                  ? state === 'ready' 
+                    ? 'sparkle-border glow-effect' 
+                    : 'hover:shadow-2xl'
+                  : 'opacity-60'
+              }`}>
+                
+                {/* Effet de brillance pour les plantes prêtes */}
+                {plot.unlocked && state === 'ready' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shimmer"></div>
+                )}
+                
                 {!plot.unlocked ? (
                   <div className="text-center">
-                    <Lock className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                    <p className="text-xs text-gray-500 mb-2">Parcelle {plot.plot_number}</p>
+                    <div className="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-400 rounded-xl flex items-center justify-center mb-3 mx-auto">
+                      <Lock className="h-6 w-6 text-gray-600" />
+                    </div>
+                    <p className="text-xs text-gray-500 mb-3 font-medium">Parcelle {plot.plot_number}</p>
                     <Button
                       size="sm"
                       onClick={(e) => {
@@ -102,7 +114,7 @@ export const PlotGrid = ({
                         onUnlockPlot(plot.plot_number);
                       }}
                       disabled={coins < unlockCost}
-                      className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-auto"
+                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-xs px-3 py-2 h-auto rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200"
                     >
                       {unlockCost >= 1000000 
                         ? `${(unlockCost / 1000000).toFixed(1)}M 🪙`
@@ -111,13 +123,15 @@ export const PlotGrid = ({
                     </Button>
                   </div>
                 ) : (
-                  <div className="text-center h-full flex flex-col justify-center w-full relative">
+                  <div className="text-center h-full flex flex-col justify-center w-full relative z-10">
                     {state === 'empty' ? (
                       <>
-                        <Sprout className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                        <p className="text-xs text-green-600 font-medium">Planter une plante</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {plantTypes.length} variétés disponibles
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform duration-300">
+                          <Sprout className="h-6 w-6 text-white" />
+                        </div>
+                        <p className="text-sm text-green-700 font-semibold mb-1">Planter</p>
+                        <p className="text-xs text-gray-600">
+                          {plantTypes.length} variétés
                         </p>
                       </>
                     ) : state === 'growing' ? (
@@ -150,15 +164,28 @@ export const PlotGrid = ({
                           </div>
                         )}
                         <div className="mt-2 flex items-center justify-center">
-                          <Gift className="h-3 w-3 text-yellow-500 mr-1" />
-                          <span className="text-xs text-yellow-600 font-bold">Récolter</span>
+                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full flex items-center space-x-1 pulse-grow">
+                            <Gift className="h-3 w-3" />
+                            <span className="text-xs font-bold">Récolter</span>
+                          </div>
                         </div>
                       </>
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+
+                {/* Indicator for active state */}
+                {plot.unlocked && state !== 'empty' && (
+                  <div className="absolute top-2 right-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      state === 'ready' 
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500 animate-ping' 
+                        : 'bg-gradient-to-r from-blue-400 to-green-500 animate-pulse'
+                    }`}></div>
+                  </div>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
