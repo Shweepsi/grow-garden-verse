@@ -28,6 +28,17 @@ export const useGameData = () => {
       };
     },
     enabled: !!user?.id,
-    refetchInterval: 30000 // Refresh every 30 seconds for real-time growth
+    // Ajuster la fréquence de rafraîchissement selon les plantes actives
+    refetchInterval: (data) => {
+      if (!data?.plots) return 30000;
+      
+      // Vérifier s'il y a des plantes avec des temps de croissance courts
+      const hasShortGrowthPlants = data.plots.some(plot => 
+        plot.planted_at && plot.growth_time_minutes && plot.growth_time_minutes < 2
+      );
+      
+      // Si on a des plantes rapides, rafraîchir plus souvent
+      return hasShortGrowthPlants ? 15000 : 30000;
+    }
   });
 };

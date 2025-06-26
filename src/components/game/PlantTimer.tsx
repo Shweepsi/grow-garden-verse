@@ -25,7 +25,10 @@ export const PlantTimer = ({ plantedAt, growthTimeMinutes, className = "" }: Pla
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    
+    // Utiliser la fréquence de mise à jour optimale selon le temps de croissance
+    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeMinutes);
+    const interval = setInterval(updateTimer, updateInterval);
 
     return () => clearInterval(interval);
   }, [plantedAt, growthTimeMinutes]);

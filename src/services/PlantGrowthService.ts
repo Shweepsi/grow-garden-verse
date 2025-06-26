@@ -25,14 +25,28 @@ export class PlantGrowthService {
   }
 
   static formatTimeRemaining(minutes: number): string {
+    if (minutes < 0.01) { // Less than 0.6 seconds
+      return "Prêt !";
+    }
     if (minutes < 1) {
-      return `${Math.ceil(minutes * 60)}s`;
+      const seconds = Math.floor(minutes * 60);
+      return `${seconds}s`;
     }
     if (minutes < 60) {
-      return `${Math.ceil(minutes)}min`;
+      return `${Math.floor(minutes)}min`;
     }
     const hours = Math.floor(minutes / 60);
-    const remainingMinutes = Math.ceil(minutes % 60);
+    const remainingMinutes = Math.floor(minutes % 60);
     return `${hours}h ${remainingMinutes}min`;
+  }
+
+  // Nouvelle méthode pour déterminer la fréquence de mise à jour optimale
+  static getOptimalUpdateInterval(growthTimeMinutes: number): number {
+    // Pour les plantes avec moins de 2 minutes de croissance, mise à jour plus fréquente
+    if (growthTimeMinutes < 2) {
+      return 500; // 500ms pour plus de fluidité
+    }
+    // Pour les plantes normales, 1 seconde suffit
+    return 1000;
   }
 }
