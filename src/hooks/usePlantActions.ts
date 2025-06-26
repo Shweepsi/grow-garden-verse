@@ -1,16 +1,16 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
+import { useAnimations } from '@/contexts/AnimationContext';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
+  const { triggerCoinAnimation, triggerXPAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
@@ -153,43 +153,10 @@ export const usePlantActions = () => {
 
       console.log('🏡 Jardin mis à jour avec succès');
 
-      // Enregistrer la transaction
-      try {
-        await supabase
-          .from('coin_transactions')
-          .insert({
-            user_id: user.id,
-            amount: harvestReward,
-            transaction_type: 'harvest',
-            description: `Récolte de ${plantType.display_name || plantType.name}`
-          });
-        console.log('💳 Transaction enregistrée');
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de l\'enregistrement de la transaction:', error);
-      }
-
-      // Enregistrer la découverte
-      try {
-        await supabase
-          .from('plant_discoveries')
-          .insert({
-            user_id: user.id,
-            plant_type_id: plantType.id,
-            discovery_method: 'harvest'
-          });
-        console.log('🔍 Découverte enregistrée');
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
-      }
-
-      // Messages de succès
-      toast.success(`🎉 Récolte effectuée ! +${harvestReward.toLocaleString()} pièces, +${expReward} EXP !`);
+      // Déclencher les animations
+      triggerCoinAnimation(harvestReward);
+      triggerXPAnimation(expReward);
       
-      if (newLevel > (garden.level || 1)) {
-        toast.success(`🎉 Niveau ${newLevel} atteint !`);
-        console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
-      }
-
       console.log('✅ Récolte terminée avec succès');
     },
     onSuccess: () => {
@@ -197,7 +164,6 @@ export const usePlantActions = () => {
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la récolte:', error);
-      toast.error(error.message || 'Erreur lors de la récolte');
     }
   });
 
