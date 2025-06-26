@@ -28,17 +28,19 @@ export const useAnimations = () => {
 
   const AnimationContainer = () => (
     <>
-      {animations.map(animation => (
+      {animations.map((animation, index) => (
         animation.type === 'coin' ? (
           <CoinAnimation
             key={animation.id}
             amount={animation.amount}
+            stackIndex={animations.filter((a, i) => i <= index && a.type === 'coin').length - 1}
             onComplete={() => removeAnimation(animation.id)}
           />
         ) : (
           <XPAnimation
             key={animation.id}
             amount={animation.amount}
+            stackIndex={animations.filter((a, i) => i <= index && a.type === 'xp').length - 1}
             onComplete={() => removeAnimation(animation.id)}
           />
         )

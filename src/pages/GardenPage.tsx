@@ -27,7 +27,10 @@ export const GardenPage = () => {
 
   return (
     <div className="min-h-screen garden-background">
-      <GameHeader garden={gameState.garden} />
+      <GameHeader 
+        garden={gameState.garden} 
+        AnimationContainer={AnimationContainer}
+      />
       
       <div className="pb-20 space-y-3">
         <PlotGrid
@@ -40,8 +43,6 @@ export const GardenPage = () => {
           onXPAnimation={showXPAnimation}
         />
       </div>
-
-      <AnimationContainer />
     </div>
   );
 };
