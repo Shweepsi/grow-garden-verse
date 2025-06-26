@@ -33,7 +33,10 @@ export const useGameData = () => {
       
       // Vérifier s'il y a des plantes avec des temps de croissance courts
       const hasShortGrowthPlants = data.plots.some(plot => 
-        plot.planted_at && plot.growth_time_seconds && plot.growth_time_seconds < 120
+        plot.planted_at && 
+        plot.growth_time_seconds && 
+        plot.growth_time_seconds < 120 &&
+        plot.plant_type // S'assurer qu'il y a bien une plante
       );
       
       // Si on a des plantes rapides, rafraîchir plus souvent

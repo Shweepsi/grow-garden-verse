@@ -10,6 +10,16 @@ interface PlantDisplayProps {
 }
 
 export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantDisplayProps) => {
+  // Validation des props
+  if (!plantType) {
+    return (
+      <div className="text-center">
+        <div className="text-2xl mb-1">❌</div>
+        <p className="text-xs text-red-500">Erreur: plante invalide</p>
+      </div>
+    );
+  }
+
   const isReady = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
   const progress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds) * 100;
 
@@ -27,11 +37,11 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
   return (
     <div className="text-center">
       <div className={`text-3xl mb-1 ${isReady ? 'animate-bounce' : ''}`}>
-        {isReady ? `✨${plantType.emoji}✨` : plantType.emoji}
+        {isReady ? `✨${plantType.emoji || '🌱'}✨` : (plantType.emoji || '🌱')}
       </div>
       
       <p className={`text-xs mb-1 ${getRarityColor(plantType.rarity)}`}>
-        {plantType.display_name}
+        {plantType.display_name || plantType.name || 'Plante inconnue'}
       </p>
 
       {/* Barre de progression */}
@@ -42,7 +52,7 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
               ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
               : 'bg-gradient-to-r from-green-400 to-blue-500'
           }`}
-          style={{ width: `${progress}%` }}
+          style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
         />
       </div>
 
