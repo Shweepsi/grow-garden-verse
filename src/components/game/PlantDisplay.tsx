@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
@@ -68,7 +67,7 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
 
   return (
     <div className="text-center relative">
-      <div className={`text-3xl mb-2 transition-all duration-300 ${
+      <div className={`text-xl mb-1 transition-all duration-300 ${
         isReady 
           ? 'animate-bounce transform scale-110 ' + getRarityGlow(plantType.rarity)
           : 'hover:scale-105 ' + getRarityGlow(plantType.rarity)
@@ -76,12 +75,12 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
         {isReady ? `✨${plantType.emoji || '🌱'}✨` : (plantType.emoji || '🌱')}
       </div>
       
-      <p className="text-xs mb-2 font-semibold text-gray-700">
+      <p className="mobile-text-xs mb-1 font-semibold text-gray-700">
         {plantType.display_name || plantType.name || 'Plante inconnue'}
       </p>
 
-      {/* Barre de progression premium */}
-      <div className="w-full bg-gray-200/50 rounded-full h-3 mb-2 overflow-hidden backdrop-blur-sm border border-white/30">
+      {/* Barre de progression premium - Adaptée mobile */}
+      <div className="w-full bg-gray-200/50 rounded-full h-2 mb-1 overflow-hidden backdrop-blur-sm border border-white/30">
         <div 
           className={`h-full rounded-full transition-all duration-500 relative overflow-hidden ${
             isReady 
@@ -102,26 +101,26 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
 
       {isReady ? (
         <div className="relative">
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse shadow-lg">
-            🎉 Prête à récolter !
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full mobile-text-xs font-bold animate-pulse shadow-lg">
+            🎉 Prête !
           </div>
           {/* Effet de particules */}
-          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
-            <div className="w-1 h-1 bg-yellow-400 rounded-full animate-ping"></div>
+          <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2">
+            <div className="w-0.5 h-0.5 bg-yellow-400 rounded-full animate-ping"></div>
           </div>
         </div>
       ) : (
         <PlantTimer 
           plantedAt={plantedAt}
           growthTimeSeconds={growthTimeSeconds}
-          className="text-blue-600 font-medium"
+          className="text-blue-600 font-medium mobile-text-xs"
         />
       )}
 
-      {/* Badge de rareté amélioré */}
+      {/* Badge de rareté amélioré - Plus petit sur mobile */}
       {plantType.rarity && plantType.rarity !== 'common' && (
-        <div className="mt-2">
-          <span className={`text-xs px-3 py-1 rounded-full font-bold shadow-lg ${getRarityColor(plantType.rarity)}`}>
+        <div className="mt-1">
+          <span className={`mobile-text-xs px-2 py-0.5 rounded-full font-bold shadow-lg ${getRarityColor(plantType.rarity)}`}>
             {plantType.rarity.toUpperCase()}
           </span>
         </div>

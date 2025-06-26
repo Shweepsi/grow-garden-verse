@@ -15,8 +15,8 @@ export const GardenPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen garden-background flex items-center justify-center">
-        <div className="glassmorphism rounded-2xl p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        <div className="glassmorphism rounded-xl p-6">
+          <Loader2 className="h-6 w-6 animate-spin text-green-600" />
         </div>
       </div>
     );
@@ -26,8 +26,8 @@ export const GardenPage = () => {
     <div className="min-h-screen garden-background">
       <GameHeader garden={gameState.garden} />
       
-      <div className="pb-24 space-y-4">
-        {/* Garden Grid with premium styling */}
+      <div className="pb-20 space-y-3">
+        {/* Garden Grid with premium styling - Optimisé mobile */}
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}

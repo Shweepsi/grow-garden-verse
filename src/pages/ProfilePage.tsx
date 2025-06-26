@@ -1,4 +1,3 @@
-
 import { GameHeader } from '@/components/game/GameHeader';
 import { PlayerStats } from '@/components/game/PlayerStats';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
@@ -9,8 +8,10 @@ export const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+      <div className="min-h-screen garden-background flex items-center justify-center">
+        <div className="glassmorphism rounded-xl p-6">
+          <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+        </div>
       </div>
     );
   }
@@ -20,11 +21,11 @@ export const ProfilePage = () => {
   const totalPlants = gameState.plantTypes.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100">
+    <div className="min-h-screen garden-background">
       <GameHeader garden={gameState.garden} />
       
-      <div className="p-4 pb-20">
-        <h1 className="text-2xl font-bold text-green-800 mb-6">Profil du Jardinier</h1>
+      <div className="p-3 pb-20">
+        <h1 className="mobile-text-xl font-bold text-green-800 mb-4">Profil du Jardinier</h1>
         
         <PlayerStats 
           garden={gameState.garden} 

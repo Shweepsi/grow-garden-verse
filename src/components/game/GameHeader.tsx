@@ -27,77 +27,95 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
 
   return (
     <div className="relative z-20">
-      <div className="mx-4 mt-4 mb-2">
-        <div className="glassmorphism rounded-2xl p-4 shadow-xl">
-          <div className="flex items-center justify-between">
-            {/* Logo et titre */}
-            <div className="flex items-center space-x-3">
+      <div className="mx-3 mt-3 mb-2">
+        <div className="glassmorphism rounded-xl p-3 shadow-xl">
+          {/* Header principal - Layout mobile optimisé */}
+          <div className="flex items-center justify-between mb-3">
+            {/* Logo et titre - Plus compact */}
+            <div className="flex items-center space-x-2">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Sprout className="h-6 w-6 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <Sprout className="h-4 w-4 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full animate-pulse"></div>
+                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full animate-pulse"></div>
               </div>
               <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent">
+                <h1 className="mobile-text-lg font-bold bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent">
                   Grow Garden
                 </h1>
-                <p className="text-xs text-gray-600">Cultivez votre paradis</p>
+                <p className="mobile-text-xs text-gray-600">Cultivez votre paradis</p>
               </div>
             </div>
             
-            {/* Statistiques */}
-            <div className="flex items-center space-x-3">
+            {/* Bouton déconnexion - Plus petit sur mobile */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={signOut}
+              className="glassmorphism border-red-200 text-red-600 hover:bg-red-50/50 hover:border-red-300 transition-all duration-300 backdrop-blur-sm px-2 py-1 h-auto touch-target"
+            >
+              <span className="mobile-text-xs">Déco</span>
+            </Button>
+          </div>
+
+          {/* Statistiques - Layout vertical sur mobile */}
+          <div className="space-y-2">
+            {/* Ligne 1: Coins et Niveau */}
+            <div className="flex items-center justify-between space-x-2">
               {/* Coins */}
-              <div className="relative group">
-                <div className="premium-card rounded-xl px-3 py-2 flex items-center space-x-2 shimmer">
-                  <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                    <Coins className="h-3 w-3 text-white" />
+              <div className="relative group flex-1">
+                <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
+                  <div className="w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                    <Coins className="h-2.5 w-2.5 text-white" />
                   </div>
-                  <span className="font-bold text-yellow-700 text-sm">
-                    {(garden?.coins || 0).toLocaleString()}
+                  <span className="font-bold text-yellow-700 mobile-text-sm">
+                    {(garden?.coins || 0) >= 1000000 
+                      ? `${((garden?.coins || 0) / 1000000).toFixed(1)}M`
+                      : (garden?.coins || 0) >= 1000
+                      ? `${((garden?.coins || 0) / 1000).toFixed(1)}K`
+                      : (garden?.coins || 0).toLocaleString()
+                    }
                   </span>
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
               
-              {/* Niveau et XP */}
-              <div className="relative group">
-                <div className="premium-card rounded-xl px-3 py-2 flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                    <Star className="h-3 w-3 text-white" />
+              {/* Niveau */}
+              <div className="relative group flex-1">
+                <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5">
+                  <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                    <Star className="h-2.5 w-2.5 text-white" />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-blue-700 text-xs leading-tight">
-                      Niveau {currentLevel}
-                    </span>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-12 bg-gray-200 rounded-full h-1 overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 relative"
-                          style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}
-                        >
-                          <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
-                        </div>
-                      </div>
-                      <span className="text-xs text-blue-600 font-medium">
-                        {Math.floor(progressPercentage)}%
-                      </span>
-                    </div>
-                  </div>
+                  <span className="font-bold text-blue-700 mobile-text-sm">
+                    Niv. {currentLevel}
+                  </span>
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
-              
-              {/* Bouton déconnexion */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={signOut}
-                className="glassmorphism border-red-200 text-red-600 hover:bg-red-50/50 hover:border-red-300 transition-all duration-300 backdrop-blur-sm"
-              >
-                <span className="text-xs">Déconnexion</span>
-              </Button>
+            </div>
+
+            {/* Ligne 2: Barre d'XP avec pourcentage */}
+            <div className="premium-card rounded-lg p-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="mobile-text-xs text-blue-600 font-medium">Expérience</span>
+                <span className="mobile-text-xs text-blue-600 font-bold">
+                  {Math.floor(progressPercentage)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 relative"
+                  style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="mobile-text-xs text-gray-500">
+                  {xpProgress.toLocaleString()} XP
+                </span>
+                <span className="mobile-text-xs text-gray-500">
+                  {xpNeeded.toLocaleString()} XP
+                </span>
+              </div>
             </div>
           </div>
         </div>

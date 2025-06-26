@@ -73,7 +73,7 @@ export const PlotGrid = ({
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-4 p-4">
+      <div className="grid grid-cols-3 gap-2 p-3">
         {plots.map((plot) => {
           const state = getPlantState(plot);
           const plantType = plantTypes.find(pt => pt.id === plot.plant_type);
@@ -82,12 +82,12 @@ export const PlotGrid = ({
           return (
             <div
               key={plot.id}
-              className={`aspect-square cursor-pointer transition-all duration-300 relative group ${
+              className={`aspect-square cursor-pointer transition-all duration-300 relative group touch-target ${
                 isPlanting ? 'pointer-events-none opacity-50' : ''
               }`}
               onClick={() => !isPlanting ? handlePlotClick(plot) : null}
             >
-              <div className={`premium-card rounded-2xl p-4 h-full flex flex-col items-center justify-center relative overflow-hidden ${
+              <div className={`premium-card rounded-xl p-2 h-full flex flex-col items-center justify-center relative overflow-hidden ${
                 plot.unlocked 
                   ? state === 'ready' 
                     ? 'sparkle-border glow-effect' 
@@ -102,10 +102,10 @@ export const PlotGrid = ({
                 
                 {!plot.unlocked ? (
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-400 rounded-xl flex items-center justify-center mb-3 mx-auto">
-                      <Lock className="h-6 w-6 text-gray-600" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg flex items-center justify-center mb-2 mx-auto">
+                      <Lock className="h-5 w-5 text-gray-600" />
                     </div>
-                    <p className="text-xs text-gray-500 mb-3 font-medium">Parcelle {plot.plot_number}</p>
+                    <p className="mobile-text-xs text-gray-500 mb-2 font-medium">Parcelle {plot.plot_number}</p>
                     <Button
                       size="sm"
                       onClick={(e) => {
@@ -114,10 +114,12 @@ export const PlotGrid = ({
                         onUnlockPlot(plot.plot_number);
                       }}
                       disabled={coins < unlockCost}
-                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-xs px-3 py-2 h-auto rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200"
+                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white mobile-text-xs px-2 py-1 h-auto rounded-md shadow-lg transform hover:scale-105 transition-all duration-200 touch-target"
                     >
                       {unlockCost >= 1000000 
                         ? `${(unlockCost / 1000000).toFixed(1)}M 🪙`
+                        : unlockCost >= 1000
+                        ? `${(unlockCost / 1000).toFixed(1)}K 🪙`
                         : `${unlockCost.toLocaleString()} 🪙`
                       }
                     </Button>
@@ -126,11 +128,11 @@ export const PlotGrid = ({
                   <div className="text-center h-full flex flex-col justify-center w-full relative z-10">
                     {state === 'empty' ? (
                       <>
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform duration-300">
-                          <Sprout className="h-6 w-6 text-white" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300">
+                          <Sprout className="h-5 w-5 text-white" />
                         </div>
-                        <p className="text-sm text-green-700 font-semibold mb-1">Planter</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="mobile-text-sm text-green-700 font-semibold mb-1">Planter</p>
+                        <p className="mobile-text-xs text-gray-600">
                           {plantTypes.length} variétés
                         </p>
                       </>
@@ -144,8 +146,8 @@ export const PlotGrid = ({
                           />
                         ) : (
                           <div className="text-center">
-                            <div className="text-2xl mb-1">❌</div>
-                            <p className="text-xs text-red-500">Plante inconnue</p>
+                            <div className="text-lg mb-1">❌</div>
+                            <p className="mobile-text-xs text-red-500">Plante inconnue</p>
                           </div>
                         )}
                       </>
@@ -159,14 +161,14 @@ export const PlotGrid = ({
                           />
                         ) : (
                           <div className="text-center">
-                            <div className="text-2xl mb-1">❌</div>
-                            <p className="text-xs text-red-500">Plante inconnue</p>
+                            <div className="text-lg mb-1">❌</div>
+                            <p className="mobile-text-xs text-red-500">Plante inconnue</p>
                           </div>
                         )}
-                        <div className="mt-2 flex items-center justify-center">
-                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full flex items-center space-x-1 pulse-grow">
-                            <Gift className="h-3 w-3" />
-                            <span className="text-xs font-bold">Récolter</span>
+                        <div className="mt-1 flex items-center justify-center">
+                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full flex items-center space-x-1 pulse-grow">
+                            <Gift className="h-2.5 w-2.5" />
+                            <span className="mobile-text-xs font-bold">Récolter</span>
                           </div>
                         </div>
                       </>
@@ -176,8 +178,8 @@ export const PlotGrid = ({
 
                 {/* Indicator for active state */}
                 {plot.unlocked && state !== 'empty' && (
-                  <div className="absolute top-2 right-2">
-                    <div className={`w-2 h-2 rounded-full ${
+                  <div className="absolute top-1.5 right-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${
                       state === 'ready' 
                         ? 'bg-gradient-to-r from-yellow-400 to-orange-500 animate-ping' 
                         : 'bg-gradient-to-r from-blue-400 to-green-500 animate-pulse'
