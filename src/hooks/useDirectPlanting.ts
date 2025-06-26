@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -187,8 +188,6 @@ export const useDirectPlanting = () => {
         console.warn('⚠️ Erreur lors de l\'enregistrement de la transaction:', error);
       }
 
-      // Toast simple et discret pour la plantation
-      const timeString = PlantGrowthService.formatTimeRemaining(adjustedGrowthTime);
       console.log('✅ Plantation terminée avec succès');
     },
     onSuccess: () => {
