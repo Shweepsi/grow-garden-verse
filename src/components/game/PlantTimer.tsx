@@ -5,11 +5,11 @@ import { Clock } from 'lucide-react';
 
 interface PlantTimerProps {
   plantedAt: string | null;
-  growthTimeMinutes: number;
+  growthTimeSeconds: number;
   className?: string;
 }
 
-export const PlantTimer = ({ plantedAt, growthTimeMinutes, className = "" }: PlantTimerProps) => {
+export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: PlantTimerProps) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
@@ -17,8 +17,8 @@ export const PlantTimer = ({ plantedAt, growthTimeMinutes, className = "" }: Pla
     if (!plantedAt) return;
 
     const updateTimer = () => {
-      const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeMinutes);
-      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeMinutes);
+      const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds);
+      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
       
       setTimeRemaining(remaining);
       setIsReady(ready);
@@ -27,11 +27,11 @@ export const PlantTimer = ({ plantedAt, growthTimeMinutes, className = "" }: Pla
     updateTimer();
     
     // Utiliser la fréquence de mise à jour optimale selon le temps de croissance
-    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeMinutes);
+    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
     const interval = setInterval(updateTimer, updateInterval);
 
     return () => clearInterval(interval);
-  }, [plantedAt, growthTimeMinutes]);
+  }, [plantedAt, growthTimeSeconds]);
 
   if (!plantedAt || isReady) return null;
 

@@ -34,8 +34,8 @@ export const usePlantActions = () => {
 
       const plantType = plot.plant_types;
       
-      // Vérifier que la plante est prête
-      if (!PlantGrowthService.isPlantReady(plot.planted_at, plot.growth_time_minutes || 60)) {
+      // Vérifier que la plante est prête (maintenant en secondes)
+      if (!PlantGrowthService.isPlantReady(plot.planted_at, plot.growth_time_seconds || 3600)) {
         throw new Error('La plante n\'est pas encore prête');
       }
 
@@ -48,10 +48,10 @@ export const usePlantActions = () => {
 
       if (!garden) throw new Error('Jardin non trouvé');
 
-      // Calculer les récompenses avec la nouvelle économie simplifiée
+      // Calculer les récompenses avec la nouvelle économie simplifiée (maintenant en secondes)
       const harvestReward = EconomyService.getHarvestReward(
         plantType.level_required || 1,
-        plantType.base_growth_minutes || 60,
+        plantType.base_growth_seconds || 60,
         garden.level || 1,
         multipliers.harvest
       );
@@ -69,7 +69,7 @@ export const usePlantActions = () => {
         .update({
           plant_type: null,
           planted_at: null,
-          growth_time_minutes: null,
+          growth_time_seconds: null,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)

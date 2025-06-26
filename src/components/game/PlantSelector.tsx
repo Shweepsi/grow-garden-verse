@@ -34,9 +34,22 @@ export const PlantSelector = ({
   const getPlantReward = (plantType: PlantType): number => {
     return EconomyService.getHarvestReward(
       plantType.level_required || 1,
-      plantType.base_growth_minutes || 60,
+      plantType.base_growth_seconds || 60,
       playerLevel
     );
+  };
+
+  const formatGrowthTime = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${seconds}s`;
+    }
+    if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes}min`;
+    }
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
   };
 
   const handlePlantClick = (plantTypeId: string, cost: number) => {
@@ -102,7 +115,7 @@ export const PlantSelector = ({
                             </Badge>
                             <div className="flex items-center gap-1 text-gray-600 font-medium">
                               <Clock className="h-3 w-3" />
-                              {plantType.base_growth_minutes}min
+                              {formatGrowthTime(plantType.base_growth_seconds)}
                             </div>
                           </div>
 
@@ -177,7 +190,7 @@ export const PlantSelector = ({
                           <div className="text-xs text-gray-500 space-y-1">
                             <div>Coût: {cost.toLocaleString()} 🪙</div>
                             <div>Gain: {reward.toLocaleString()} 🪙</div>
-                            <div>Temps: {plantType.base_growth_minutes}min</div>
+                            <div>Temps: {formatGrowthTime(plantType.base_growth_seconds)}</div>
                           </div>
                         </div>
                       </CardContent>

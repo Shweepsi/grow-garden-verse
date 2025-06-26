@@ -1,50 +1,54 @@
 
 export class PlantGrowthService {
-  static calculateGrowthProgress(plantedAt: string | null, growthTimeMinutes: number): number {
+  static calculateGrowthProgress(plantedAt: string | null, growthTimeSeconds: number): number {
     if (!plantedAt) return 0;
     
     const now = new Date();
     const planted = new Date(plantedAt);
-    const elapsedMinutes = (now.getTime() - planted.getTime()) / (1000 * 60);
+    const elapsedSeconds = (now.getTime() - planted.getTime()) / 1000;
     
-    return Math.min(elapsedMinutes / growthTimeMinutes, 1);
+    return Math.min(elapsedSeconds / growthTimeSeconds, 1);
   }
 
-  static isPlantReady(plantedAt: string | null, growthTimeMinutes: number): boolean {
-    return this.calculateGrowthProgress(plantedAt, growthTimeMinutes) >= 1;
+  static isPlantReady(plantedAt: string | null, growthTimeSeconds: number): boolean {
+    return this.calculateGrowthProgress(plantedAt, growthTimeSeconds) >= 1;
   }
 
-  static getTimeRemaining(plantedAt: string | null, growthTimeMinutes: number): number {
+  static getTimeRemaining(plantedAt: string | null, growthTimeSeconds: number): number {
     if (!plantedAt) return 0;
     
     const now = new Date();
     const planted = new Date(plantedAt);
-    const elapsedMinutes = (now.getTime() - planted.getTime()) / (1000 * 60);
+    const elapsedSeconds = (now.getTime() - planted.getTime()) / 1000;
     
-    return Math.max(growthTimeMinutes - elapsedMinutes, 0);
+    return Math.max(growthTimeSeconds - elapsedSeconds, 0);
   }
 
-  static formatTimeRemaining(minutes: number): string {
-    if (minutes < 0.01) { // Less than 0.6 seconds
+  static formatTimeRemaining(seconds: number): string {
+    if (seconds < 1) {
       return "Prêt !";
     }
-    if (minutes < 1) {
-      const seconds = Math.floor(minutes * 60);
-      return `${seconds}s`;
+    if (seconds < 60) {
+      return `${Math.floor(seconds)}s`;
     }
-    if (minutes < 60) {
-      return `${Math.floor(minutes)}min`;
+    if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+      if (remainingSeconds === 0) {
+        return `${minutes}min`;
+      }
+      return `${minutes}min ${remainingSeconds}s`;
     }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = Math.floor(minutes % 60);
+    const hours = Math.floor(seconds / 3600);
+    const remainingMinutes = Math.floor((seconds % 3600) / 60);
     return `${hours}h ${remainingMinutes}min`;
   }
 
-  // Nouvelle méthode pour déterminer la fréquence de mise à jour optimale
-  static getOptimalUpdateInterval(growthTimeMinutes: number): number {
-    // Pour les plantes avec moins de 2 minutes de croissance, mise à jour plus fréquente
-    if (growthTimeMinutes < 2) {
-      return 500; // 500ms pour plus de fluidité
+  // Méthode pour déterminer la fréquence de mise à jour optimale
+  static getOptimalUpdateInterval(growthTimeSeconds: number): number {
+    // Pour les plantes avec moins de 2 minutes (120s) de croissance, mise à jour plus fréquente
+    if (growthTimeSeconds < 120) {
+      return 250; // 250ms pour une fluidité maximale sur les temps courts
     }
     // Pour les plantes normales, 1 seconde suffit
     return 1000;

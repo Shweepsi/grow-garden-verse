@@ -11,7 +11,7 @@ export class EconomyService {
   // Calculer les récompenses avec profit de 60-80%
   static getHarvestReward(
     plantLevel: number, 
-    growthTime: number,
+    growthTimeSeconds: number,
     playerLevel: number = 1,
     harvestMultiplier: number = 1
   ): number {
@@ -19,7 +19,7 @@ export class EconomyService {
     
     // Profit de base de 70% + bonus pour temps long + bonus niveau
     const baseProfit = baseCost * 1.7; // 70% de profit de base
-    const timeBonus = Math.max(1, Math.floor(growthTime / 10)) * 0.1; // 10% par 10min
+    const timeBonus = Math.max(1, Math.floor(growthTimeSeconds / 600)) * 0.1; // 10% par 10min (600s)
     const levelBonus = 1 + (playerLevel * 0.02); // 2% par niveau du joueur
     
     const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
@@ -32,12 +32,12 @@ export class EconomyService {
     return 15 + (plantLevel * 5);
   }
 
-  // Temps de croissance ajusté (inchangé)
+  // Temps de croissance ajusté (maintenant en secondes)
   static getAdjustedGrowthTime(
-    baseGrowthMinutes: number,
+    baseGrowthSeconds: number,
     growthMultiplier: number = 1
   ): number {
-    return Math.max(0.5, baseGrowthMinutes / growthMultiplier);
+    return Math.max(1, baseGrowthSeconds / growthMultiplier);
   }
 
   // Vérification d'accès aux plantes (inchangé)
@@ -46,17 +46,17 @@ export class EconomyService {
   }
 
   // Nouvelle méthode pour calculer le retour sur investissement
-  static getROIPercentage(plantLevel: number, growthTime: number): number {
+  static getROIPercentage(plantLevel: number, growthTimeSeconds: number): number {
     const cost = this.getPlantDirectCost(plantLevel);
-    const reward = this.getHarvestReward(plantLevel, growthTime);
+    const reward = this.getHarvestReward(plantLevel, growthTimeSeconds);
     return Math.floor(((reward - cost) / cost) * 100);
   }
 
-  // Méthode pour calculer le gain par minute
-  static getProfitPerMinute(plantLevel: number, growthTime: number): number {
+  // Méthode pour calculer le gain par minute (maintenant par seconde puis converti)
+  static getProfitPerMinute(plantLevel: number, growthTimeSeconds: number): number {
     const cost = this.getPlantDirectCost(plantLevel);
-    const reward = this.getHarvestReward(plantLevel, growthTime);
+    const reward = this.getHarvestReward(plantLevel, growthTimeSeconds);
     const profit = reward - cost;
-    return Math.floor(profit / growthTime);
+    return Math.floor((profit / growthTimeSeconds) * 60); // Profit par seconde * 60 = par minute
   }
 }

@@ -4,7 +4,7 @@ export interface PlantType {
   name: string;
   display_name: string;
   emoji: string;
-  base_growth_minutes: number;
+  base_growth_seconds: number;
   rarity: string;
   level_required: number;
   created_at: string;
@@ -18,7 +18,7 @@ export interface GardenPlot {
   plant_type: string | null;
   plant_metadata: any;
   planted_at: string | null;
-  growth_time_minutes: number | null;
+  growth_time_seconds: number | null;
   updated_at: string;
   created_at: string;
 }

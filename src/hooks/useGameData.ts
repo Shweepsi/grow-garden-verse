@@ -30,15 +30,15 @@ export const useGameData = () => {
     enabled: !!user?.id,
     // Ajuster la fréquence de rafraîchissement selon les plantes actives
     refetchInterval: (data) => {
-      if (!data?.plots) return 30000;
+      if (!data?.data?.plots) return 30000;
       
       // Vérifier s'il y a des plantes avec des temps de croissance courts
-      const hasShortGrowthPlants = data.plots.some(plot => 
-        plot.planted_at && plot.growth_time_minutes && plot.growth_time_minutes < 2
+      const hasShortGrowthPlants = data.data.plots.some(plot => 
+        plot.planted_at && plot.growth_time_seconds && plot.growth_time_seconds < 120
       );
       
       // Si on a des plantes rapides, rafraîchir plus souvent
-      return hasShortGrowthPlants ? 15000 : 30000;
+      return hasShortGrowthPlants ? 5000 : 15000;
     }
   });
 };

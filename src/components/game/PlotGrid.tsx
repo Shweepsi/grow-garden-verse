@@ -32,7 +32,7 @@ export const PlotGrid = ({
   const getPlantState = (plot: GardenPlot) => {
     if (!plot.plant_type) return 'empty';
     
-    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, plot.growth_time_minutes || 60);
+    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, plot.growth_time_seconds || 3600);
     
     return isReady ? 'ready' : 'growing';
   };
@@ -102,7 +102,7 @@ export const PlotGrid = ({
                         <PlantDisplay 
                           plantType={plantType!} 
                           plantedAt={plot.planted_at}
-                          growthTimeMinutes={plot.growth_time_minutes || 60}
+                          growthTimeSeconds={plot.growth_time_seconds || 3600}
                         />
                       </>
                     ) : (
@@ -110,7 +110,7 @@ export const PlotGrid = ({
                         <PlantDisplay 
                           plantType={plantType!} 
                           plantedAt={plot.planted_at}
-                          growthTimeMinutes={plot.growth_time_minutes || 60}
+                          growthTimeSeconds={plot.growth_time_seconds || 3600}
                         />
                         <div className="mt-2 flex items-center justify-center">
                           <Gift className="h-3 w-3 text-yellow-500 mr-1" />

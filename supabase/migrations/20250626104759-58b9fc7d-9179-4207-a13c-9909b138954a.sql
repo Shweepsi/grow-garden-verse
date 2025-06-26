@@ -1,15 +1,15 @@
 
--- Update plant growth times with the new balanced progression
-UPDATE plant_types SET base_growth_minutes = 0.25 WHERE name = 'carrot';
-UPDATE plant_types SET base_growth_minutes = 0.5 WHERE name = 'lettuce';
-UPDATE plant_types SET base_growth_minutes = 1 WHERE name = 'tomato';
-UPDATE plant_types SET base_growth_minutes = 2 WHERE name = 'corn';
-UPDATE plant_types SET base_growth_minutes = 4 WHERE name = 'potato';
-UPDATE plant_types SET base_growth_minutes = 8 WHERE name = 'pumpkin';
-UPDATE plant_types SET base_growth_minutes = 12 WHERE name = 'watermelon';
-UPDATE plant_types SET base_growth_minutes = 16 WHERE name = 'apple';
-UPDATE plant_types SET base_growth_minutes = 20 WHERE name = 'grape';
-UPDATE plant_types SET base_growth_minutes = 25 WHERE name = 'golden_fruit';
+-- Update plant growth times with the new balanced progression (now in seconds)
+UPDATE plant_types SET base_growth_seconds = 15 WHERE name = 'carrot';      -- 15 seconds
+UPDATE plant_types SET base_growth_seconds = 30 WHERE name = 'lettuce';     -- 30 seconds
+UPDATE plant_types SET base_growth_seconds = 60 WHERE name = 'tomato';      -- 1 minute
+UPDATE plant_types SET base_growth_seconds = 120 WHERE name = 'corn';       -- 2 minutes
+UPDATE plant_types SET base_growth_seconds = 240 WHERE name = 'potato';     -- 4 minutes
+UPDATE plant_types SET base_growth_seconds = 480 WHERE name = 'pumpkin';    -- 8 minutes
+UPDATE plant_types SET base_growth_seconds = 720 WHERE name = 'watermelon'; -- 12 minutes
+UPDATE plant_types SET base_growth_seconds = 960 WHERE name = 'apple';      -- 16 minutes
+UPDATE plant_types SET base_growth_seconds = 1200 WHERE name = 'grape';     -- 20 minutes
+UPDATE plant_types SET base_growth_seconds = 1500 WHERE name = 'golden_fruit'; -- 25 minutes
 
 -- Update the plot unlock cost function with more balanced progression
 CREATE OR REPLACE FUNCTION public.get_plot_unlock_cost(plot_number integer)

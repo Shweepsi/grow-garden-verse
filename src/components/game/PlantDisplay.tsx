@@ -6,12 +6,12 @@ import { PlantTimer } from './PlantTimer';
 interface PlantDisplayProps {
   plantType: PlantType;
   plantedAt: string | null;
-  growthTimeMinutes: number;
+  growthTimeSeconds: number;
 }
 
-export const PlantDisplay = ({ plantType, plantedAt, growthTimeMinutes }: PlantDisplayProps) => {
-  const isReady = PlantGrowthService.isPlantReady(plantedAt, growthTimeMinutes);
-  const progress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeMinutes) * 100;
+export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantDisplayProps) => {
+  const isReady = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
+  const progress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds) * 100;
 
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
@@ -53,7 +53,7 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeMinutes }: PlantD
       ) : (
         <PlantTimer 
           plantedAt={plantedAt}
-          growthTimeMinutes={growthTimeMinutes}
+          growthTimeSeconds={growthTimeSeconds}
           className="text-blue-600"
         />
       )}

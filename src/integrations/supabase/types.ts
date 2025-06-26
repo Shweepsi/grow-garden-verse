@@ -138,7 +138,7 @@ export type Database = {
       garden_plots: {
         Row: {
           created_at: string
-          growth_time_minutes: number | null
+          growth_time_seconds: number | null
           id: string
           plant_metadata: Json | null
           plant_type: string | null
@@ -150,7 +150,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          growth_time_minutes?: number | null
+          growth_time_seconds?: number | null
           id?: string
           plant_metadata?: Json | null
           plant_type?: string | null
@@ -162,7 +162,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          growth_time_minutes?: number | null
+          growth_time_seconds?: number | null
           id?: string
           plant_metadata?: Json | null
           plant_type?: string | null
@@ -253,7 +253,7 @@ export type Database = {
       }
       plant_types: {
         Row: {
-          base_growth_minutes: number | null
+          base_growth_seconds: number
           created_at: string
           display_name: string
           emoji: string | null
@@ -263,7 +263,7 @@ export type Database = {
           rarity: string | null
         }
         Insert: {
-          base_growth_minutes?: number | null
+          base_growth_seconds?: number
           created_at?: string
           display_name: string
           emoji?: string | null
@@ -273,7 +273,7 @@ export type Database = {
           rarity?: string | null
         }
         Update: {
-          base_growth_minutes?: number | null
+          base_growth_seconds?: number
           created_at?: string
           display_name?: string
           emoji?: string | null

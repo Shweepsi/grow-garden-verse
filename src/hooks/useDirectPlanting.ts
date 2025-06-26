@@ -39,9 +39,9 @@ export const useDirectPlanting = () => {
 
       if (!plantType) throw new Error('Type de plante non trouvé');
 
-      // Calculer le temps de croissance ajusté
+      // Calculer le temps de croissance ajusté (maintenant en secondes)
       const adjustedGrowthTime = EconomyService.getAdjustedGrowthTime(
-        plantType.base_growth_minutes || 60,
+        plantType.base_growth_seconds || 60,
         multipliers.growth
       );
 
@@ -51,7 +51,7 @@ export const useDirectPlanting = () => {
         .update({
           plant_type: plantTypeId,
           planted_at: new Date().toISOString(),
-          growth_time_minutes: adjustedGrowthTime,
+          growth_time_seconds: adjustedGrowthTime,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
