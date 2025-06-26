@@ -2,12 +2,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
 
-export const usePlantActions = () => {
+export const usePlantActions = (onCoinAnimation?: (amount: number) => void, onXPAnimation?: (amount: number) => void) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
@@ -182,11 +181,15 @@ export const usePlantActions = () => {
         console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
       }
 
-      // Messages de succès
-      toast.success(`🎉 Récolte effectuée ! +${harvestReward.toLocaleString()} pièces, +${expReward} EXP !`);
-      
+      // Déclencher les animations
+      if (onCoinAnimation) {
+        onCoinAnimation(harvestReward);
+      }
+      if (onXPAnimation) {
+        onXPAnimation(expReward);
+      }
+
       if (newLevel > (garden.level || 1)) {
-        toast.success(`🎉 Niveau ${newLevel} atteint !`);
         console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
       }
 
@@ -197,7 +200,6 @@ export const usePlantActions = () => {
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la récolte:', error);
-      toast.error(error.message || 'Erreur lors de la récolte');
     }
   });
 

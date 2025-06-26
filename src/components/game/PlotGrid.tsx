@@ -9,6 +9,7 @@ import { PlantSelector } from './PlantSelector';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { GameBalanceService } from '@/services/GameBalanceService';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
+import { usePlantActions } from '@/hooks/usePlantActions';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -16,6 +17,8 @@ interface PlotGridProps {
   coins: number;
   onHarvestPlant: (plotNumber: number) => void;
   onUnlockPlot: (plotNumber: number) => void;
+  onCoinAnimation?: (amount: number) => void;
+  onXPAnimation?: (amount: number) => void;
 }
 
 export const PlotGrid = ({ 
@@ -23,17 +26,19 @@ export const PlotGrid = ({
   plantTypes, 
   coins,
   onHarvestPlant, 
-  onUnlockPlot 
+  onUnlockPlot,
+  onCoinAnimation,
+  onXPAnimation
 }: PlotGridProps) => {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
   const { plantDirect, isPlanting } = useDirectPlanting();
+  const { harvestPlant: localHarvestPlant } = usePlantActions(onCoinAnimation, onXPAnimation);
 
   const getPlantState = (plot: GardenPlot) => {
-    // Validation stricte des données de la parcelle
     if (!plot.plant_type) return 'empty';
     
-    const growthTime = plot.growth_time_seconds || 3600; // Défaut 1h si pas défini
+    const growthTime = plot.growth_time_seconds || 3600;
     const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime);
     
     return isReady ? 'ready' : 'growing';
@@ -54,7 +59,7 @@ export const PlotGrid = ({
       console.log(`🌱 Ouverture du sélecteur de plantes pour parcelle ${plot.plot_number}`);
     } else if (state === 'ready') {
       console.log(`🌾 Tentative de récolte sur parcelle ${plot.plot_number}`);
-      onHarvestPlant(plot.plot_number);
+      localHarvestPlant(plot.plot_number);
     } else {
       console.log(`⏰ Plante en croissance sur parcelle ${plot.plot_number}`);
     }
@@ -95,7 +100,6 @@ export const PlotGrid = ({
                   : 'opacity-60'
               }`}>
                 
-                {/* Effet de brillance pour les plantes prêtes */}
                 {plot.unlocked && state === 'ready' && (
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shimmer"></div>
                 )}
@@ -176,7 +180,6 @@ export const PlotGrid = ({
                   </div>
                 )}
 
-                {/* Indicator for active state */}
                 {plot.unlocked && state !== 'empty' && (
                   <div className="absolute top-1.5 right-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full ${

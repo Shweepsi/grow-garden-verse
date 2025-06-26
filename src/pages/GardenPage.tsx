@@ -2,6 +2,7 @@
 import { GameHeader } from '@/components/game/GameHeader';
 import { PlotGrid } from '@/components/game/PlotGrid';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
+import { useAnimations } from '@/components/game/AnimationContainer';
 import { Loader2 } from 'lucide-react';
 
 export const GardenPage = () => {
@@ -11,6 +12,8 @@ export const GardenPage = () => {
     harvestPlant, 
     unlockPlot 
   } = useRefactoredGame();
+
+  const { showCoinAnimation, showXPAnimation, AnimationContainer } = useAnimations();
 
   if (loading) {
     return (
@@ -27,15 +30,18 @@ export const GardenPage = () => {
       <GameHeader garden={gameState.garden} />
       
       <div className="pb-20 space-y-3">
-        {/* Garden Grid with premium styling - Optimisé mobile */}
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}
           coins={gameState.garden?.coins || 0}
           onHarvestPlant={harvestPlant}
           onUnlockPlot={unlockPlot}
+          onCoinAnimation={showCoinAnimation}
+          onXPAnimation={showXPAnimation}
         />
       </div>
+
+      <AnimationContainer />
     </div>
   );
 };

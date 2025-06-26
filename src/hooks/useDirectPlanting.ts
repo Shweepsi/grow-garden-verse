@@ -1,7 +1,7 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
@@ -183,7 +183,6 @@ export const useDirectPlanting = () => {
       }
 
       const timeString = PlantGrowthService.formatTimeRemaining(adjustedGrowthTime);
-      toast.success(`🌱 ${plantType.display_name} plantée ! Prête dans ${timeString}`);
       
       console.log('✅ Plantation terminée avec succès');
     },
@@ -192,7 +191,6 @@ export const useDirectPlanting = () => {
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation:', error);
-      toast.error(error.message || 'Erreur lors de la plantation');
     }
   });
 
