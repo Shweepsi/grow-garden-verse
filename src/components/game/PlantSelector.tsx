@@ -1,9 +1,8 @@
-
 import { PlantType } from '@/types/game';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Sparkles, Lock, TrendingUp, Clock } from 'lucide-react';
+import { Coins, Sparkles, Lock, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
 
@@ -81,6 +80,16 @@ export const PlantSelector = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Message d'information sur la protection des 100 pièces */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-blue-700">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Vous devez garder au moins 100 pièces pour pouvoir acheter une carotte
+              </span>
+            </div>
+          </div>
+
           {/* Plantes disponibles */}
           {availablePlants.length > 0 && (
             <div>
@@ -92,7 +101,7 @@ export const PlantSelector = ({
                 {availablePlants.map((plantType) => {
                   const cost = getPlantCost(plantType);
                   const reward = getPlantReward(plantType);
-                  const canAfford = coins >= cost;
+                  const canAfford = EconomyService.canAffordPlant(coins, cost);
 
                   return (
                     <Card
@@ -144,7 +153,8 @@ export const PlantSelector = ({
                           <div className={`text-xs font-medium ${
                             canAfford ? 'text-green-600' : 'text-red-500'
                           }`}>
-                            {canAfford ? '✓ Fonds suffisants' : '✗ Fonds insuffisants'}
+                            {canAfford ? '✓ Fonds suffisants' : 
+                             coins >= cost ? '⚠️ Garde 100 pièces minimum' : '✗ Fonds insuffisants'}
                           </div>
                         </div>
                       </CardContent>

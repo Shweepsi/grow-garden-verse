@@ -1,7 +1,5 @@
 
 import { Coins, Sprout, Star } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 
@@ -10,8 +8,6 @@ interface GameHeaderProps {
 }
 
 export const GameHeader = ({ garden }: GameHeaderProps) => {
-  const { signOut } = useAuth();
-
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
@@ -46,16 +42,6 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 <p className="mobile-text-xs text-gray-600">Cultivez votre paradis</p>
               </div>
             </div>
-            
-            {/* Bouton déconnexion - Plus petit sur mobile */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={signOut}
-              className="glassmorphism border-red-200 text-red-600 hover:bg-red-50/50 hover:border-red-300 transition-all duration-300 backdrop-blur-sm px-2 py-1 h-auto touch-target"
-            >
-              <span className="mobile-text-xs">Déco</span>
-            </Button>
           </div>
 
           {/* Statistiques - Layout vertical sur mobile */}

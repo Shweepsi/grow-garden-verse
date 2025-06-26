@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +26,35 @@ export const useDirectPlanting = () => {
 
       console.log(`🌱 Début de la plantation sur la parcelle ${plotNumber}`);
       console.log(`📋 Type de plante: ${plantTypeId}, Coût: ${cost}`);
+
+      // Vérifier les fonds avec protection des 100 pièces minimum
+      const { data: garden, error: gardenError } = await supabase
+        .from('player_gardens')
+        .select('coins, level')
+        .eq('user_id', user.id)
+        .single();
+
+      if (gardenError) {
+        console.error('❌ Erreur récupération jardin:', gardenError);
+        throw new Error('Erreur lors de la récupération des données du jardin');
+      }
+
+      if (!garden) {
+        throw new Error('Jardin non trouvé');
+      }
+
+      const currentCoins = garden.coins || 0;
+      
+      // Vérification avec protection des 100 pièces
+      if (!EconomyService.canAffordPlant(currentCoins, cost)) {
+        if (currentCoins < cost) {
+          throw new Error(`Pas assez de pièces (${currentCoins}/${cost})`);
+        } else {
+          throw new Error(`Vous devez garder au moins 100 pièces pour pouvoir acheter une carotte`);
+        }
+      }
+
+      console.log(`💰 Fonds suffisants avec protection: ${currentCoins} >= ${cost + EconomyService.MINIMUM_COINS}`);
 
       // Obtenir les multiplicateurs actifs
       let multipliers;
@@ -64,29 +92,6 @@ export const useDirectPlanting = () => {
       }
 
       console.log('✅ Parcelle valide et disponible');
-
-      // Vérifier les fonds
-      const { data: garden, error: gardenError } = await supabase
-        .from('player_gardens')
-        .select('coins, level')
-        .eq('user_id', user.id)
-        .single();
-
-      if (gardenError) {
-        console.error('❌ Erreur récupération jardin:', gardenError);
-        throw new Error('Erreur lors de la récupération des données du jardin');
-      }
-
-      if (!garden) {
-        throw new Error('Jardin non trouvé');
-      }
-
-      const currentCoins = garden.coins || 0;
-      if (currentCoins < cost) {
-        throw new Error(`Pas assez de pièces (${currentCoins}/${cost})`);
-      }
-
-      console.log(`💰 Fonds suffisants: ${currentCoins} >= ${cost}`);
 
       // Obtenir les infos de la plante
       const { data: plantType, error: plantError } = await supabase
