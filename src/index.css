@@ -300,6 +300,22 @@
   }
 }
 
+/* Animation pour les gains/pertes de pièces et XP */
+@keyframes slideUpFade {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  20% {
+    transform: translateY(-10px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-40px) scale(1);
+    opacity: 0;
+  }
+}
+
 /* Mobile optimized scrollbar */
 ::-webkit-scrollbar {
   width: 4px;

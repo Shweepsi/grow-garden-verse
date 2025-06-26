@@ -2,12 +2,16 @@
 import { Coins, Sprout, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
+import { useAnimations } from '@/contexts/AnimationContext';
+import { CoinAnimation } from '@/components/animations/CoinAnimation';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
 }
 
 export const GameHeader = ({ garden }: GameHeaderProps) => {
+  const { coinAnimations, xpAnimations } = useAnimations();
+
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
@@ -50,7 +54,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
             <div className="flex items-center justify-between space-x-2">
               {/* Coins */}
               <div className="relative group flex-1">
-                <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
+                <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer relative">
                   <div className="w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                     <Coins className="h-2.5 w-2.5 text-white" />
                   </div>
@@ -62,18 +66,36 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                       : (garden?.coins || 0).toLocaleString()
                     }
                   </span>
+                  
+                  {/* Zone d'animation des pièces */}
+                  {coinAnimations.map((animation) => (
+                    <CoinAnimation
+                      key={animation.id}
+                      amount={animation.amount}
+                      type="coin"
+                    />
+                  ))}
                 </div>
               </div>
               
               {/* Niveau */}
               <div className="relative group flex-1">
-                <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5">
+                <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 relative">
                   <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
                     <Star className="h-2.5 w-2.5 text-white" />
                   </div>
                   <span className="font-bold text-blue-700 mobile-text-sm">
                     Niv. {currentLevel}
                   </span>
+                  
+                  {/* Zone d'animation de l'XP */}
+                  {xpAnimations.map((animation) => (
+                    <CoinAnimation
+                      key={animation.id}
+                      amount={animation.amount}
+                      type="xp"
+                    />
+                  ))}
                 </div>
               </div>
             </div>
