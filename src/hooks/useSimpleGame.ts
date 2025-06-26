@@ -243,7 +243,7 @@ export const useSimpleGame = () => {
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      const unlockCosts = [0, 100, 250, 500]; // Cost for plots 1,2,3,4
+      const unlockCosts = [0, 100, 200, 350, 500, 700, 1000, 1500, 2000]; // Coûts pour parcelles 1-9
       const cost = unlockCosts[plotNumber - 1] || 0;
 
       if ((gameState.garden?.coins || 0) < cost) {

@@ -39,7 +39,7 @@ export const PlotGrid = ({
   };
 
   const getUnlockCost = (plotNumber: number) => {
-    const costs = [0, 100, 250, 500];
+    const costs = [0, 100, 200, 350, 500, 700, 1000, 1500, 2000];
     return costs[plotNumber - 1] || 0;
   };
 
@@ -67,7 +67,7 @@ export const PlotGrid = ({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 p-4">
+      <div className="grid grid-cols-3 gap-4 p-4">
         {plots.map((plot) => {
           const state = getPlantState(plot);
           const plantType = plantTypes.find(pt => pt.id === plot.plant_type);
@@ -85,8 +85,8 @@ export const PlotGrid = ({
               <CardContent className="p-4 h-full flex flex-col items-center justify-center">
                 {!plot.unlocked ? (
                   <div className="text-center">
-                    <Lock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500 mb-2">Parcelle {plot.plot_number}</p>
+                    <Lock className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 mb-2">Parcelle {plot.plot_number}</p>
                     <Button
                       size="sm"
                       onClick={(e) => {
@@ -94,7 +94,7 @@ export const PlotGrid = ({
                         onUnlockPlot(plot.plot_number);
                       }}
                       disabled={coins < getUnlockCost(plot.plot_number)}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-auto"
                     >
                       Débloquer {getUnlockCost(plot.plot_number)} 🪙
                     </Button>
@@ -103,8 +103,8 @@ export const PlotGrid = ({
                   <div className="text-center h-full flex flex-col justify-center">
                     {state === 'empty' ? (
                       <>
-                        <Sprout className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                        <p className="text-sm text-green-600">Planter une graine</p>
+                        <Sprout className="h-6 w-6 text-green-400 mx-auto mb-2" />
+                        <p className="text-xs text-green-600">Planter une graine</p>
                       </>
                     ) : state === 'growing' ? (
                       <>
@@ -114,7 +114,7 @@ export const PlotGrid = ({
                           waterCount={plot.plant_water_count}
                         />
                         <div className="mt-2 flex items-center justify-center">
-                          <Droplets className="h-4 w-4 text-blue-500 mr-1" />
+                          <Droplets className="h-3 w-3 text-blue-500 mr-1" />
                           <span className="text-xs text-blue-600">Arroser</span>
                         </div>
                       </>
@@ -126,7 +126,7 @@ export const PlotGrid = ({
                           waterCount={plot.plant_water_count}
                         />
                         <div className="mt-2 flex items-center justify-center">
-                          <Gift className="h-4 w-4 text-yellow-500 mr-1" />
+                          <Gift className="h-3 w-3 text-yellow-500 mr-1" />
                           <span className="text-xs text-yellow-600">Récolter</span>
                         </div>
                       </>
