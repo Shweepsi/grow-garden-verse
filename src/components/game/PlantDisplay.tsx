@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from 'react';
 import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
@@ -10,6 +11,9 @@ interface PlantDisplayProps {
 }
 
 export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantDisplayProps) => {
+  const [progress, setProgress] = useState(0);
+  const [isReady, setIsReady] = useState(false);
+
   // Validation des props
   if (!plantType) {
     return (
@@ -20,8 +24,25 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
     );
   }
 
-  const isReady = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
-  const progress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds) * 100;
+  useEffect(() => {
+    if (!plantedAt) return;
+
+    const updateProgress = () => {
+      const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds);
+      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
+      
+      setProgress(currentProgress * 100);
+      setIsReady(ready);
+    };
+
+    updateProgress();
+    
+    // Utiliser la même fréquence de mise à jour optimale que PlantTimer
+    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
+    const interval = setInterval(updateProgress, updateInterval);
+
+    return () => clearInterval(interval);
+  }, [plantedAt, growthTimeSeconds]);
 
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
@@ -44,7 +65,7 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
         {plantType.display_name || plantType.name || 'Plante inconnue'}
       </p>
 
-      {/* Barre de progression */}
+      {/* Barre de progression mise à jour en temps réel */}
       <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
         <div 
           className={`h-2 rounded-full transition-all ${
