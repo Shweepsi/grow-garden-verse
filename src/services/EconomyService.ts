@@ -74,4 +74,72 @@ export class EconomyService {
     const profit = reward - cost;
     return Math.floor((profit / growthTimeSeconds) * 60); // Profit par seconde * 60 = par minute
   }
+
+  // Nouveaux prix d'améliorations basés sur l'économie des plantes
+  static getUpgradeCosts() {
+    return {
+      // Améliorations de base - accessibles tôt
+      basic: {
+        coins: 1000,   // ~6-7 récoltes de plantes niveau 1
+        gems: 0
+      },
+      
+      // Améliorations intermédiaires 
+      intermediate: {
+        coins: 5000,   // ~15-20 récoltes de plantes niveau 2-3
+        gems: 10
+      },
+      
+      // Améliorations avancées
+      advanced: {
+        coins: 25000,  // ~30-40 récoltes de plantes niveau 4-5
+        gems: 50
+      },
+      
+      // Améliorations premium
+      premium: {
+        coins: 100000, // ~60-80 récoltes de plantes niveau 6+
+        gems: 200
+      },
+      
+      // Améliorations légendaires
+      legendary: {
+        coins: 500000, // ~100+ récoltes de plantes haut niveau
+        gems: 1000
+      }
+    };
+  }
+
+  // Calculer le coût d'une amélioration selon son type et niveau requis
+  static getUpgradeCostByLevel(levelRequired: number, effectType: string): { coins: number; gems: number } {
+    const costs = this.getUpgradeCosts();
+    
+    // Améliorations de récolte (plus chères car plus profitables)
+    if (effectType.includes('harvest')) {
+      if (levelRequired <= 3) return { coins: costs.basic.coins * 1.5, gems: costs.basic.gems };
+      if (levelRequired <= 8) return { coins: costs.intermediate.coins * 1.5, gems: costs.intermediate.gems };
+      if (levelRequired <= 15) return { coins: costs.advanced.coins * 1.5, gems: costs.advanced.gems };
+      if (levelRequired <= 25) return { coins: costs.premium.coins * 1.5, gems: costs.premium.gems };
+      return { coins: costs.legendary.coins * 1.5, gems: costs.legendary.gems };
+    }
+    
+    // Améliorations de vitesse de croissance
+    if (effectType.includes('growth')) {
+      if (levelRequired <= 5) return costs.basic;
+      if (levelRequired <= 12) return costs.intermediate;
+      if (levelRequired <= 20) return costs.advanced;
+      if (levelRequired <= 30) return costs.premium;
+      return costs.legendary;
+    }
+    
+    // Améliorations spéciales (déblocages, auto, etc.)
+    if (effectType.includes('unlock') || effectType.includes('auto') || effectType.includes('prestige')) {
+      if (levelRequired <= 10) return { coins: costs.advanced.coins, gems: costs.advanced.gems * 2 };
+      if (levelRequired <= 20) return { coins: costs.premium.coins, gems: costs.premium.gems * 2 };
+      return { coins: costs.legendary.coins, gems: costs.legendary.gems * 2 };
+    }
+    
+    // Par défaut
+    return costs.basic;
+  }
 }
