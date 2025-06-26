@@ -63,6 +63,39 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_challenges: {
+        Row: {
+          challenge_type: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          reward_coins: number | null
+          reward_gems: number | null
+          start_date: string | null
+          target_value: number
+        }
+        Insert: {
+          challenge_type: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          start_date?: string | null
+          target_value: number
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          start_date?: string | null
+          target_value?: number
+        }
+        Relationships: []
+      }
       daily_objectives: {
         Row: {
           completed: boolean | null
@@ -269,6 +302,39 @@ export type Database = {
         }
         Relationships: []
       }
+      player_collections: {
+        Row: {
+          collection_name: string
+          collection_type: string
+          completed: boolean | null
+          created_at: string | null
+          id: string
+          reward_coins: number | null
+          reward_gems: number | null
+          user_id: string
+        }
+        Insert: {
+          collection_name: string
+          collection_type: string
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          user_id: string
+        }
+        Update: {
+          collection_name?: string
+          collection_type?: string
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       player_gardens: {
         Row: {
           active_plot: number
@@ -279,6 +345,8 @@ export type Database = {
           id: string
           last_played: string
           level: number | null
+          permanent_multiplier: number | null
+          prestige_level: number | null
           prestige_points: number | null
           total_harvests: number
           user_id: string
@@ -292,6 +360,8 @@ export type Database = {
           id?: string
           last_played?: string
           level?: number | null
+          permanent_multiplier?: number | null
+          prestige_level?: number | null
           prestige_points?: number | null
           total_harvests?: number
           user_id: string
@@ -305,6 +375,8 @@ export type Database = {
           id?: string
           last_played?: string
           level?: number | null
+          permanent_multiplier?: number | null
+          prestige_level?: number | null
           prestige_points?: number | null
           total_harvests?: number
           user_id?: string
@@ -521,6 +593,10 @@ export type Database = {
       generate_daily_objectives: {
         Args: { target_user_id: string }
         Returns: undefined
+      }
+      get_plot_unlock_cost: {
+        Args: { plot_number: number }
+        Returns: number
       }
     }
     Enums: {

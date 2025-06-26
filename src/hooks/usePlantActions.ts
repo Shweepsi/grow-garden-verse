@@ -4,59 +4,40 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { GameBalanceService } from '@/services/GameBalanceService';
+import { StageGrowthService } from '@/services/StageGrowthService';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const plantSeedMutation = useMutation({
-    mutationFn: async ({ plotNumber, plantTypeId }: { plotNumber: number; plantTypeId: string }) => {
+  // L'arrosage fait maintenant progresser d'une étape
+  const waterPlantMutation = useMutation({
+    mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Get plant type info for growth time
-      const { data: plantType } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', plantTypeId)
-        .single();
-
-      if (!plantType) throw new Error('Plant type not found');
-
-      // Create the correct seed name using the plant type name
-      const seedName = `${plantType.name}_seed`;
-
-      // Check inventory for seed with corrected logic
-      const { data: inventoryItem, error: inventoryError } = await supabase
-        .from('player_inventory_items')
+      // Obtenir les données actuelles de la parcelle
+      const { data: plot } = await supabase
+        .from('garden_plots')
         .select(`
-          id, 
-          quantity, 
-          shop_item:shop_items(name)
+          *, 
+          plant_types(*)
         `)
         .eq('user_id', user.id)
-        .gt('quantity', 0);
+        .eq('plot_number', plotNumber)
+        .single();
 
-      if (inventoryError) throw inventoryError;
+      if (!plot || !plot.plant_type) throw new Error('Aucune plante à arroser');
 
-      // Find the matching seed in inventory
-      const matchingSeed = inventoryItem?.find(item => 
-        item.shop_item?.name === seedName
-      );
+      const plantType = plot.plant_types;
+      const newStage = StageGrowthService.advanceStage(plot.plant_stage, plantType.growth_stages);
 
-      if (!matchingSeed) {
-        throw new Error(`Vous n'avez pas de graine de ${plantType.display_name} dans votre inventaire`);
-      }
-
-      // Plant the seed with real-time growth
+      // Mettre à jour l'étape de la plante
       const { error } = await supabase
         .from('garden_plots')
         .update({
-          plant_type: plantTypeId,
-          plant_stage: 0,
-          plant_water_count: 0,
-          planted_at: new Date().toISOString(),
-          growth_time_minutes: plantType.base_growth_minutes,
-          last_watered: null,
+          plant_stage: newStage,
+          plant_water_count: plot.plant_water_count + 1,
+          last_watered: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
@@ -64,59 +45,17 @@ export const usePlantActions = () => {
 
       if (error) throw error;
 
-      // Decrease seed quantity
-      if (matchingSeed.quantity <= 1) {
-        await supabase.from('player_inventory_items').delete().eq('id', matchingSeed.id);
+      // Vérifier si la plante est maintenant prête à récolter
+      const isReady = StageGrowthService.isReadyToHarvest(newStage, plantType.growth_stages);
+      
+      if (isReady) {
+        toast.success('🌟 Plante prête à récolter !');
       } else {
-        await supabase
-          .from('player_inventory_items')
-          .update({ quantity: matchingSeed.quantity - 1 })
-          .eq('id', matchingSeed.id);
+        toast.success(`Étape ${newStage}/${plantType.growth_stages} atteinte !`);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      toast.success('Graine plantée avec succès !');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la plantation');
-    }
-  });
-
-  const waterPlantMutation = useMutation({
-    mutationFn: async (plotNumber: number) => {
-      if (!user?.id) throw new Error('Not authenticated');
-
-      // Get current plot data
-      const { data: plot } = await supabase
-        .from('garden_plots')
-        .select('growth_time_minutes')
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber)
-        .single();
-
-      if (!plot) throw new Error('Plot not found');
-
-      // Watering reduces growth time by 10 minutes instead of advancing stages
-      const newGrowthTime = Math.max(30, (plot.growth_time_minutes || 60) - 10);
-
-      const { error } = await supabase
-        .from('garden_plots')
-        .update({
-          growth_time_minutes: newGrowthTime,
-          last_watered: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber)
-        .not('plant_type', 'is', null);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      toast.success('Plante arrosée ! Croissance accélérée.');
     },
     onError: (error: any) => {
       toast.error('Erreur lors de l\'arrosage');
@@ -127,32 +66,56 @@ export const usePlantActions = () => {
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Get plot and plant info
+      // Obtenir les infos de la parcelle et de la plante
       const { data: plot } = await supabase
         .from('garden_plots')
-        .select('*, plant_types(*)')
+        .select(`
+          *, 
+          plant_types(*)
+        `)
         .eq('user_id', user.id)
         .eq('plot_number', plotNumber)
         .single();
 
-      if (!plot || !plot.plant_type) throw new Error('No plant to harvest');
+      if (!plot || !plot.plant_type) throw new Error('Aucune plante à récolter');
 
-      // Get current garden data
+      const plantType = plot.plant_types;
+      
+      // Vérifier que la plante est prête
+      if (!StageGrowthService.isReadyToHarvest(plot.plant_stage, plantType.growth_stages)) {
+        throw new Error('La plante n\'est pas encore prête');
+      }
+
+      // Obtenir les données du jardin
       const { data: garden } = await supabase
         .from('player_gardens')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (!garden) throw new Error('Garden not found');
+      if (!garden) throw new Error('Jardin non trouvé');
 
-      const plantType = plot.plant_types;
-      const harvestReward = GameBalanceService.getHarvestReward(plantType.growth_stages, garden.level);
-      const expReward = GameBalanceService.getExperienceReward(plantType.growth_stages);
-      const newExp = garden.experience + expReward;
+      // Calculer les récompenses avec le nouveau système
+      // Estimer le prix de la graine basé sur la rareté
+      const priceRange = GameBalanceService.getSeedPriceRange(plantType.rarity || 'common');
+      const estimatedSeedPrice = (priceRange.min + priceRange.max) / 2;
+      
+      const harvestReward = GameBalanceService.getHarvestReward(
+        plot.plant_stage, 
+        estimatedSeedPrice, 
+        garden.level || 1,
+        garden.permanent_multiplier || 1
+      );
+      
+      const expReward = GameBalanceService.getExperienceReward(
+        plot.plant_stage, 
+        plantType.rarity || 'common'
+      );
+      
+      const newExp = (garden.experience || 0) + expReward;
       const newLevel = GameBalanceService.getLevelFromExperience(newExp);
 
-      // Clear plot
+      // Vider la parcelle
       await supabase
         .from('garden_plots')
         .update({
@@ -167,19 +130,19 @@ export const usePlantActions = () => {
         .eq('user_id', user.id)
         .eq('plot_number', plotNumber);
 
-      // Update garden stats - only coins and experience, no seed drops
+      // Mettre à jour les stats du jardin
       await supabase
         .from('player_gardens')
         .update({
           coins: garden.coins + harvestReward,
           experience: newExp,
           level: newLevel,
-          total_harvests: garden.total_harvests + 1,
+          total_harvests: (garden.total_harvests || 0) + 1,
           last_played: new Date().toISOString()
         })
         .eq('user_id', user.id);
 
-      // Record transaction
+      // Enregistrer la transaction
       await supabase
         .from('coin_transactions')
         .insert({
@@ -189,7 +152,7 @@ export const usePlantActions = () => {
           description: `Récolte de ${plantType.display_name}`
         });
 
-      // Record plant discovery
+      // Enregistrer la découverte
       await supabase
         .from('plant_discoveries')
         .insert({
@@ -198,11 +161,14 @@ export const usePlantActions = () => {
           discovery_method: 'harvest'
         });
 
-      toast.success(`Récolte effectuée ! +${harvestReward} pièces gagnées !`);
+      toast.success(`Récolte effectuée ! +${harvestReward} pièces, +${expReward} EXP !`);
+      
+      if (newLevel > (garden.level || 1)) {
+        toast.success(`🎉 Niveau ${newLevel} atteint !`);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
     onError: (error: any) => {
       toast.error('Erreur lors de la récolte');
@@ -210,13 +176,8 @@ export const usePlantActions = () => {
   });
 
   return {
-    plantSeed: (plotNumber: number, plantTypeId: string) => 
-      plantSeedMutation.mutate({ plotNumber, plantTypeId }),
-    waterPlant: (plotNumber: number) => 
-      waterPlantMutation.mutate(plotNumber),
-    harvestPlant: (plotNumber: number) => 
-      harvestPlantMutation.mutate(plotNumber),
-    isPlanting: plantSeedMutation.isPending,
+    waterPlant: (plotNumber: number) => waterPlantMutation.mutate(plotNumber),
+    harvestPlant: (plotNumber: number) => harvestPlantMutation.mutate(plotNumber),
     isWatering: waterPlantMutation.isPending,
     isHarvesting: harvestPlantMutation.isPending
   };
