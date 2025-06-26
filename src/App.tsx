@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from '@/hooks/useAuth';
-import { AnimationProvider } from '@/contexts/AnimationContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GardenPage } from '@/pages/GardenPage';
 import { UpgradesPage } from '@/pages/UpgradesPage';
@@ -21,15 +20,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AnimationProvider>
-            <Routes>
-              <Route path="/" element={<Navigate to="/garden" replace />} />
-              <Route path="/garden" element={<AppLayout><GardenPage /></AppLayout>} />
-              <Route path="/upgrades" element={<AppLayout><UpgradesPage /></AppLayout>} />
-              <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AnimationProvider>
+          <Routes>
+            <Route path="/" element={<Navigate to="/garden" replace />} />
+            <Route path="/garden" element={<AppLayout><GardenPage /></AppLayout>} />
+            <Route path="/upgrades" element={<AppLayout><UpgradesPage /></AppLayout>} />
+            <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
