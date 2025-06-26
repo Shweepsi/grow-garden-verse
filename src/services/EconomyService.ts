@@ -1,10 +1,11 @@
+
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 
 export class EconomyService {
-  // Pièces minimum à conserver pour pouvoir acheter des améliorations
+  // Pièces minimum à conserver pour pouvoir continuer à jouer
   static readonly MINIMUM_COINS = 100;
 
-  // Nouveau système de coût progressif plus équilibré
+  // Système de coût progressif équilibré
   static getPlantDirectCost(plantLevel: number): number {
     if (!plantLevel || plantLevel < 1) return 100;
     // Progression douce : 100 * 1.5^(niveau-1)
@@ -21,12 +22,13 @@ export class EconomyService {
     return currentCoins >= (upgradeCost + this.MINIMUM_COINS);
   }
 
-  // Calculer les récompenses avec profit de 60-80%
+  // Calculer les récompenses avec multiplicateurs d'améliorations
   static getHarvestReward(
     plantLevel: number, 
     growthTimeSeconds: number,
     playerLevel: number = 1,
-    harvestMultiplier: number = 1
+    harvestMultiplier: number = 1,
+    plantCostReduction: number = 1
   ): number {
     // Validation des paramètres
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
@@ -34,7 +36,7 @@ export class EconomyService {
     if (!playerLevel || playerLevel < 1) playerLevel = 1;
     if (!harvestMultiplier || harvestMultiplier < 0.1) harvestMultiplier = 1;
     
-    const baseCost = this.getPlantDirectCost(plantLevel);
+    const baseCost = this.getPlantDirectCost(plantLevel) * plantCostReduction;
     
     // Profit de base de 70% + bonus pour temps long + bonus niveau
     const baseProfit = baseCost * 1.7; // 70% de profit de base
@@ -45,11 +47,12 @@ export class EconomyService {
     return Math.floor(finalReward * harvestMultiplier);
   }
 
-  // Expérience proportionnelle au niveau de la plante
-  static getExperienceReward(plantLevel: number): number {
+  // Expérience avec multiplicateur d'amélioration
+  static getExperienceReward(plantLevel: number, expMultiplier: number = 1): number {
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
-    // 15 EXP de base + 5 par niveau
-    return 15 + (plantLevel * 5);
+    // 15 EXP de base + 5 par niveau, avec multiplicateur
+    const baseExp = 15 + (plantLevel * 5);
+    return Math.floor(baseExp * expMultiplier);
   }
 
   // Temps de croissance ajusté (maintenant en secondes)
@@ -69,7 +72,7 @@ export class EconomyService {
     return playerLevel >= plantLevel;
   }
 
-  // Nouvelle méthode pour calculer le retour sur investissement
+  // Calculer le retour sur investissement
   static getROIPercentage(plantLevel: number, growthTimeSeconds: number): number {
     const cost = this.getPlantDirectCost(plantLevel);
     const reward = this.getHarvestReward(plantLevel, growthTimeSeconds);
@@ -77,7 +80,7 @@ export class EconomyService {
     return Math.floor(((reward - cost) / cost) * 100);
   }
 
-  // Méthode pour calculer le gain par minute
+  // Calculer le gain par minute
   static getProfitPerMinute(plantLevel: number, growthTimeSeconds: number): number {
     if (!growthTimeSeconds || growthTimeSeconds <= 0) return 0;
     
@@ -87,71 +90,54 @@ export class EconomyService {
     return Math.floor((profit / growthTimeSeconds) * 60); // Profit par seconde * 60 = par minute
   }
 
-  // Nouveaux prix d'améliorations basés sur l'économie des plantes
-  static getUpgradeCosts() {
-    return {
-      // Améliorations de base - accessibles tôt
-      basic: {
-        coins: 1000,   // ~6-7 récoltes de plantes niveau 1
-        gems: 0
-      },
-      
-      // Améliorations intermédiaires 
-      intermediate: {
-        coins: 5000,   // ~15-20 récoltes de plantes niveau 2-3
-        gems: 10
-      },
-      
-      // Améliorations avancées
-      advanced: {
-        coins: 25000,  // ~30-40 récoltes de plantes niveau 4-5
-        gems: 50
-      },
-      
-      // Améliorations premium
-      premium: {
-        coins: 100000, // ~60-80 récoltes de plantes niveau 6+
-        gems: 200
-      },
-      
-      // Améliorations légendaires
-      legendary: {
-        coins: 500000, // ~100+ récoltes de plantes haut niveau
-        gems: 1000
-      }
-    };
+  // Calculer la chance de gemmes lors de la récolte
+  static getGemChance(baseChance: number = 0): number {
+    return Math.min(0.5, baseChance); // Maximum 50% de chance
   }
 
-  // Calculer le coût d'une amélioration selon son type et niveau requis
-  static getUpgradeCostByLevel(levelRequired: number, effectType: string): { coins: number; gems: number } {
-    const costs = this.getUpgradeCosts();
-    
-    // Améliorations de récolte (plus chères car plus profitables)
-    if (effectType.includes('harvest')) {
-      if (levelRequired <= 3) return { coins: costs.basic.coins * 1.5, gems: costs.basic.gems };
-      if (levelRequired <= 8) return { coins: costs.intermediate.coins * 1.5, gems: costs.intermediate.gems };
-      if (levelRequired <= 15) return { coins: costs.advanced.coins * 1.5, gems: costs.advanced.gems };
-      if (levelRequired <= 25) return { coins: costs.premium.coins * 1.5, gems: costs.premium.gems };
-      return { coins: costs.legendary.coins * 1.5, gems: costs.legendary.gems };
-    }
-    
-    // Améliorations de vitesse de croissance
-    if (effectType.includes('growth')) {
-      if (levelRequired <= 5) return costs.basic;
-      if (levelRequired <= 12) return costs.intermediate;
-      if (levelRequired <= 20) return costs.advanced;
-      if (levelRequired <= 30) return costs.premium;
-      return costs.legendary;
-    }
-    
-    // Améliorations spéciales (déblocages, auto, etc.)
-    if (effectType.includes('unlock') || effectType.includes('auto') || effectType.includes('prestige')) {
-      if (levelRequired <= 10) return { coins: costs.advanced.coins, gems: costs.advanced.gems * 2 };
-      if (levelRequired <= 20) return { coins: costs.premium.coins, gems: costs.premium.gems * 2 };
-      return { coins: costs.legendary.coins, gems: costs.legendary.gems * 2 };
-    }
-    
-    // Par défaut
-    return costs.basic;
+  // Calculer le coût d'une plante avec réduction
+  static getAdjustedPlantCost(baseCost: number, costReduction: number = 1): number {
+    return Math.floor(baseCost * costReduction);
+  }
+
+  // Déterminer si une parcelle doit être débloquée automatiquement
+  static shouldAutoUnlockPlot(playerLevel: number, plotNumber: number, autoUnlockLevel: number): boolean {
+    return playerLevel >= autoUnlockLevel && plotNumber <= autoUnlockLevel;
+  }
+
+  // Calculer les multiplicateurs actifs des améliorations
+  static calculateActiveMultipliers(playerUpgrades: PlayerUpgrade[]) {
+    const multipliers = {
+      harvest: 1,
+      growth: 1,
+      exp: 1,
+      plantCostReduction: 1,
+      gemChance: 0
+    };
+
+    playerUpgrades.forEach(upgrade => {
+      const levelUpgrade = upgrade.level_upgrades;
+      if (!levelUpgrade) return;
+
+      switch (levelUpgrade.effect_type) {
+        case 'harvest_multiplier':
+          multipliers.harvest *= levelUpgrade.effect_value;
+          break;
+        case 'growth_speed':
+          multipliers.growth *= levelUpgrade.effect_value;
+          break;
+        case 'exp_multiplier':
+          multipliers.exp *= levelUpgrade.effect_value;
+          break;
+        case 'plant_cost_reduction':
+          multipliers.plantCostReduction *= levelUpgrade.effect_value;
+          break;
+        case 'gem_chance':
+          multipliers.gemChance += levelUpgrade.effect_value;
+          break;
+      }
+    });
+
+    return multipliers;
   }
 }

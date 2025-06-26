@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
+import { EconomyService } from '@/services/EconomyService';
 
 export const useUpgrades = () => {
   const { user } = useAuth();
@@ -49,7 +50,7 @@ export const useUpgrades = () => {
     }) => {
       if (!user?.id) throw new Error('Non authentifié');
 
-      // Vérifier les fonds
+      // Vérifier les fonds avec protection des 100 pièces
       const { data: garden } = await supabase
         .from('player_gardens')
         .select('coins, gems')
@@ -57,8 +58,15 @@ export const useUpgrades = () => {
         .single();
 
       if (!garden) throw new Error('Jardin non trouvé');
-      if (garden.coins < costCoins) throw new Error('Pas assez de pièces');
-      if ((garden.gems || 0) < costGems) throw new Error('Pas assez de gemmes');
+      
+      // Utiliser EconomyService pour vérifier si on peut acheter l'amélioration
+      if (!EconomyService.canAffordUpgrade(garden.coins, costCoins)) {
+        throw new Error('Pas assez de pièces (gardez 100 pièces de réserve)');
+      }
+      
+      if ((garden.gems || 0) < costGems) {
+        throw new Error('Pas assez de gemmes');
+      }
 
       // Acheter l'amélioration
       const { error: upgradeError } = await supabase
@@ -96,10 +104,14 @@ export const useUpgrades = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playerUpgrades'] });
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      toast.success('Amélioration achetée !');
+      toast.success('Amélioration achetée !', {
+        description: 'Votre bonus est maintenant actif'
+      });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'achat');
+      toast.error('Erreur lors de l\'achat', {
+        description: error.message || 'Veuillez réessayer'
+      });
     }
   });
 
@@ -111,24 +123,16 @@ export const useUpgrades = () => {
     return playerUpgrades.some(pu => pu.upgrade_id === upgradeId);
   };
 
+  // Calculer tous les multiplicateurs actifs
   const getActiveMultipliers = () => {
-    const multipliers = {
-      harvest: 1,
-      growth: 1
-    };
+    return EconomyService.calculateActiveMultipliers(playerUpgrades);
+  };
 
-    playerUpgrades.forEach(upgrade => {
-      const levelUpgrade = upgrade.level_upgrades;
-      if (!levelUpgrade) return;
-
-      if (levelUpgrade.effect_type === 'harvest_multiplier') {
-        multipliers.harvest *= levelUpgrade.effect_value;
-      } else if (levelUpgrade.effect_type === 'growth_speed') {
-        multipliers.growth *= levelUpgrade.effect_value;
-      }
-    });
-
-    return multipliers;
+  // Obtenir les améliorations de déblocage automatique
+  const getAutoUnlockUpgrades = () => {
+    return playerUpgrades.filter(upgrade => 
+      upgrade.level_upgrades?.effect_type === 'auto_unlock'
+    );
   };
 
   return {
@@ -138,6 +142,7 @@ export const useUpgrades = () => {
     purchaseUpgrade,
     isUpgradePurchased,
     getActiveMultipliers,
+    getAutoUnlockUpgrades,
     isPurchasing: purchaseUpgradeMutation.isPending
   };
 };
