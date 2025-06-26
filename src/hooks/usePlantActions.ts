@@ -78,11 +78,23 @@ export const usePlantActions = () => {
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Watering now reduces growth time by 10 minutes instead of advancing stages
+      // Get current plot data
+      const { data: plot } = await supabase
+        .from('garden_plots')
+        .select('growth_time_minutes')
+        .eq('user_id', user.id)
+        .eq('plot_number', plotNumber)
+        .single();
+
+      if (!plot) throw new Error('Plot not found');
+
+      // Watering reduces growth time by 10 minutes instead of advancing stages
+      const newGrowthTime = Math.max(30, (plot.growth_time_minutes || 60) - 10);
+
       const { error } = await supabase
         .from('garden_plots')
         .update({
-          growth_time_minutes: Math.max(30, supabase.sql`growth_time_minutes - 10`),
+          growth_time_minutes: newGrowthTime,
           last_watered: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })

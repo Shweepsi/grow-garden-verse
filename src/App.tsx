@@ -24,8 +24,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/garden" replace />} />
             <Route path="/garden" element={<AppLayout><GardenPage /></AppLayout>} />
-            <Route path="/shop" element={<AppLayout><ShopPage /></AppLayout>} />
             <Route path="/inventory" element={<AppLayout><InventoryPage /></AppLayout>} />
+            <Route path="/shop" element={<AppLayout><ShopPage /></AppLayout>} />
             <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
