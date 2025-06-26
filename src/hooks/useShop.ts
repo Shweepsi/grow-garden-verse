@@ -25,7 +25,7 @@ export const useShop = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch shop items (now including seeds)
+  // Fetch only premium shop items (tools and upgrades)
   const { data: shopItems = [], isLoading } = useQuery({
     queryKey: ['shopItems'],
     queryFn: async () => {
@@ -33,7 +33,8 @@ export const useShop = () => {
         .from('shop_items')
         .select('*')
         .eq('available', true)
-        .order('item_type', { ascending: true })
+        .in('item_type', ['tool', 'upgrade'])
+        .order('rarity', { ascending: true })
         .order('price', { ascending: true });
 
       if (error) throw error;
@@ -41,7 +42,7 @@ export const useShop = () => {
     }
   });
 
-  // Purchase item mutation with promise support
+  // Purchase item mutation with gems support
   const purchaseItemMutation = useMutation({
     mutationFn: async ({ itemId, quantity = 1 }: { itemId: string; quantity?: number }) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -51,28 +52,47 @@ export const useShop = () => {
 
       const totalCost = item.price * quantity;
 
-      // Check if user has enough coins
+      // Check if user has enough gems for premium items
       const { data: garden, error: gardenError } = await supabase
         .from('player_gardens')
-        .select('coins')
+        .select('gems, coins')
         .eq('user_id', user.id)
         .single();
 
       if (gardenError) throw gardenError;
-      if ((garden.coins || 0) < totalCost) {
-        throw new Error('Pas assez de pièces');
+      
+      // Premium items cost gems
+      if (item.is_premium || ['tool', 'upgrade'].includes(item.item_type)) {
+        if ((garden.gems || 0) < totalCost) {
+          throw new Error('Pas assez de gemmes');
+        }
+
+        // Deduct gems
+        const { error: updateError } = await supabase
+          .from('player_gardens')
+          .update({
+            gems: (garden.gems || 0) - totalCost,
+            last_played: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Fallback to coins for non-premium items
+        if ((garden.coins || 0) < totalCost) {
+          throw new Error('Pas assez de pièces');
+        }
+
+        const { error: updateError } = await supabase
+          .from('player_gardens')
+          .update({
+            coins: garden.coins - totalCost,
+            last_played: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (updateError) throw updateError;
       }
-
-      // Deduct coins
-      const { error: updateError } = await supabase
-        .from('player_gardens')
-        .update({
-          coins: garden.coins - totalCost,
-          last_played: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
 
       // Add item to inventory (check if exists first)
       const { data: existingItem } = await supabase
@@ -97,27 +117,18 @@ export const useShop = () => {
           });
       }
 
-      // Record purchase history and transaction
-      await Promise.all([
-        supabase.from('purchase_history').insert({
-          user_id: user.id,
-          shop_item_id: itemId,
-          quantity,
-          total_cost: totalCost
-        }),
-        supabase.from('coin_transactions').insert({
-          user_id: user.id,
-          amount: -totalCost,
-          transaction_type: 'purchase',
-          description: `Achat de ${item.display_name} x${quantity}`
-        })
-      ]);
+      // Record purchase history
+      await supabase.from('purchase_history').insert({
+        user_id: user.id,
+        shop_item_id: itemId,
+        quantity,
+        total_cost: totalCost
+      });
 
       return { item, quantity, totalCost };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       toast.success('Achat effectué avec succès !');
     },
     onError: (error: any) => {

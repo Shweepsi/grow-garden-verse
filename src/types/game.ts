@@ -3,12 +3,11 @@ export interface PlantType {
   id: string;
   name: string;
   display_name: string;
-  growth_stages: number;
-  water_per_stage: number;
   emoji: string;
   base_growth_minutes: number;
   rarity: string;
-  drop_rate: number;
+  level_required: number;
+  created_at: string;
 }
 
 export interface GardenPlot {
@@ -17,13 +16,11 @@ export interface GardenPlot {
   plot_number: number;
   unlocked: boolean;
   plant_type: string | null;
-  plant_stage: number;
-  plant_water_count: number;
   plant_metadata: any;
-  last_watered: string | null;
   planted_at: string | null;
   growth_time_minutes: number | null;
   updated_at: string;
+  created_at: string;
 }
 
 export interface PlayerGarden {
@@ -37,6 +34,9 @@ export interface PlayerGarden {
   active_plot: number;
   total_harvests: number;
   last_played: string;
+  created_at: string;
+  prestige_level: number;
+  permanent_multiplier: number;
 }
 
 export interface DailyObjective {

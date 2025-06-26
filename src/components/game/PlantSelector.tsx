@@ -83,7 +83,7 @@ export const PlantSelector = ({
   // Filtrer les plantes selon le niveau et les déblocages
   const availablePlants = plantTypes.filter(plant => {
     // Vérifier le niveau requis
-    if (playerLevel < (plant.level_required || 1)) return false;
+    if (playerLevel < plant.level_required) return false;
     
     // Vérifier les déblocages de rareté
     return EconomyService.canAccessRarity(
@@ -160,7 +160,7 @@ export const PlantSelector = ({
                             
                             <div className="flex items-center justify-center gap-2 text-xs">
                               <Badge variant="outline" className="text-xs">
-                                Niv. {plantType.level_required || 1}
+                                Niv. {plantType.level_required}
                               </Badge>
                               <span className="text-gray-600">
                                 {plantType.base_growth_minutes}min
@@ -224,7 +224,7 @@ export const PlantSelector = ({
                           <div className="flex items-center justify-center gap-1">
                             <Lock className="h-3 w-3 text-red-500" />
                             <span className="text-xs text-red-500">
-                              Niveau {plantType.level_required || 1} requis
+                              Niveau {plantType.level_required} requis
                             </span>
                           </div>
                         </div>
