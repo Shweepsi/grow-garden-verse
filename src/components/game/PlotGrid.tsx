@@ -6,7 +6,7 @@ import { GardenPlot, PlantType } from '@/types/game';
 import { Lock, Sprout, Gift } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
 import { DirectSeedPurchase } from './DirectSeedPurchase';
-import { StageGrowthService } from '@/services/StageGrowthService';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { GameBalanceService } from '@/services/GameBalanceService';
 import { useShop } from '@/hooks/useShop';
 
@@ -14,7 +14,7 @@ interface PlotGridProps {
   plots: GardenPlot[];
   plantTypes: PlantType[];
   coins: number;
-  onWaterPlant: (plotNumber: number) => void;
+  onPlantSeed: (plotNumber: number, plantTypeId: string, seedPrice: number) => void;
   onHarvestPlant: (plotNumber: number) => void;
   onUnlockPlot: (plotNumber: number) => void;
 }
@@ -23,7 +23,7 @@ export const PlotGrid = ({
   plots, 
   plantTypes, 
   coins,
-  onWaterPlant, 
+  onPlantSeed,
   onHarvestPlant, 
   onUnlockPlot 
 }: PlotGridProps) => {
@@ -34,10 +34,7 @@ export const PlotGrid = ({
   const getPlantState = (plot: GardenPlot) => {
     if (!plot.plant_type) return 'empty';
     
-    const plantType = plantTypes.find(pt => pt.id === plot.plant_type);
-    if (!plantType) return 'empty';
-    
-    const isReady = StageGrowthService.isReadyToHarvest(plot.plant_stage, plantType.growth_stages);
+    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, plot.growth_time_minutes || 60);
     
     return isReady ? 'ready' : 'growing';
   };
@@ -49,8 +46,6 @@ export const PlotGrid = ({
     if (state === 'empty') {
       setSelectedPlot(plot.plot_number);
       setShowSeedSelector(true);
-    } else if (state === 'growing') {
-      onWaterPlant(plot.plot_number);
     } else if (state === 'ready') {
       onHarvestPlant(plot.plot_number);
     }
@@ -117,25 +112,25 @@ export const PlotGrid = ({
                     {state === 'empty' ? (
                       <>
                         <Sprout className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                        <p className="text-xs text-green-600 font-medium">Acheter & Planter</p>
+                        <p className="text-xs text-green-600 font-medium">Planter une graine</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {availableSeeds.length} graines disponibles
+                          {availableSeeds.length} variétés disponibles
                         </p>
                       </>
                     ) : state === 'growing' ? (
                       <>
                         <PlantDisplay 
                           plantType={plantType!} 
-                          stage={plot.plant_stage}
-                          waterCount={plot.plant_water_count}
+                          plantedAt={plot.planted_at}
+                          growthTimeMinutes={plot.growth_time_minutes || 60}
                         />
                       </>
                     ) : (
                       <>
                         <PlantDisplay 
                           plantType={plantType!} 
-                          stage={plot.plant_stage}
-                          waterCount={plot.plant_water_count}
+                          plantedAt={plot.planted_at}
+                          growthTimeMinutes={plot.growth_time_minutes || 60}
                         />
                         <div className="mt-2 flex items-center justify-center">
                           <Gift className="h-3 w-3 text-yellow-500 mr-1" />
@@ -160,6 +155,7 @@ export const PlotGrid = ({
         plotNumber={selectedPlot || 1}
         availableSeeds={availableSeeds}
         coins={coins}
+        onPlantSeed={onPlantSeed}
       />
     </>
   );

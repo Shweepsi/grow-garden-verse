@@ -1,17 +1,17 @@
 
 import { PlantType } from '@/types/game';
-import { StageGrowthService } from '@/services/StageGrowthService';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { PlantTimer } from './PlantTimer';
 
 interface PlantDisplayProps {
   plantType: PlantType;
-  stage: number;
-  waterCount: number;
+  plantedAt: string | null;
+  growthTimeMinutes: number;
 }
 
-export const PlantDisplay = ({ plantType, stage, waterCount }: PlantDisplayProps) => {
-  const isReady = StageGrowthService.isReadyToHarvest(stage, plantType.growth_stages);
-  const progress = StageGrowthService.getProgress(stage, plantType.growth_stages);
-  const stageEmoji = StageGrowthService.getStageEmoji(stage, plantType.growth_stages, plantType.emoji);
+export const PlantDisplay = ({ plantType, plantedAt, growthTimeMinutes }: PlantDisplayProps) => {
+  const isReady = PlantGrowthService.isPlantReady(plantedAt, growthTimeMinutes);
+  const progress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeMinutes) * 100;
 
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
@@ -27,15 +27,11 @@ export const PlantDisplay = ({ plantType, stage, waterCount }: PlantDisplayProps
   return (
     <div className="text-center">
       <div className={`text-3xl mb-1 ${isReady ? 'animate-bounce' : ''}`}>
-        {isReady ? `✨${plantType.emoji}✨` : stageEmoji}
+        {isReady ? `✨${plantType.emoji}✨` : plantType.emoji}
       </div>
       
       <p className={`text-xs mb-1 ${getRarityColor(plantType.rarity)}`}>
         {plantType.display_name}
-      </p>
-      
-      <p className="text-xs text-gray-500 mb-1">
-        Étape {stage}/{plantType.growth_stages}
       </p>
 
       {/* Barre de progression */}
@@ -55,9 +51,11 @@ export const PlantDisplay = ({ plantType, stage, waterCount }: PlantDisplayProps
           🎉 Prête à récolter !
         </p>
       ) : (
-        <p className="text-xs text-blue-600">
-          💧 Cliquez pour arroser ({stage + 1}/{plantType.growth_stages})
-        </p>
+        <PlantTimer 
+          plantedAt={plantedAt}
+          growthTimeMinutes={growthTimeMinutes}
+          className="text-blue-600"
+        />
       )}
 
       {plantType.rarity && plantType.rarity !== 'common' && (

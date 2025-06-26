@@ -10,7 +10,6 @@ export const GardenPage = () => {
     gameState, 
     loading, 
     plantSeed, 
-    waterPlant, 
     harvestPlant, 
     unlockPlot 
   } = useRefactoredGame();
@@ -39,7 +38,6 @@ export const GardenPage = () => {
           plantTypes={gameState.plantTypes}
           coins={gameState.garden?.coins || 0}
           onPlantSeed={plantSeed}
-          onWaterPlant={waterPlant}
           onHarvestPlant={harvestPlant}
           onUnlockPlot={unlockPlot}
         />

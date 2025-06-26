@@ -25,6 +25,9 @@ export class PlantGrowthService {
   }
 
   static formatTimeRemaining(minutes: number): string {
+    if (minutes < 1) {
+      return `${Math.ceil(minutes * 60)}s`;
+    }
     if (minutes < 60) {
       return `${Math.ceil(minutes)}min`;
     }
