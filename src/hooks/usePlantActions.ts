@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -182,18 +181,26 @@ export const usePlantActions = () => {
         console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
       }
 
-      // Messages de succès
-      toast.success(`🎉 Récolte effectuée ! +${harvestReward.toLocaleString()} pièces, +${expReward} EXP !`);
-      
+      // Messages de succès - seulement pour level up
       if (newLevel > (garden.level || 1)) {
         toast.success(`🎉 Niveau ${newLevel} atteint !`);
         console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
       }
 
       console.log('✅ Récolte terminée avec succès');
+      
+      // Retourner les données pour les animations
+      return {
+        harvestReward,
+        expReward,
+        plantName: plantType.display_name,
+        levelUp: newLevel > (garden.level || 1),
+        newLevel
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      // Les animations seront gérées par le composant qui appelle cette mutation
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la récolte:', error);
@@ -203,6 +210,7 @@ export const usePlantActions = () => {
 
   return {
     harvestPlant: (plotNumber: number) => harvestPlantMutation.mutate(plotNumber),
-    isHarvesting: harvestPlantMutation.isPending
+    isHarvesting: harvestPlantMutation.isPending,
+    harvestData: harvestPlantMutation.data
   };
 };
