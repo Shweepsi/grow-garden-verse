@@ -228,12 +228,29 @@ export const useSimpleGame = () => {
     }
   });
 
+  // Wrapper functions to handle the correct parameter format
+  const plantSeed = (plotNumber: number, plantTypeId: string) => {
+    plantSeedMutation.mutate({ plotNumber, plantTypeId });
+  };
+
+  const waterPlant = (plotNumber: number) => {
+    waterPlantMutation.mutate(plotNumber);
+  };
+
+  const harvestPlant = (plotNumber: number) => {
+    harvestPlantMutation.mutate(plotNumber);
+  };
+
+  const unlockPlot = (plotNumber: number) => {
+    unlockPlotMutation.mutate(plotNumber);
+  };
+
   return {
     gameState,
     loading: isLoading || gameState.loading,
-    plantSeed: plantSeedMutation.mutate,
-    waterPlant: waterPlantMutation.mutate,
-    harvestPlant: harvestPlantMutation.mutate,
-    unlockPlot: unlockPlotMutation.mutate
+    plantSeed,
+    waterPlant,
+    harvestPlant,
+    unlockPlot
   };
 };
