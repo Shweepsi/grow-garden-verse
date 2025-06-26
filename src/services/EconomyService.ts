@@ -13,7 +13,13 @@ export class EconomyService {
   }
 
   // Vérifier si l'achat d'une plante est possible sans descendre sous le minimum
-  static canAffordPlant(currentCoins: number, plantCost: number): boolean {
+  static canAffordPlant(currentCoins: number, plantCost: number, plantLevel: number = 1): boolean {
+    // Exception pour la carotte (niveau 1) : on peut toujours l'acheter si on a assez de pièces
+    if (plantLevel === 1) {
+      return currentCoins >= plantCost;
+    }
+    
+    // Pour les autres plantes, on garde la protection des 100 pièces
     return currentCoins >= (plantCost + this.MINIMUM_COINS);
   }
 

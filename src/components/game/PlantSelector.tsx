@@ -93,7 +93,7 @@ export const PlantSelector = ({
             <div className="flex items-center gap-2 text-blue-700">
               <AlertTriangle className="h-3 w-3" />
               <span className="text-xs font-medium">
-                Gardez au moins 100 pièces pour acheter une carotte
+                Gardez au moins 100 pièces sauf pour acheter une carotte
               </span>
             </div>
           </div>
@@ -121,7 +121,8 @@ export const PlantSelector = ({
                 {availablePlants.map((plantType) => {
                   const cost = getPlantCost(plantType);
                   const reward = getPlantReward(plantType);
-                  const canAfford = EconomyService.canAffordPlant(coins, cost);
+                  const plantLevel = plantType.level_required || 1;
+                  const canAfford = EconomyService.canAffordPlant(coins, cost, plantLevel);
 
                   return (
                     <Card

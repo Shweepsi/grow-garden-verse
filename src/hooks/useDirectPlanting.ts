@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,17 +46,35 @@ export const useDirectPlanting = () => {
       }
 
       const currentCoins = garden.coins || 0;
+
+      // Obtenir les infos de la plante pour connaître son niveau
+      const { data: plantType, error: plantError } = await supabase
+        .from('plant_types')
+        .select('*')
+        .eq('id', plantTypeId)
+        .single();
+
+      if (plantError) {
+        console.error('❌ Erreur récupération plante:', plantError);
+        throw new Error('Type de plante non trouvé');
+      }
+
+      if (!plantType) {
+        throw new Error('Type de plante non trouvé');
+      }
+
+      const plantLevel = plantType.level_required || 1;
       
-      // Vérification avec protection des 100 pièces
-      if (!EconomyService.canAffordPlant(currentCoins, cost)) {
+      // Vérification avec protection des 100 pièces (sauf pour la carotte)
+      if (!EconomyService.canAffordPlant(currentCoins, cost, plantLevel)) {
         if (currentCoins < cost) {
           throw new Error(`Pas assez de pièces (${currentCoins}/${cost})`);
-        } else {
+        } else if (plantLevel > 1) {
           throw new Error(`Vous devez garder au moins 100 pièces pour pouvoir acheter une carotte`);
         }
       }
 
-      console.log(`💰 Fonds suffisants avec protection: ${currentCoins} >= ${cost + EconomyService.MINIMUM_COINS}`);
+      console.log(`💰 Fonds suffisants: ${currentCoins} >= ${cost}`);
 
       // Obtenir les multiplicateurs actifs
       let multipliers;
@@ -95,22 +112,6 @@ export const useDirectPlanting = () => {
       }
 
       console.log('✅ Parcelle valide et disponible');
-
-      // Obtenir les infos de la plante
-      const { data: plantType, error: plantError } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', plantTypeId)
-        .single();
-
-      if (plantError) {
-        console.error('❌ Erreur récupération plante:', plantError);
-        throw new Error('Type de plante non trouvé');
-      }
-
-      if (!plantType) {
-        throw new Error('Type de plante non trouvé');
-      }
 
       // Vérifier le niveau requis
       const playerLevel = garden.level || 1;
