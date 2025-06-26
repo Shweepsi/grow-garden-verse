@@ -16,21 +16,24 @@ export const usePlantActions = () => {
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Validation du numéro de parcelle
+      // Validation stricte du numéro de parcelle
       if (!plotNumber || plotNumber < 1 || plotNumber > 9) {
         throw new Error('Numéro de parcelle invalide');
       }
+
+      console.log(`🌾 Début de la récolte pour la parcelle ${plotNumber}`);
 
       // Obtenir les multiplicateurs actifs de manière sécurisée
       let multipliers;
       try {
         multipliers = getActiveMultipliers();
+        console.log('💪 Multiplicateurs actifs:', multipliers);
       } catch (error) {
-        console.warn('Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
+        console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
         multipliers = { harvest: 1, growth: 1 };
       }
 
-      // Obtenir les infos de la parcelle et de la plante
+      // Obtenir les infos de la parcelle avec jointure
       const { data: plot, error: plotError } = await supabase
         .from('garden_plots')
         .select(`
@@ -41,18 +44,38 @@ export const usePlantActions = () => {
         .eq('plot_number', plotNumber)
         .single();
 
-      if (plotError) throw new Error(`Erreur lors de la récupération de la parcelle: ${plotError.message}`);
-      if (!plot || !plot.plant_type) throw new Error('Aucune plante à récolter');
+      if (plotError) {
+        console.error('❌ Erreur parcelle:', plotError);
+        throw new Error(`Erreur lors de la récupération de la parcelle: ${plotError.message}`);
+      }
+      
+      if (!plot) {
+        throw new Error('Parcelle non trouvée');
+      }
+      
+      if (!plot.plant_type) {
+        throw new Error('Aucune plante à récolter sur cette parcelle');
+      }
 
       const plantType = plot.plant_types;
-      if (!plantType) throw new Error('Type de plante introuvable');
-      
-      // Vérifier que la plante est prête avec validation renforcée
-      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, plot.growth_time_seconds || 3600);
-      if (!isReady) {
-        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, plot.growth_time_seconds || 3600);
-        throw new Error(`La plante n'est pas encore prête (${PlantGrowthService.formatTimeRemaining(timeRemaining)} restantes)`);
+      if (!plantType) {
+        throw new Error('Type de plante introuvable');
       }
+
+      console.log('🌱 Plante trouvée:', plantType.display_name);
+      
+      // Vérification robuste de la maturité
+      const growthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
+      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime);
+      
+      if (!isReady) {
+        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, growthTime);
+        const timeString = PlantGrowthService.formatTimeRemaining(timeRemaining);
+        console.log(`⏰ Plante pas encore prête, temps restant: ${timeString}`);
+        throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
+      }
+
+      console.log('✅ Plante prête pour la récolte');
 
       // Obtenir les données du jardin
       const { data: garden, error: gardenError } = await supabase
@@ -61,25 +84,38 @@ export const usePlantActions = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (gardenError) throw new Error(`Erreur lors de la récupération du jardin: ${gardenError.message}`);
-      if (!garden) throw new Error('Jardin non trouvé');
+      if (gardenError) {
+        console.error('❌ Erreur jardin:', gardenError);
+        throw new Error(`Erreur lors de la récupération du jardin: ${gardenError.message}`);
+      }
+      
+      if (!garden) {
+        throw new Error('Jardin non trouvé');
+      }
 
-      // Calculer les récompenses avec validation
+      // Calculer les récompenses avec validation renforcée
+      const plantLevel = Math.max(1, plantType.level_required || 1);
+      const baseGrowthSeconds = Math.max(1, plantType.base_growth_seconds || 60);
+      const playerLevel = Math.max(1, garden.level || 1);
+      const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
+
       const harvestReward = EconomyService.getHarvestReward(
-        plantType.level_required || 1,
-        plantType.base_growth_seconds || 60,
-        garden.level || 1,
-        multipliers.harvest
+        plantLevel,
+        baseGrowthSeconds,
+        playerLevel,
+        harvestMultiplier
       );
       
-      const expReward = EconomyService.getExperienceReward(
-        plantType.level_required || 1
-      );
+      const expReward = EconomyService.getExperienceReward(plantLevel);
       
-      const newExp = (garden.experience || 0) + expReward;
-      const newLevel = Math.floor(Math.sqrt(newExp / 100)) + 1;
+      console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP`);
 
-      // Vider la parcelle
+      const newExp = Math.max(0, (garden.experience || 0) + expReward);
+      const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
+      const newCoins = Math.max(0, (garden.coins || 0) + harvestReward);
+      const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
+
+      // Vider la parcelle en premier
       const { error: updatePlotError } = await supabase
         .from('garden_plots')
         .update({
@@ -91,52 +127,76 @@ export const usePlantActions = () => {
         .eq('user_id', user.id)
         .eq('plot_number', plotNumber);
 
-      if (updatePlotError) throw new Error(`Erreur lors de la vidange de la parcelle: ${updatePlotError.message}`);
+      if (updatePlotError) {
+        console.error('❌ Erreur mise à jour parcelle:', updatePlotError);
+        throw new Error(`Erreur lors de la vidange de la parcelle: ${updatePlotError.message}`);
+      }
+
+      console.log('🧹 Parcelle vidée avec succès');
 
       // Mettre à jour les stats du jardin
       const { error: updateGardenError } = await supabase
         .from('player_gardens')
         .update({
-          coins: Math.max(0, garden.coins + harvestReward),
-          experience: Math.max(0, newExp),
-          level: Math.max(1, newLevel),
-          total_harvests: Math.max(0, (garden.total_harvests || 0) + 1),
+          coins: newCoins,
+          experience: newExp,
+          level: newLevel,
+          total_harvests: newHarvests,
           last_played: new Date().toISOString()
         })
         .eq('user_id', user.id);
 
-      if (updateGardenError) throw new Error(`Erreur lors de la mise à jour du jardin: ${updateGardenError.message}`);
+      if (updateGardenError) {
+        console.error('❌ Erreur mise à jour jardin:', updateGardenError);
+        throw new Error(`Erreur lors de la mise à jour du jardin: ${updateGardenError.message}`);
+      }
+
+      console.log('🏡 Jardin mis à jour avec succès');
 
       // Enregistrer la transaction
-      await supabase
-        .from('coin_transactions')
-        .insert({
-          user_id: user.id,
-          amount: harvestReward,
-          transaction_type: 'harvest',
-          description: `Récolte de ${plantType.display_name || plantType.name}`
-        });
+      try {
+        await supabase
+          .from('coin_transactions')
+          .insert({
+            user_id: user.id,
+            amount: harvestReward,
+            transaction_type: 'harvest',
+            description: `Récolte de ${plantType.display_name || plantType.name}`
+          });
+        console.log('💳 Transaction enregistrée');
+      } catch (error) {
+        console.warn('⚠️ Erreur lors de l\'enregistrement de la transaction:', error);
+      }
 
       // Enregistrer la découverte
-      await supabase
-        .from('plant_discoveries')
-        .insert({
-          user_id: user.id,
-          plant_type_id: plantType.id,
-          discovery_method: 'harvest'
-        });
+      try {
+        await supabase
+          .from('plant_discoveries')
+          .insert({
+            user_id: user.id,
+            plant_type_id: plantType.id,
+            discovery_method: 'harvest'
+          });
+        console.log('🔍 Découverte enregistrée');
+      } catch (error) {
+        console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
+      }
 
-      toast.success(`Récolte effectuée ! +${harvestReward.toLocaleString()} pièces, +${expReward} EXP !`);
+      // Messages de succès
+      toast.success(`🎉 Récolte effectuée ! +${harvestReward.toLocaleString()} pièces, +${expReward} EXP !`);
       
       if (newLevel > (garden.level || 1)) {
         toast.success(`🎉 Niveau ${newLevel} atteint !`);
+        console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
       }
+
+      console.log('✅ Récolte terminée avec succès');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
     },
     onError: (error: any) => {
-      console.error('Erreur lors de la récolte:', error);
+      console.error('💥 Erreur lors de la récolte:', error);
       toast.error(error.message || 'Erreur lors de la récolte');
     }
   });

@@ -27,26 +27,48 @@ export const PlotGrid = ({
 }: PlotGridProps) => {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
-  const { plantDirect } = useDirectPlanting();
+  const { plantDirect, isPlanting } = useDirectPlanting();
 
   const getPlantState = (plot: GardenPlot) => {
+    // Validation stricte des données de la parcelle
     if (!plot.plant_type) return 'empty';
     
-    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, plot.growth_time_seconds || 3600);
+    const growthTime = plot.growth_time_seconds || 3600; // Défaut 1h si pas défini
+    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime);
     
     return isReady ? 'ready' : 'growing';
   };
 
   const handlePlotClick = (plot: GardenPlot) => {
-    if (!plot.unlocked) return;
+    if (!plot.unlocked) {
+      console.log(`🔒 Tentative de clic sur parcelle ${plot.plot_number} verrouillée`);
+      return;
+    }
     
     const state = getPlantState(plot);
+    console.log(`🖱️ Clic sur parcelle ${plot.plot_number}, état: ${state}`);
+    
     if (state === 'empty') {
       setSelectedPlot(plot.plot_number);
       setShowPlantSelector(true);
+      console.log(`🌱 Ouverture du sélecteur de plantes pour parcelle ${plot.plot_number}`);
     } else if (state === 'ready') {
+      console.log(`🌾 Tentative de récolte sur parcelle ${plot.plot_number}`);
       onHarvestPlant(plot.plot_number);
+    } else {
+      console.log(`⏰ Plante en croissance sur parcelle ${plot.plot_number}`);
     }
+  };
+
+  const handlePlantSelection = (plotNumber: number, plantTypeId: string, cost: number) => {
+    console.log(`🌱 Plantation sélectionnée: parcelle ${plotNumber}, plante ${plantTypeId}, coût ${cost}`);
+    plantDirect(plotNumber, plantTypeId, cost);
+  };
+
+  const handleClosePlantSelector = () => {
+    console.log('❌ Fermeture du sélecteur de plantes');
+    setShowPlantSelector(false);
+    setSelectedPlot(null);
   };
 
   return (
@@ -64,8 +86,8 @@ export const PlotGrid = ({
                 plot.unlocked 
                   ? 'hover:shadow-lg border-green-200 hover:border-green-400' 
                   : 'bg-gray-100 border-gray-200'
-              }`}
-              onClick={() => plot.unlocked ? handlePlotClick(plot) : null}
+              } ${isPlanting ? 'pointer-events-none opacity-50' : ''}`}
+              onClick={() => !isPlanting ? handlePlotClick(plot) : null}
             >
               <CardContent className="p-3 h-full flex flex-col items-center justify-center">
                 {!plot.unlocked ? (
@@ -76,6 +98,7 @@ export const PlotGrid = ({
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
+                        console.log(`🔓 Tentative de déblocage parcelle ${plot.plot_number}, coût: ${unlockCost}`);
                         onUnlockPlot(plot.plot_number);
                       }}
                       disabled={coins < unlockCost}
@@ -99,19 +122,33 @@ export const PlotGrid = ({
                       </>
                     ) : state === 'growing' ? (
                       <>
-                        <PlantDisplay 
-                          plantType={plantType!} 
-                          plantedAt={plot.planted_at}
-                          growthTimeSeconds={plot.growth_time_seconds || 3600}
-                        />
+                        {plantType ? (
+                          <PlantDisplay 
+                            plantType={plantType} 
+                            plantedAt={plot.planted_at}
+                            growthTimeSeconds={plot.growth_time_seconds || 3600}
+                          />
+                        ) : (
+                          <div className="text-center">
+                            <div className="text-2xl mb-1">❌</div>
+                            <p className="text-xs text-red-500">Plante inconnue</p>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
-                        <PlantDisplay 
-                          plantType={plantType!} 
-                          plantedAt={plot.planted_at}
-                          growthTimeSeconds={plot.growth_time_seconds || 3600}
-                        />
+                        {plantType ? (
+                          <PlantDisplay 
+                            plantType={plantType} 
+                            plantedAt={plot.planted_at}
+                            growthTimeSeconds={plot.growth_time_seconds || 3600}
+                          />
+                        ) : (
+                          <div className="text-center">
+                            <div className="text-2xl mb-1">❌</div>
+                            <p className="text-xs text-red-500">Plante inconnue</p>
+                          </div>
+                        )}
                         <div className="mt-2 flex items-center justify-center">
                           <Gift className="h-3 w-3 text-yellow-500 mr-1" />
                           <span className="text-xs text-yellow-600 font-bold">Récolter</span>
@@ -128,14 +165,11 @@ export const PlotGrid = ({
 
       <PlantSelector
         isOpen={showPlantSelector}
-        onClose={() => {
-          setShowPlantSelector(false);
-          setSelectedPlot(null);
-        }}
+        onClose={handleClosePlantSelector}
         plotNumber={selectedPlot || 1}
         plantTypes={plantTypes}
         coins={coins}
-        onPlantDirect={plantDirect}
+        onPlantDirect={handlePlantSelection}
       />
     </>
   );

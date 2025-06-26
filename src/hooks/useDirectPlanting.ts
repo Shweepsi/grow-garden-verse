@@ -16,72 +16,177 @@ export const useDirectPlanting = () => {
     mutationFn: async ({ plotNumber, plantTypeId, cost }: { plotNumber: number; plantTypeId: string; cost: number }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
+      // Validation stricte des paramètres
+      if (!plotNumber || plotNumber < 1 || plotNumber > 9) {
+        throw new Error('Numéro de parcelle invalide');
+      }
+      
+      if (!plantTypeId || !cost || cost < 0) {
+        throw new Error('Paramètres de plantation invalides');
+      }
+
+      console.log(`🌱 Début de la plantation sur la parcelle ${plotNumber}`);
+      console.log(`📋 Type de plante: ${plantTypeId}, Coût: ${cost}`);
+
       // Obtenir les multiplicateurs actifs
-      const multipliers = getActiveMultipliers();
+      let multipliers;
+      try {
+        multipliers = getActiveMultipliers();
+        console.log('💪 Multiplicateurs actifs:', multipliers);
+      } catch (error) {
+        console.warn('⚠️ Erreur lors de la récupération des multiplicateurs:', error);
+        multipliers = { harvest: 1, growth: 1 };
+      }
+
+      // Vérifier que la parcelle est débloquée et vide
+      const { data: plot, error: plotCheckError } = await supabase
+        .from('garden_plots')
+        .select('unlocked, plant_type')
+        .eq('user_id', user.id)
+        .eq('plot_number', plotNumber)
+        .single();
+
+      if (plotCheckError) {
+        console.error('❌ Erreur vérification parcelle:', plotCheckError);
+        throw new Error('Erreur lors de la vérification de la parcelle');
+      }
+
+      if (!plot) {
+        throw new Error('Parcelle non trouvée');
+      }
+
+      if (!plot.unlocked) {
+        throw new Error('Cette parcelle n\'est pas encore débloquée');
+      }
+
+      if (plot.plant_type) {
+        throw new Error('Cette parcelle contient déjà une plante');
+      }
+
+      console.log('✅ Parcelle valide et disponible');
 
       // Vérifier les fonds
-      const { data: garden } = await supabase
+      const { data: garden, error: gardenError } = await supabase
         .from('player_gardens')
-        .select('coins')
+        .select('coins, level')
         .eq('user_id', user.id)
         .single();
 
-      if (!garden || garden.coins < cost) {
-        throw new Error('Pas assez de pièces');
+      if (gardenError) {
+        console.error('❌ Erreur récupération jardin:', gardenError);
+        throw new Error('Erreur lors de la récupération des données du jardin');
       }
 
+      if (!garden) {
+        throw new Error('Jardin non trouvé');
+      }
+
+      const currentCoins = garden.coins || 0;
+      if (currentCoins < cost) {
+        throw new Error(`Pas assez de pièces (${currentCoins}/${cost})`);
+      }
+
+      console.log(`💰 Fonds suffisants: ${currentCoins} >= ${cost}`);
+
       // Obtenir les infos de la plante
-      const { data: plantType } = await supabase
+      const { data: plantType, error: plantError } = await supabase
         .from('plant_types')
         .select('*')
         .eq('id', plantTypeId)
         .single();
 
-      if (!plantType) throw new Error('Type de plante non trouvé');
+      if (plantError) {
+        console.error('❌ Erreur récupération plante:', plantError);
+        throw new Error('Type de plante non trouvé');
+      }
 
-      // Calculer le temps de croissance ajusté (maintenant en secondes)
+      if (!plantType) {
+        throw new Error('Type de plante non trouvé');
+      }
+
+      // Vérifier le niveau requis
+      const playerLevel = garden.level || 1;
+      const requiredLevel = plantType.level_required || 1;
+      
+      if (playerLevel < requiredLevel) {
+        throw new Error(`Niveau ${requiredLevel} requis (vous êtes niveau ${playerLevel})`);
+      }
+
+      console.log(`🌱 Plante validée: ${plantType.display_name}`);
+
+      // Calculer le temps de croissance ajusté
+      const baseGrowthSeconds = Math.max(1, plantType.base_growth_seconds || 60);
+      const growthMultiplier = Math.max(0.1, multipliers.growth || 1);
       const adjustedGrowthTime = EconomyService.getAdjustedGrowthTime(
-        plantType.base_growth_seconds || 60,
-        multipliers.growth
+        baseGrowthSeconds,
+        growthMultiplier
       );
 
-      // Planter directement
-      await supabase
+      console.log(`⏰ Temps de croissance: ${baseGrowthSeconds}s → ${adjustedGrowthTime}s (x${growthMultiplier})`);
+
+      const now = new Date().toISOString();
+
+      // Planter la plante
+      const { error: plantError2 } = await supabase
         .from('garden_plots')
         .update({
           plant_type: plantTypeId,
-          planted_at: new Date().toISOString(),
+          planted_at: now,
           growth_time_seconds: adjustedGrowthTime,
-          updated_at: new Date().toISOString()
+          updated_at: now
         })
         .eq('user_id', user.id)
         .eq('plot_number', plotNumber);
 
+      if (plantError2) {
+        console.error('❌ Erreur plantation:', plantError2);
+        throw new Error('Erreur lors de la plantation');
+      }
+
+      console.log('🌱 Plante plantée avec succès');
+
       // Déduire le coût
-      await supabase
+      const newCoins = Math.max(0, currentCoins - cost);
+      const { error: updateCoinsError } = await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins - cost,
-          last_played: new Date().toISOString()
+          coins: newCoins,
+          last_played: now
         })
         .eq('user_id', user.id);
 
-      // Enregistrer la transaction
-      await supabase
-        .from('coin_transactions')
-        .insert({
-          user_id: user.id,
-          amount: -cost,
-          transaction_type: 'plant_direct',
-          description: `Plantation directe de ${plantType.display_name}`
-        });
+      if (updateCoinsError) {
+        console.error('❌ Erreur mise à jour pièces:', updateCoinsError);
+        throw new Error('Erreur lors de la déduction du coût');
+      }
 
-      toast.success(`${plantType.display_name} plantée ! Elle sera prête dans ${PlantGrowthService.formatTimeRemaining(adjustedGrowthTime)}`);
+      console.log(`💰 Coût déduit: ${currentCoins} → ${newCoins}`);
+
+      // Enregistrer la transaction
+      try {
+        await supabase
+          .from('coin_transactions')
+          .insert({
+            user_id: user.id,
+            amount: -cost,
+            transaction_type: 'plant_direct',
+            description: `Plantation directe de ${plantType.display_name}`
+          });
+        console.log('💳 Transaction enregistrée');
+      } catch (error) {
+        console.warn('⚠️ Erreur lors de l\'enregistrement de la transaction:', error);
+      }
+
+      const timeString = PlantGrowthService.formatTimeRemaining(adjustedGrowthTime);
+      toast.success(`🌱 ${plantType.display_name} plantée ! Prête dans ${timeString}`);
+      
+      console.log('✅ Plantation terminée avec succès');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
     },
     onError: (error: any) => {
+      console.error('💥 Erreur lors de la plantation:', error);
       toast.error(error.message || 'Erreur lors de la plantation');
     }
   });
