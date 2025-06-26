@@ -1,8 +1,7 @@
-
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 
 export class EconomyService {
-  // Pièces minimum à conserver pour pouvoir acheter une carotte
+  // Pièces minimum à conserver pour pouvoir acheter des améliorations
   static readonly MINIMUM_COINS = 100;
 
   // Nouveau système de coût progressif plus équilibré
@@ -12,15 +11,14 @@ export class EconomyService {
     return Math.floor(100 * Math.pow(1.5, plantLevel - 1));
   }
 
-  // Vérifier si l'achat d'une plante est possible sans descendre sous le minimum
-  static canAffordPlant(currentCoins: number, plantCost: number, plantLevel: number = 1): boolean {
-    // Exception pour la carotte (niveau 1) : on peut toujours l'acheter si on a assez de pièces
-    if (plantLevel === 1) {
-      return currentCoins >= plantCost;
-    }
-    
-    // Pour les autres plantes, on garde la protection des 100 pièces
-    return currentCoins >= (plantCost + this.MINIMUM_COINS);
+  // Vérifier si l'achat d'une plante est possible (sans restriction)
+  static canAffordPlant(currentCoins: number, plantCost: number): boolean {
+    return currentCoins >= plantCost;
+  }
+
+  // Vérifier si l'achat d'une amélioration est possible avec protection des 100 pièces
+  static canAffordUpgrade(currentCoins: number, upgradeCost: number): boolean {
+    return currentCoins >= (upgradeCost + this.MINIMUM_COINS);
   }
 
   // Calculer les récompenses avec profit de 60-80%

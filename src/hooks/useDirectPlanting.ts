@@ -29,7 +29,7 @@ export const useDirectPlanting = () => {
       console.log(`🌱 Début de la plantation sur la parcelle ${plotNumber}`);
       console.log(`📋 Type de plante: ${plantTypeId}, Coût: ${cost}`);
 
-      // Vérifier les fonds avec protection des 100 pièces minimum
+      // Vérifier les fonds (sans protection des 100 pièces)
       const { data: garden, error: gardenError } = await supabase
         .from('player_gardens')
         .select('coins, level')
@@ -62,16 +62,10 @@ export const useDirectPlanting = () => {
       if (!plantType) {
         throw new Error('Type de plante non trouvé');
       }
-
-      const plantLevel = plantType.level_required || 1;
       
-      // Vérification avec protection des 100 pièces (sauf pour la carotte)
-      if (!EconomyService.canAffordPlant(currentCoins, cost, plantLevel)) {
-        if (currentCoins < cost) {
-          throw new Error(`Pas assez de pièces (${currentCoins}/${cost})`);
-        } else if (plantLevel > 1) {
-          throw new Error(`Vous devez garder au moins 100 pièces pour pouvoir acheter une carotte`);
-        }
+      // Vérification simple : a-t-on assez de pièces ?
+      if (!EconomyService.canAffordPlant(currentCoins, cost)) {
+        throw new Error(`Pas assez de pièces (${currentCoins}/${cost})`);
       }
 
       console.log(`💰 Fonds suffisants: ${currentCoins} >= ${cost}`);

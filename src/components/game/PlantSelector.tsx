@@ -3,7 +3,7 @@ import { PlantType } from '@/types/game';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Sparkles, Lock, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
+import { Coins, Sparkles, Lock, TrendingUp, Clock } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
 import { useUpgrades } from '@/hooks/useUpgrades';
@@ -88,16 +88,6 @@ export const PlantSelector = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Message d'information compact */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-            <div className="flex items-center gap-2 text-blue-700">
-              <AlertTriangle className="h-3 w-3" />
-              <span className="text-xs font-medium">
-                Gardez au moins 100 pièces sauf pour acheter une carotte
-              </span>
-            </div>
-          </div>
-
           {/* Multiplicateur actif */}
           {multipliers.harvest > 1 && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-2">
@@ -121,8 +111,7 @@ export const PlantSelector = ({
                 {availablePlants.map((plantType) => {
                   const cost = getPlantCost(plantType);
                   const reward = getPlantReward(plantType);
-                  const plantLevel = plantType.level_required || 1;
-                  const canAfford = EconomyService.canAffordPlant(coins, cost, plantLevel);
+                  const canAfford = EconomyService.canAffordPlant(coins, cost);
 
                   return (
                     <Card
@@ -176,8 +165,7 @@ export const PlantSelector = ({
                           <div className={`text-xs font-medium ${
                             canAfford ? 'text-green-600' : 'text-red-500'
                           }`}>
-                            {canAfford ? '✓' : 
-                             coins >= cost ? '⚠️' : '✗'}
+                            {canAfford ? '✓' : '✗'}
                           </div>
                         </div>
                       </CardContent>
