@@ -6,6 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { GardenPlot, PlantType } from '@/types/game';
 import { Lock, Droplets, Sprout, Gift } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
+import { PlantTimer } from './PlantTimer';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { GameBalanceService } from '@/services/GameBalanceService';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -30,17 +33,17 @@ export const PlotGrid = ({
   const [showSeedSelector, setShowSeedSelector] = useState(false);
 
   const getPlantState = (plot: GardenPlot) => {
-    if (!plot.plant_type) return 'empty';
+    if (!plot.plant_type || !plot.planted_at) return 'empty';
+    
     const plantType = plantTypes.find(pt => pt.id === plot.plant_type);
     if (!plantType) return 'empty';
     
-    if (plot.plant_stage >= plantType.growth_stages) return 'ready';
-    return 'growing';
-  };
-
-  const getUnlockCost = (plotNumber: number) => {
-    const costs = [0, 100, 200, 350, 500, 700, 1000, 1500, 2000];
-    return costs[plotNumber - 1] || 0;
+    const isReady = PlantGrowthService.isPlantReady(
+      plot.planted_at, 
+      plot.growth_time_minutes || plantType.base_growth_minutes || 60
+    );
+    
+    return isReady ? 'ready' : 'growing';
   };
 
   const handlePlotClick = (plot: GardenPlot) => {
@@ -82,7 +85,7 @@ export const PlotGrid = ({
               }`}
               onClick={() => plot.unlocked ? handlePlotClick(plot) : null}
             >
-              <CardContent className="p-4 h-full flex flex-col items-center justify-center">
+              <CardContent className="p-3 h-full flex flex-col items-center justify-center">
                 {!plot.unlocked ? (
                   <div className="text-center">
                     <Lock className="h-6 w-6 text-gray-400 mx-auto mb-2" />
@@ -93,10 +96,10 @@ export const PlotGrid = ({
                         e.stopPropagation();
                         onUnlockPlot(plot.plot_number);
                       }}
-                      disabled={coins < getUnlockCost(plot.plot_number)}
+                      disabled={coins < GameBalanceService.getUnlockCost(plot.plot_number)}
                       className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-auto"
                     >
-                      Débloquer {getUnlockCost(plot.plot_number)} 🪙
+                      {GameBalanceService.getUnlockCost(plot.plot_number)} 🪙
                     </Button>
                   </div>
                 ) : (
@@ -104,16 +107,24 @@ export const PlotGrid = ({
                     {state === 'empty' ? (
                       <>
                         <Sprout className="h-6 w-6 text-green-400 mx-auto mb-2" />
-                        <p className="text-xs text-green-600">Planter une graine</p>
+                        <p className="text-xs text-green-600">Planter</p>
                       </>
                     ) : state === 'growing' ? (
                       <>
                         <PlantDisplay 
                           plantType={plantType!} 
-                          stage={plot.plant_stage}
+                          stage={Math.floor(PlantGrowthService.calculateGrowthProgress(
+                            plot.planted_at,
+                            plot.growth_time_minutes || plantType?.base_growth_minutes || 60
+                          ) * (plantType?.growth_stages || 3))}
                           waterCount={plot.plant_water_count}
                         />
-                        <div className="mt-2 flex items-center justify-center">
+                        <PlantTimer
+                          plantedAt={plot.planted_at}
+                          growthTimeMinutes={plot.growth_time_minutes || plantType?.base_growth_minutes || 60}
+                          className="text-blue-600 mt-1"
+                        />
+                        <div className="mt-1 flex items-center justify-center">
                           <Droplets className="h-3 w-3 text-blue-500 mr-1" />
                           <span className="text-xs text-blue-600">Arroser</span>
                         </div>
@@ -122,7 +133,7 @@ export const PlotGrid = ({
                       <>
                         <PlantDisplay 
                           plantType={plantType!} 
-                          stage={plot.plant_stage}
+                          stage={plantType?.growth_stages || 3}
                           waterCount={plot.plant_water_count}
                         />
                         <div className="mt-2 flex items-center justify-center">
@@ -154,6 +165,9 @@ export const PlotGrid = ({
               >
                 <span className="text-2xl mb-1">{plantType.emoji}</span>
                 <span className="text-sm">{plantType.display_name}</span>
+                <span className="text-xs text-gray-500">
+                  {plantType.base_growth_minutes || 60}min
+                </span>
               </Button>
             ))}
           </div>

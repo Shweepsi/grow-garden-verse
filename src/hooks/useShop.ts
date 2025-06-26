@@ -17,13 +17,15 @@ export interface ShopItem {
   is_premium: boolean;
   effects: any;
   available: boolean;
+  is_daily_special: boolean;
+  rotation_date: string;
 }
 
 export const useShop = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch shop items
+  // Fetch shop items (excluding seeds)
   const { data: shopItems = [], isLoading } = useQuery({
     queryKey: ['shopItems'],
     queryFn: async () => {
@@ -31,6 +33,7 @@ export const useShop = () => {
         .from('shop_items')
         .select('*')
         .eq('available', true)
+        .neq('item_type', 'seed') // Exclude seeds from shop
         .order('item_type', { ascending: true })
         .order('price', { ascending: true });
 
@@ -72,36 +75,44 @@ export const useShop = () => {
 
       if (updateError) throw updateError;
 
-      // Add item to inventory
-      const { error: inventoryError } = await supabase
+      // Add item to inventory (check if exists first)
+      const { data: existingItem } = await supabase
         .from('player_inventory_items')
-        .insert({
-          user_id: user.id,
-          shop_item_id: itemId,
-          quantity
-        });
+        .select('id, quantity')
+        .eq('user_id', user.id)
+        .eq('shop_item_id', itemId)
+        .single();
 
-      if (inventoryError) throw inventoryError;
+      if (existingItem) {
+        await supabase
+          .from('player_inventory_items')
+          .update({ quantity: existingItem.quantity + quantity })
+          .eq('id', existingItem.id);
+      } else {
+        await supabase
+          .from('player_inventory_items')
+          .insert({
+            user_id: user.id,
+            shop_item_id: itemId,
+            quantity
+          });
+      }
 
-      // Record purchase history
-      await supabase
-        .from('purchase_history')
-        .insert({
+      // Record purchase history and transaction
+      await Promise.all([
+        supabase.from('purchase_history').insert({
           user_id: user.id,
           shop_item_id: itemId,
           quantity,
           total_cost: totalCost
-        });
-
-      // Record transaction
-      await supabase
-        .from('coin_transactions')
-        .insert({
+        }),
+        supabase.from('coin_transactions').insert({
           user_id: user.id,
           amount: -totalCost,
           transaction_type: 'purchase',
           description: `Achat de ${item.display_name} x${quantity}`
-        });
+        })
+      ]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
@@ -110,7 +121,6 @@ export const useShop = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Erreur lors de l\'achat');
-      console.error(error);
     }
   });
 

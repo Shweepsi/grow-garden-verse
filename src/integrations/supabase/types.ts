@@ -63,15 +63,56 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_objectives: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          current_progress: number | null
+          date_assigned: string | null
+          id: string
+          objective_type: string
+          reward_coins: number | null
+          reward_gems: number | null
+          target_value: number
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_progress?: number | null
+          date_assigned?: string | null
+          id?: string
+          objective_type: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          target_value: number
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_progress?: number | null
+          date_assigned?: string | null
+          id?: string
+          objective_type?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          target_value?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       garden_plots: {
         Row: {
           created_at: string
+          growth_time_minutes: number | null
           id: string
           last_watered: string | null
           plant_metadata: Json | null
           plant_stage: number
           plant_type: string | null
           plant_water_count: number
+          planted_at: string | null
           plot_number: number
           unlocked: boolean
           updated_at: string
@@ -79,12 +120,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          growth_time_minutes?: number | null
           id?: string
           last_watered?: string | null
           plant_metadata?: Json | null
           plant_stage?: number
           plant_type?: string | null
           plant_water_count?: number
+          planted_at?: string | null
           plot_number: number
           unlocked?: boolean
           updated_at?: string
@@ -92,12 +135,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          growth_time_minutes?: number | null
           id?: string
           last_watered?: string | null
           plant_metadata?: Json | null
           plant_stage?: number
           plant_type?: string | null
           plant_water_count?: number
+          planted_at?: string | null
           plot_number?: number
           unlocked?: boolean
           updated_at?: string
@@ -113,33 +158,114 @@ export type Database = {
           },
         ]
       }
+      plant_discoveries: {
+        Row: {
+          discovered_at: string | null
+          discovery_method: string | null
+          id: string
+          plant_type_id: string
+          rarity_bonus: number | null
+          user_id: string
+        }
+        Insert: {
+          discovered_at?: string | null
+          discovery_method?: string | null
+          id?: string
+          plant_type_id: string
+          rarity_bonus?: number | null
+          user_id: string
+        }
+        Update: {
+          discovered_at?: string | null
+          discovery_method?: string | null
+          id?: string
+          plant_type_id?: string
+          rarity_bonus?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       plant_types: {
         Row: {
+          base_growth_minutes: number | null
           created_at: string
           display_name: string
+          drop_rate: number | null
           emoji: string | null
           growth_stages: number
           id: string
           name: string
+          rarity: string | null
           water_per_stage: number
         }
         Insert: {
+          base_growth_minutes?: number | null
           created_at?: string
           display_name: string
+          drop_rate?: number | null
           emoji?: string | null
           growth_stages?: number
           id?: string
           name: string
+          rarity?: string | null
           water_per_stage?: number
         }
         Update: {
+          base_growth_minutes?: number | null
           created_at?: string
           display_name?: string
+          drop_rate?: number | null
           emoji?: string | null
           growth_stages?: number
           id?: string
           name?: string
+          rarity?: string | null
           water_per_stage?: number
+        }
+        Relationships: []
+      }
+      player_achievements: {
+        Row: {
+          achievement_name: string
+          achievement_type: string
+          completed: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          progress: number | null
+          reward_coins: number | null
+          reward_gems: number | null
+          target: number
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_name: string
+          achievement_type: string
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          progress?: number | null
+          reward_coins?: number | null
+          reward_gems?: number | null
+          target: number
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_name?: string
+          achievement_type?: string
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          progress?: number | null
+          reward_coins?: number | null
+          reward_gems?: number | null
+          target?: number
+          unlocked_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -148,8 +274,12 @@ export type Database = {
           active_plot: number
           coins: number
           created_at: string
+          experience: number | null
+          gems: number | null
           id: string
           last_played: string
+          level: number | null
+          prestige_points: number | null
           total_harvests: number
           user_id: string
         }
@@ -157,8 +287,12 @@ export type Database = {
           active_plot?: number
           coins?: number
           created_at?: string
+          experience?: number | null
+          gems?: number | null
           id?: string
           last_played?: string
+          level?: number | null
+          prestige_points?: number | null
           total_harvests?: number
           user_id: string
         }
@@ -166,8 +300,12 @@ export type Database = {
           active_plot?: number
           coins?: number
           created_at?: string
+          experience?: number | null
+          gems?: number | null
           id?: string
           last_played?: string
+          level?: number | null
+          prestige_points?: number | null
           total_harvests?: number
           user_id?: string
         }
@@ -294,11 +432,13 @@ export type Database = {
           effects: Json | null
           emoji: string | null
           id: string
+          is_daily_special: boolean | null
           is_premium: boolean
           item_type: string
           name: string
           price: number
           rarity: string
+          rotation_date: string | null
         }
         Insert: {
           available?: boolean
@@ -308,11 +448,13 @@ export type Database = {
           effects?: Json | null
           emoji?: string | null
           id?: string
+          is_daily_special?: boolean | null
           is_premium?: boolean
           item_type: string
           name: string
           price: number
           rarity?: string
+          rotation_date?: string | null
         }
         Update: {
           available?: boolean
@@ -322,11 +464,13 @@ export type Database = {
           effects?: Json | null
           emoji?: string | null
           id?: string
+          is_daily_special?: boolean | null
           is_premium?: boolean
           item_type?: string
           name?: string
           price?: number
           rarity?: string
+          rotation_date?: string | null
         }
         Relationships: []
       }
@@ -372,6 +516,10 @@ export type Database = {
     Functions: {
       cleanup_expired_effects: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      generate_daily_objectives: {
+        Args: { target_user_id: string }
         Returns: undefined
       }
     }

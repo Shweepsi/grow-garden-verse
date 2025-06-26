@@ -1,11 +1,19 @@
 
 import { GameHeader } from '@/components/game/GameHeader';
 import { PlotGrid } from '@/components/game/PlotGrid';
-import { useSimpleGame } from '@/hooks/useSimpleGame';
+import { DailyObjectives } from '@/components/game/DailyObjectives';
+import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { Loader2 } from 'lucide-react';
 
 export const GardenPage = () => {
-  const { gameState, loading, plantSeed, waterPlant, harvestPlant, unlockPlot } = useSimpleGame();
+  const { 
+    gameState, 
+    loading, 
+    plantSeed, 
+    waterPlant, 
+    harvestPlant, 
+    unlockPlot 
+  } = useRefactoredGame();
 
   if (loading) {
     return (
@@ -19,7 +27,13 @@ export const GardenPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100">
       <GameHeader garden={gameState.garden} />
       
-      <div className="pb-20">
+      <div className="pb-20 space-y-4">
+        {/* Daily Objectives */}
+        <div className="px-4">
+          <DailyObjectives objectives={gameState.dailyObjectives} />
+        </div>
+
+        {/* Garden Grid */}
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}
