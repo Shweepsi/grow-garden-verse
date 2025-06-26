@@ -2,12 +2,12 @@
 import { useState } from 'react';
 import { GameHeader } from '@/components/game/GameHeader';
 import { InventoryItemCard } from '@/components/inventory/InventoryItemCard';
-import { useSimpleGame } from '@/hooks/useSimpleGame';
+import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useInventory } from '@/hooks/useInventory';
 import { Loader2 } from 'lucide-react';
 
 export const InventoryPage = () => {
-  const { gameState } = useSimpleGame();
+  const { gameState } = useRefactoredGame();
   const { inventoryItems, seeds, tools, upgrades, loading, useTool, usingTool } = useInventory();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -78,6 +78,8 @@ export const InventoryPage = () => {
             <p className="text-gray-600">
               {selectedCategory === 'all' 
                 ? 'Votre inventaire est vide' 
+                : selectedCategory === 'seed'
+                ? 'Aucune graine dans votre inventaire. Rendez-vous dans la boutique pour en acheter !'
                 : 'Aucun article dans cette catégorie'}
             </p>
           </div>

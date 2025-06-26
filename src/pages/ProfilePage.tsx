@@ -1,9 +1,9 @@
 
 import { GameHeader } from '@/components/game/GameHeader';
-import { useSimpleGame } from '@/hooks/useSimpleGame';
+import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 
 export const ProfilePage = () => {
-  const { gameState } = useSimpleGame();
+  const { gameState } = useRefactoredGame();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100">

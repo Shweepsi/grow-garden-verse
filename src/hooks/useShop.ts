@@ -25,7 +25,7 @@ export const useShop = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch shop items (excluding seeds)
+  // Fetch shop items (now including seeds)
   const { data: shopItems = [], isLoading } = useQuery({
     queryKey: ['shopItems'],
     queryFn: async () => {
@@ -33,7 +33,6 @@ export const useShop = () => {
         .from('shop_items')
         .select('*')
         .eq('available', true)
-        .neq('item_type', 'seed') // Exclude seeds from shop
         .order('item_type', { ascending: true })
         .order('price', { ascending: true });
 

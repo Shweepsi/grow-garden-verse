@@ -142,10 +142,6 @@ export const usePlantActions = () => {
       const newExp = garden.experience + expReward;
       const newLevel = GameBalanceService.getLevelFromExperience(newExp);
 
-      // Chance to get seeds based on plant rarity
-      const seedDropChance = GameBalanceService.getDropChance(plantType.rarity);
-      const getSeeds = Math.random() < seedDropChance;
-
       // Clear plot
       await supabase
         .from('garden_plots')
@@ -161,7 +157,7 @@ export const usePlantActions = () => {
         .eq('user_id', user.id)
         .eq('plot_number', plotNumber);
 
-      // Update garden stats
+      // Update garden stats - only coins and experience, no seed drops
       await supabase
         .from('player_gardens')
         .update({
@@ -172,45 +168,6 @@ export const usePlantActions = () => {
           last_played: new Date().toISOString()
         })
         .eq('user_id', user.id);
-
-      // Add seeds to inventory if dropped
-      if (getSeeds) {
-        const seedName = `${plantType.name}_seed`;
-        const { data: shopItem } = await supabase
-          .from('shop_items')
-          .select('id')
-          .eq('name', seedName)
-          .single();
-
-        if (shopItem) {
-          const seedQuantity = plantType.rarity === 'legendary' ? 1 : 2;
-          
-          // Check if user already has these seeds
-          const { data: existingSeeds } = await supabase
-            .from('player_inventory_items')
-            .select('id, quantity')
-            .eq('user_id', user.id)
-            .eq('shop_item_id', shopItem.id)
-            .single();
-
-          if (existingSeeds) {
-            await supabase
-              .from('player_inventory_items')
-              .update({ quantity: existingSeeds.quantity + seedQuantity })
-              .eq('id', existingSeeds.id);
-          } else {
-            await supabase
-              .from('player_inventory_items')
-              .insert({
-                user_id: user.id,
-                shop_item_id: shopItem.id,
-                quantity: seedQuantity
-              });
-          }
-          
-          toast.success(`Récolte effectuée ! +${seedQuantity} graines obtenues !`);
-        }
-      }
 
       // Record transaction
       await supabase
@@ -230,11 +187,12 @@ export const usePlantActions = () => {
           plant_type_id: plantType.id,
           discovery_method: 'harvest'
         });
+
+      toast.success(`Récolte effectuée ! +${harvestReward} pièces gagnées !`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      toast.success('Récolte effectuée avec succès !');
     },
     onError: (error: any) => {
       toast.error('Erreur lors de la récolte');

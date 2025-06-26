@@ -2,12 +2,12 @@
 import { useState } from 'react';
 import { GameHeader } from '@/components/game/GameHeader';
 import { ShopItemCard } from '@/components/shop/ShopItemCard';
-import { useSimpleGame } from '@/hooks/useSimpleGame';
+import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useShop } from '@/hooks/useShop';
 import { Loader2 } from 'lucide-react';
 
 export const ShopPage = () => {
-  const { gameState } = useSimpleGame();
+  const { gameState } = useRefactoredGame();
   const { shopItems, loading, purchaseItem, purchasing } = useShop();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -36,6 +36,13 @@ export const ShopPage = () => {
       
       <div className="p-4 pb-20">
         <h1 className="text-2xl font-bold text-green-800 mb-4">🛒 Boutique</h1>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-800">
+            💡 <strong>Astuce :</strong> Achetez des graines ici pour planter dans votre jardin. 
+            Récoltez vos plantes pour gagner des pièces et acheter plus de graines !
+          </p>
+        </div>
         
         {/* Category filters */}
         <div className="flex gap-2 mb-4 overflow-x-auto">
