@@ -6,11 +6,13 @@ import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
+import { useAnimations } from '@/contexts/AnimationContext';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
+  const { triggerCoinAnimation, triggerXPAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
@@ -111,6 +113,7 @@ export const usePlantActions = () => {
       console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
+      const oldLevel = Math.max(1, garden.level || 1);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
       const newCoins = Math.max(0, (garden.coins || 0) + harvestReward);
       const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
@@ -182,10 +185,12 @@ export const usePlantActions = () => {
         console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
       }
 
-      // Messages de succès
-      toast.success(`🎉 Récolte effectuée ! +${harvestReward.toLocaleString()} pièces, +${expReward} EXP !`);
-      
-      if (newLevel > (garden.level || 1)) {
+      // Déclencher les animations dans le header
+      triggerCoinAnimation(harvestReward);
+      triggerXPAnimation(expReward);
+
+      // Toast de niveau uniquement si montée de niveau
+      if (newLevel > oldLevel) {
         toast.success(`🎉 Niveau ${newLevel} atteint !`);
         console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
       }
