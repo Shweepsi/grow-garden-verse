@@ -1,8 +1,7 @@
+
 import { Coins, Sprout, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
-import { CoinAnimation } from './CoinAnimation';
-import { XPAnimation } from './XPAnimation';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
@@ -64,7 +63,6 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                     }
                   </span>
                 </div>
-                <CoinAnimation />
               </div>
               
               {/* Niveau */}
@@ -84,12 +82,9 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
             <div className="premium-card rounded-lg p-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="mobile-text-xs text-blue-600 font-medium">Expérience</span>
-                <div className="relative">
-                  <span className="mobile-text-xs text-blue-600 font-bold">
-                    {Math.floor(progressPercentage)}%
-                  </span>
-                  <XPAnimation />
-                </div>
+                <span className="mobile-text-xs text-blue-600 font-bold">
+                  {Math.floor(progressPercentage)}%
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div 

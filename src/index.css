@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -296,29 +297,6 @@
   50% {
     transform: translateY(-5vh) rotate(180deg);
     opacity: 0.6;
-  }
-}
-
-@keyframes slideUpFade {
-  0% { 
-    transform: translateY(0px);
-    opacity: 1;
-    scale: 1;
-  }
-  25% {
-    transform: translateY(-15px);
-    opacity: 1;
-    scale: 1.1;
-  }
-  75% {
-    transform: translateY(-25px);
-    opacity: 0.8;
-    scale: 1;
-  }
-  100% { 
-    transform: translateY(-30px);
-    opacity: 0;
-    scale: 0.9;
   }
 }
 

@@ -1,16 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
-import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useDirectPlanting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
-  const { triggerCoinAnimation } = useAnimations();
 
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, cost }: { plotNumber: number; plantTypeId: string; cost: number }) => {
@@ -184,9 +183,7 @@ export const useDirectPlanting = () => {
       }
 
       const timeString = PlantGrowthService.formatTimeRemaining(adjustedGrowthTime);
-      
-      // Déclencher l'animation de perte de pièces
-      triggerCoinAnimation(-cost);
+      toast.success(`🌱 ${plantType.display_name} plantée ! Prête dans ${timeString}`);
       
       console.log('✅ Plantation terminée avec succès');
     },
@@ -195,6 +192,7 @@ export const useDirectPlanting = () => {
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation:', error);
+      toast.error(error.message || 'Erreur lors de la plantation');
     }
   });
 
