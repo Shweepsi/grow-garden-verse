@@ -140,11 +140,8 @@ export type Database = {
           created_at: string
           growth_time_minutes: number | null
           id: string
-          last_watered: string | null
           plant_metadata: Json | null
-          plant_stage: number
           plant_type: string | null
-          plant_water_count: number
           planted_at: string | null
           plot_number: number
           unlocked: boolean
@@ -155,11 +152,8 @@ export type Database = {
           created_at?: string
           growth_time_minutes?: number | null
           id?: string
-          last_watered?: string | null
           plant_metadata?: Json | null
-          plant_stage?: number
           plant_type?: string | null
-          plant_water_count?: number
           planted_at?: string | null
           plot_number: number
           unlocked?: boolean
@@ -170,11 +164,8 @@ export type Database = {
           created_at?: string
           growth_time_minutes?: number | null
           id?: string
-          last_watered?: string | null
           plant_metadata?: Json | null
-          plant_stage?: number
           plant_type?: string | null
-          plant_water_count?: number
           planted_at?: string | null
           plot_number?: number
           unlocked?: boolean
@@ -190,6 +181,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      level_upgrades: {
+        Row: {
+          cost_coins: number
+          cost_gems: number
+          created_at: string | null
+          description: string
+          display_name: string
+          effect_type: string
+          effect_value: number
+          emoji: string | null
+          id: string
+          level_required: number
+          name: string
+        }
+        Insert: {
+          cost_coins?: number
+          cost_gems?: number
+          created_at?: string | null
+          description: string
+          display_name: string
+          effect_type: string
+          effect_value?: number
+          emoji?: string | null
+          id?: string
+          level_required: number
+          name: string
+        }
+        Update: {
+          cost_coins?: number
+          cost_gems?: number
+          created_at?: string | null
+          description?: string
+          display_name?: string
+          effect_type?: string
+          effect_value?: number
+          emoji?: string | null
+          id?: string
+          level_required?: number
+          name?: string
+        }
+        Relationships: []
       }
       plant_discoveries: {
         Row: {
@@ -223,37 +256,31 @@ export type Database = {
           base_growth_minutes: number | null
           created_at: string
           display_name: string
-          drop_rate: number | null
           emoji: string | null
-          growth_stages: number
           id: string
+          level_required: number | null
           name: string
           rarity: string | null
-          water_per_stage: number
         }
         Insert: {
           base_growth_minutes?: number | null
           created_at?: string
           display_name: string
-          drop_rate?: number | null
           emoji?: string | null
-          growth_stages?: number
           id?: string
+          level_required?: number | null
           name: string
           rarity?: string | null
-          water_per_stage?: number
         }
         Update: {
           base_growth_minutes?: number | null
           created_at?: string
           display_name?: string
-          drop_rate?: number | null
           emoji?: string | null
-          growth_stages?: number
           id?: string
+          level_required?: number | null
           name?: string
           rarity?: string | null
-          water_per_stage?: number
         }
         Relationships: []
       }
@@ -438,6 +465,35 @@ export type Database = {
             columns: ["shop_item_id"]
             isOneToOne: false
             referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_upgrades: {
+        Row: {
+          id: string
+          purchased_at: string | null
+          upgrade_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          purchased_at?: string | null
+          upgrade_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          purchased_at?: string | null
+          upgrade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_upgrades_upgrade_id_fkey"
+            columns: ["upgrade_id"]
+            isOneToOne: false
+            referencedRelation: "level_upgrades"
             referencedColumns: ["id"]
           },
         ]

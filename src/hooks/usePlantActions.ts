@@ -3,16 +3,21 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { GameBalanceService } from '@/services/GameBalanceService';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { EconomyService } from '@/services/EconomyService';
+import { useUpgrades } from '@/hooks/useUpgrades';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { getActiveMultipliers } = useUpgrades();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
+
+      // Obtenir les multiplicateurs actifs
+      const multipliers = getActiveMultipliers();
 
       // Obtenir les infos de la parcelle et de la plante
       const { data: plot } = await supabase
@@ -43,24 +48,22 @@ export const usePlantActions = () => {
 
       if (!garden) throw new Error('Jardin non trouvé');
 
-      // Calculer les récompenses basées sur la rareté et le niveau
-      const priceRange = GameBalanceService.getSeedPriceRange(plantType.rarity || 'common');
-      const estimatedSeedPrice = (priceRange.min + priceRange.max) / 2;
-      
-      const harvestReward = GameBalanceService.getHarvestReward(
-        5, // Score fixe pour le système temps réel
-        estimatedSeedPrice, 
+      // Calculer les récompenses avec la nouvelle économie
+      const harvestReward = EconomyService.getHarvestReward(
+        plantType.rarity || 'common',
+        plantType.level_required || 1,
+        plantType.base_growth_minutes || 60,
         garden.level || 1,
-        garden.permanent_multiplier || 1
+        multipliers.harvest
       );
       
-      const expReward = GameBalanceService.getExperienceReward(
-        5, 
-        plantType.rarity || 'common'
+      const expReward = EconomyService.getExperienceReward(
+        plantType.rarity || 'common',
+        plantType.level_required || 1
       );
       
       const newExp = (garden.experience || 0) + expReward;
-      const newLevel = GameBalanceService.getLevelFromExperience(newExp);
+      const newLevel = Math.floor(Math.sqrt(newExp / 100)) + 1; // Formule de niveau ajustée
 
       // Vider la parcelle
       await supabase

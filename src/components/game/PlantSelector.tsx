@@ -3,9 +3,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { PlantType } from '@/types/game';
-import { Coins, Sparkles } from 'lucide-react';
-import { GameBalanceService } from '@/services/GameBalanceService';
+import { Coins, Sparkles, Lock } from 'lucide-react';
+import { EconomyService } from '@/services/EconomyService';
+import { useUpgrades } from '@/hooks/useUpgrades';
+import { useGameData } from '@/hooks/useGameData';
 
 interface PlantSelectorProps {
   isOpen: boolean;
@@ -25,9 +28,16 @@ export const PlantSelector = ({
   onPlantDirect
 }: PlantSelectorProps) => {
   const [isPlanting, setIsPlanting] = useState(false);
+  const { data: gameData } = useGameData();
+  const { playerUpgrades } = useUpgrades();
+  
+  const playerLevel = gameData?.garden?.level || 1;
 
   const handlePlant = async (plantType: PlantType) => {
-    const cost = getPlantCost(plantType.rarity || 'common');
+    const cost = EconomyService.getPlantDirectCost(
+      plantType.rarity || 'common', 
+      plantType.level_required || 1
+    );
     if (coins < cost) return;
 
     setIsPlanting(true);
@@ -41,9 +51,11 @@ export const PlantSelector = ({
     }
   };
 
-  const getPlantCost = (rarity: string): number => {
-    const priceRange = GameBalanceService.getSeedPriceRange(rarity);
-    return Math.floor((priceRange.min + priceRange.max) / 2);
+  const getPlantCost = (plantType: PlantType): number => {
+    return EconomyService.getPlantDirectCost(
+      plantType.rarity || 'common',
+      plantType.level_required || 1
+    );
   };
 
   const getRarityColor = (rarity: string) => {
@@ -68,13 +80,35 @@ export const PlantSelector = ({
     }
   };
 
+  // Filtrer les plantes selon le niveau et les déblocages
+  const availablePlants = plantTypes.filter(plant => {
+    // Vérifier le niveau requis
+    if (playerLevel < (plant.level_required || 1)) return false;
+    
+    // Vérifier les déblocages de rareté
+    return EconomyService.canAccessRarity(
+      plant.rarity || 'common',
+      playerLevel,
+      playerUpgrades
+    );
+  });
+
+  const lockedPlants = plantTypes.filter(plant => 
+    !availablePlants.includes(plant)
+  );
+
   // Grouper par rareté
-  const plantsByRarity = plantTypes.reduce((acc, plant) => {
-    const rarity = plant.rarity || 'common';
-    if (!acc[rarity]) acc[rarity] = [];
-    acc[rarity].push(plant);
-    return acc;
-  }, {} as Record<string, PlantType[]>);
+  const groupByRarity = (plants: PlantType[]) => {
+    return plants.reduce((acc, plant) => {
+      const rarity = plant.rarity || 'common';
+      if (!acc[rarity]) acc[rarity] = [];
+      acc[rarity].push(plant);
+      return acc;
+    }, {} as Record<string, PlantType[]>);
+  };
+
+  const availableByRarity = groupByRarity(availablePlants);
+  const lockedByRarity = groupByRarity(lockedPlants);
 
   const rarityOrder = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
 
@@ -93,8 +127,9 @@ export const PlantSelector = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Plantes disponibles */}
           {rarityOrder.map(rarity => {
-            const plants = plantsByRarity[rarity];
+            const plants = availableByRarity[rarity];
             if (!plants?.length) return null;
 
             return (
@@ -109,7 +144,7 @@ export const PlantSelector = ({
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {plants.map((plantType) => {
-                    const cost = getPlantCost(plantType.rarity || 'common');
+                    const cost = getPlantCost(plantType);
                     const canAfford = coins >= cost;
 
                     return (
@@ -123,9 +158,14 @@ export const PlantSelector = ({
                             
                             <h4 className="font-medium text-sm">{plantType.display_name}</h4>
                             
-                            <p className="text-xs text-gray-600 mb-2">
-                              Croissance: {plantType.base_growth_minutes}min
-                            </p>
+                            <div className="flex items-center justify-center gap-2 text-xs">
+                              <Badge variant="outline" className="text-xs">
+                                Niv. {plantType.level_required || 1}
+                              </Badge>
+                              <span className="text-gray-600">
+                                {plantType.base_growth_minutes}min
+                              </span>
+                            </div>
 
                             <div className={`font-bold text-sm flex items-center justify-center gap-1 ${
                               canAfford ? 'text-green-600' : 'text-red-500'
@@ -155,6 +195,56 @@ export const PlantSelector = ({
               </div>
             );
           })}
+
+          {/* Plantes verrouillées */}
+          {Object.keys(lockedByRarity).length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 text-gray-500">
+                🔒 Plantes Verrouillées
+              </h3>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {rarityOrder.map(rarity => {
+                  const plants = lockedByRarity[rarity];
+                  if (!plants?.length) return null;
+
+                  return plants.map((plantType) => (
+                    <Card
+                      key={plantType.id}
+                      className="opacity-50 border-gray-200 bg-gray-50"
+                    >
+                      <CardContent className="p-4">
+                        <div className="text-center space-y-2">
+                          <div className="text-3xl mb-2 grayscale">{plantType.emoji}</div>
+                          
+                          <h4 className="font-medium text-sm text-gray-500">
+                            {plantType.display_name}
+                          </h4>
+                          
+                          <div className="flex items-center justify-center gap-1">
+                            <Lock className="h-3 w-3 text-red-500" />
+                            <span className="text-xs text-red-500">
+                              Niveau {plantType.level_required || 1} requis
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ));
+                })}
+              </div>
+            </div>
+          )}
+
+          {availablePlants.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <Lock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p>Aucune plante disponible à votre niveau.</p>
+              <p className="text-sm mt-2">
+                Récoltez des plantes pour gagner de l'expérience et débloquer de nouvelles variétés !
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
