@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -185,7 +184,7 @@ export const usePlantActions = () => {
         console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
       }
 
-      // Déclencher les animations dans le header
+      // Déclencher les animations dans le header - Gain de pièces (positif)
       triggerCoinAnimation(harvestReward);
       triggerXPAnimation(expReward);
 
