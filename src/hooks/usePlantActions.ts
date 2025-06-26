@@ -48,9 +48,8 @@ export const usePlantActions = () => {
 
       if (!garden) throw new Error('Jardin non trouvé');
 
-      // Calculer les récompenses avec la nouvelle économie
+      // Calculer les récompenses avec la nouvelle économie simplifiée
       const harvestReward = EconomyService.getHarvestReward(
-        plantType.rarity || 'common',
         plantType.level_required || 1,
         plantType.base_growth_minutes || 60,
         garden.level || 1,
@@ -58,7 +57,6 @@ export const usePlantActions = () => {
       );
       
       const expReward = EconomyService.getExperienceReward(
-        plantType.rarity || 'common',
         plantType.level_required || 1
       );
       

@@ -55,16 +55,6 @@ export const useToolApplication = () => {
             effect_value: effects.growth_boost,
             expires_at: new Date(Date.now() + effects.duration * 1000).toISOString()
           });
-      } else if (effects.water_all) {
-        // Arrosoir - arroser toutes les plantes (pour futur système d'arrosage)
-        await supabase
-          .from('garden_plots')
-          .update({
-            last_watered: new Date().toISOString(),
-            plant_water_count: 1
-          })
-          .eq('user_id', user.id)
-          .not('plant_type', 'is', null);
       }
 
       // Déduire le coût

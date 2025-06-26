@@ -3,15 +3,12 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GardenPlot, PlantType } from '@/types/game';
-import { Lock, Sprout, Gift, Wrench } from 'lucide-react';
+import { Lock, Sprout, Gift } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
 import { PlantSelector } from './PlantSelector';
-import { ToolSelector } from './ToolSelector';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { GameBalanceService } from '@/services/GameBalanceService';
-import { useShop } from '@/hooks/useShop';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
-import { useToolApplication } from '@/hooks/useToolApplication';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -30,10 +27,7 @@ export const PlotGrid = ({
 }: PlotGridProps) => {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
-  const [showToolSelector, setShowToolSelector] = useState(false);
-  const { shopItems } = useShop();
   const { plantDirect } = useDirectPlanting();
-  const { applyTool } = useToolApplication();
 
   const getPlantState = (plot: GardenPlot) => {
     if (!plot.plant_type) return 'empty';
@@ -54,16 +48,6 @@ export const PlotGrid = ({
       onHarvestPlant(plot.plot_number);
     }
   };
-
-  const handleToolClick = (plot: GardenPlot, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!plot.unlocked) return;
-    
-    setSelectedPlot(plot.plot_number);
-    setShowToolSelector(true);
-  };
-
-  const availableTools = shopItems.filter(item => item.item_type === 'tool');
 
   return (
     <>
@@ -105,16 +89,6 @@ export const PlotGrid = ({
                   </div>
                 ) : (
                   <div className="text-center h-full flex flex-col justify-center w-full relative">
-                    {/* Bouton outil en haut à droite */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="absolute top-0 right-0 w-6 h-6 p-0 bg-blue-50 hover:bg-blue-100 border-blue-200"
-                      onClick={(e) => handleToolClick(plot, e)}
-                    >
-                      <Wrench className="h-3 w-3 text-blue-600" />
-                    </Button>
-
                     {state === 'empty' ? (
                       <>
                         <Sprout className="h-8 w-8 text-green-400 mx-auto mb-2" />
@@ -162,18 +136,6 @@ export const PlotGrid = ({
         plantTypes={plantTypes}
         coins={coins}
         onPlantDirect={plantDirect}
-      />
-
-      <ToolSelector
-        isOpen={showToolSelector}
-        onClose={() => {
-          setShowToolSelector(false);
-          setSelectedPlot(null);
-        }}
-        plotNumber={selectedPlot || 1}
-        tools={availableTools}
-        coins={coins}
-        onApplyTool={applyTool}
       />
     </>
   );
