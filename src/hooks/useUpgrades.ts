@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
-import { EconomyService } from '@/services/EconomyService';
 
 export const useUpgrades = () => {
   const { user } = useAuth();
@@ -50,7 +49,7 @@ export const useUpgrades = () => {
     }) => {
       if (!user?.id) throw new Error('Non authentifié');
 
-      // Vérifier les fonds avec la nouvelle logique de protection
+      // Vérifier les fonds
       const { data: garden } = await supabase
         .from('player_gardens')
         .select('coins, gems')
@@ -58,9 +57,7 @@ export const useUpgrades = () => {
         .single();
 
       if (!garden) throw new Error('Jardin non trouvé');
-      if (!EconomyService.canAffordUpgrade(garden.coins, costCoins)) {
-        throw new Error(`Pas assez de pièces (besoin de ${costCoins + EconomyService.MINIMUM_COINS}, vous avez ${garden.coins})`);
-      }
+      if (garden.coins < costCoins) throw new Error('Pas assez de pièces');
       if ((garden.gems || 0) < costGems) throw new Error('Pas assez de gemmes');
 
       // Acheter l'amélioration
@@ -114,9 +111,24 @@ export const useUpgrades = () => {
     return playerUpgrades.some(pu => pu.upgrade_id === upgradeId);
   };
 
-  // Méthode améliorée pour récupérer les multiplicateurs actifs
   const getActiveMultipliers = () => {
-    return EconomyService.getActiveMultipliers(playerUpgrades);
+    const multipliers = {
+      harvest: 1,
+      growth: 1
+    };
+
+    playerUpgrades.forEach(upgrade => {
+      const levelUpgrade = upgrade.level_upgrades;
+      if (!levelUpgrade) return;
+
+      if (levelUpgrade.effect_type === 'harvest_multiplier') {
+        multipliers.harvest *= levelUpgrade.effect_value;
+      } else if (levelUpgrade.effect_type === 'growth_speed') {
+        multipliers.growth *= levelUpgrade.effect_value;
+      }
+    });
+
+    return multipliers;
   };
 
   return {

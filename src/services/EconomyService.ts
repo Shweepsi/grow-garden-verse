@@ -1,4 +1,3 @@
-
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 
 export class EconomyService {
@@ -27,8 +26,7 @@ export class EconomyService {
     plantLevel: number, 
     growthTimeSeconds: number,
     playerLevel: number = 1,
-    harvestMultiplier: number = 1,
-    plantCostReduction: number = 1
+    harvestMultiplier: number = 1
   ): number {
     // Validation des paramètres
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
@@ -36,7 +34,7 @@ export class EconomyService {
     if (!playerLevel || playerLevel < 1) playerLevel = 1;
     if (!harvestMultiplier || harvestMultiplier < 0.1) harvestMultiplier = 1;
     
-    const baseCost = this.getPlantDirectCost(plantLevel) * plantCostReduction;
+    const baseCost = this.getPlantDirectCost(plantLevel);
     
     // Profit de base de 70% + bonus pour temps long + bonus niveau
     const baseProfit = baseCost * 1.7; // 70% de profit de base
@@ -47,12 +45,11 @@ export class EconomyService {
     return Math.floor(finalReward * harvestMultiplier);
   }
 
-  // Expérience proportionnelle au niveau de la plante avec bonus possible
-  static getExperienceReward(plantLevel: number, expMultiplier: number = 1): number {
+  // Expérience proportionnelle au niveau de la plante
+  static getExperienceReward(plantLevel: number): number {
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
     // 15 EXP de base + 5 par niveau
-    const baseExp = 15 + (plantLevel * 5);
-    return Math.floor(baseExp * expMultiplier);
+    return 15 + (plantLevel * 5);
   }
 
   // Temps de croissance ajusté (maintenant en secondes)
@@ -64,12 +61,6 @@ export class EconomyService {
     if (!growthMultiplier || growthMultiplier <= 0) growthMultiplier = 1;
     
     return Math.max(1, Math.floor(baseGrowthSeconds / growthMultiplier));
-  }
-
-  // Coût de plantation avec réduction possible
-  static getAdjustedPlantCost(plantLevel: number, costReduction: number = 1): number {
-    const baseCost = this.getPlantDirectCost(plantLevel);
-    return Math.floor(baseCost * costReduction);
   }
 
   // Vérification d'accès aux plantes
@@ -96,43 +87,7 @@ export class EconomyService {
     return Math.floor((profit / growthTimeSeconds) * 60); // Profit par seconde * 60 = par minute
   }
 
-  // Calculer les multiplicateurs actifs depuis les améliorations du joueur
-  static getActiveMultipliers(playerUpgrades: PlayerUpgrade[]) {
-    const multipliers = {
-      harvest: 1,
-      growth: 1,
-      experience: 1,
-      plantCostReduction: 1,
-      gemChance: 0
-    };
-
-    playerUpgrades.forEach(upgrade => {
-      const levelUpgrade = upgrade.level_upgrades;
-      if (!levelUpgrade) return;
-
-      switch (levelUpgrade.effect_type) {
-        case 'harvest_multiplier':
-          multipliers.harvest *= levelUpgrade.effect_value;
-          break;
-        case 'growth_speed':
-          multipliers.growth *= levelUpgrade.effect_value;
-          break;
-        case 'exp_multiplier':
-          multipliers.experience *= levelUpgrade.effect_value;
-          break;
-        case 'plant_cost_reduction':
-          multipliers.plantCostReduction *= levelUpgrade.effect_value;
-          break;
-        case 'gem_chance':
-          multipliers.gemChance += levelUpgrade.effect_value;
-          break;
-      }
-    });
-
-    return multipliers;
-  }
-
-  // Nouveaux prix d'améliorations basés sur l'économie des plantes (simplifiés)
+  // Nouveaux prix d'améliorations basés sur l'économie des plantes
   static getUpgradeCosts() {
     return {
       // Améliorations de base - accessibles tôt
@@ -143,39 +98,60 @@ export class EconomyService {
       
       // Améliorations intermédiaires 
       intermediate: {
-        coins: 2500,   // ~8-10 récoltes de plantes niveau 2-3
-        gems: 0
+        coins: 5000,   // ~15-20 récoltes de plantes niveau 2-3
+        gems: 10
       },
       
       // Améliorations avancées
       advanced: {
-        coins: 6000,  // ~15-20 récoltes de plantes niveau 4-5
-        gems: 0
+        coins: 25000,  // ~30-40 récoltes de plantes niveau 4-5
+        gems: 50
       },
       
       // Améliorations premium
       premium: {
-        coins: 15000, // ~25-30 récoltes de plantes niveau 6+
-        gems: 0
+        coins: 100000, // ~60-80 récoltes de plantes niveau 6+
+        gems: 200
       },
       
       // Améliorations légendaires
       legendary: {
-        coins: 40000, // ~40+ récoltes de plantes haut niveau
-        gems: 0
+        coins: 500000, // ~100+ récoltes de plantes haut niveau
+        gems: 1000
       }
     };
   }
 
-  // Calculer le coût d'une amélioration selon son type et niveau requis (sans gemmes)
+  // Calculer le coût d'une amélioration selon son type et niveau requis
   static getUpgradeCostByLevel(levelRequired: number, effectType: string): { coins: number; gems: number } {
     const costs = this.getUpgradeCosts();
     
-    // Toutes les améliorations sans gemmes maintenant
-    if (levelRequired <= 3) return costs.basic;
-    if (levelRequired <= 8) return costs.intermediate;
-    if (levelRequired <= 15) return costs.advanced;
-    if (levelRequired <= 25) return costs.premium;
-    return costs.legendary;
+    // Améliorations de récolte (plus chères car plus profitables)
+    if (effectType.includes('harvest')) {
+      if (levelRequired <= 3) return { coins: costs.basic.coins * 1.5, gems: costs.basic.gems };
+      if (levelRequired <= 8) return { coins: costs.intermediate.coins * 1.5, gems: costs.intermediate.gems };
+      if (levelRequired <= 15) return { coins: costs.advanced.coins * 1.5, gems: costs.advanced.gems };
+      if (levelRequired <= 25) return { coins: costs.premium.coins * 1.5, gems: costs.premium.gems };
+      return { coins: costs.legendary.coins * 1.5, gems: costs.legendary.gems };
+    }
+    
+    // Améliorations de vitesse de croissance
+    if (effectType.includes('growth')) {
+      if (levelRequired <= 5) return costs.basic;
+      if (levelRequired <= 12) return costs.intermediate;
+      if (levelRequired <= 20) return costs.advanced;
+      if (levelRequired <= 30) return costs.premium;
+      return costs.legendary;
+    }
+    
+    // Améliorations spéciales (déblocages, auto, etc.)
+    if (effectType.includes('unlock') || effectType.includes('auto') || effectType.includes('prestige')) {
+      if (levelRequired <= 10) return { coins: costs.advanced.coins, gems: costs.advanced.gems * 2 };
+      if (levelRequired <= 20) return { coins: costs.premium.coins, gems: costs.premium.gems * 2 };
+      return { coins: costs.legendary.coins, gems: costs.legendary.gems * 2 };
+    }
+    
+    // Par défaut
+    return costs.basic;
   }
 }
