@@ -2,13 +2,13 @@
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 
 export class EconomyService {
-  // Calculer le prix d'une plante selon son niveau (1-10)
+  // Nouveau système de coût progressif plus équilibré
   static getPlantDirectCost(plantLevel: number): number {
-    // Progression simple : 50 * niveau^2
-    return 50 * Math.pow(plantLevel, 2);
+    // Progression douce : 100 * 1.5^(niveau-1)
+    return Math.floor(100 * Math.pow(1.5, plantLevel - 1));
   }
 
-  // Calculer les récompenses de récolte avec multiplicateurs
+  // Calculer les récompenses avec profit de 60-80%
   static getHarvestReward(
     plantLevel: number, 
     growthTime: number,
@@ -16,22 +16,23 @@ export class EconomyService {
     harvestMultiplier: number = 1
   ): number {
     const baseCost = this.getPlantDirectCost(plantLevel);
-    const timeBonus = Math.max(1, Math.floor(growthTime / 30)); // Bonus pour temps long
-    const levelBonus = 1 + (playerLevel * 0.05); // 5% par niveau
     
-    const baseReward = baseCost * 1.5 * timeBonus * levelBonus;
-    return Math.floor(baseReward * harvestMultiplier);
+    // Profit de base de 70% + bonus pour temps long + bonus niveau
+    const baseProfit = baseCost * 1.7; // 70% de profit de base
+    const timeBonus = Math.max(1, Math.floor(growthTime / 10)) * 0.1; // 10% par 10min
+    const levelBonus = 1 + (playerLevel * 0.02); // 2% par niveau du joueur
+    
+    const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
+    return Math.floor(finalReward * harvestMultiplier);
   }
 
-  // Calculer l'expérience gagnée
+  // Expérience proportionnelle au niveau de la plante
   static getExperienceReward(plantLevel: number): number {
-    const baseExp = 10;
-    const levelMultiplier = Math.pow(1.2, plantLevel - 1);
-    
-    return Math.floor(baseExp * levelMultiplier);
+    // 15 EXP de base + 5 par niveau
+    return 15 + (plantLevel * 5);
   }
 
-  // Calculer le temps de croissance ajusté selon les multiplicateurs
+  // Temps de croissance ajusté (inchangé)
   static getAdjustedGrowthTime(
     baseGrowthMinutes: number,
     growthMultiplier: number = 1
@@ -39,8 +40,23 @@ export class EconomyService {
     return Math.max(0.5, baseGrowthMinutes / growthMultiplier);
   }
 
-  // Vérifier si le joueur peut accéder à une plante selon son niveau
+  // Vérification d'accès aux plantes (inchangé)
   static canAccessPlant(plantLevel: number, playerLevel: number): boolean {
     return playerLevel >= plantLevel;
+  }
+
+  // Nouvelle méthode pour calculer le retour sur investissement
+  static getROIPercentage(plantLevel: number, growthTime: number): number {
+    const cost = this.getPlantDirectCost(plantLevel);
+    const reward = this.getHarvestReward(plantLevel, growthTime);
+    return Math.floor(((reward - cost) / cost) * 100);
+  }
+
+  // Méthode pour calculer le gain par minute
+  static getProfitPerMinute(plantLevel: number, growthTime: number): number {
+    const cost = this.getPlantDirectCost(plantLevel);
+    const reward = this.getHarvestReward(plantLevel, growthTime);
+    const profit = reward - cost;
+    return Math.floor(profit / growthTime);
   }
 }
