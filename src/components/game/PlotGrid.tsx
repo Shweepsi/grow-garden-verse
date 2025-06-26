@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,7 @@ export const PlotGrid = ({
   const [showSeedSelector, setShowSeedSelector] = useState(false);
   const [buyingAndPlanting, setBuyingAndPlanting] = useState(false);
   const { seeds } = useInventory();
-  const { shopItems, purchaseItem, purchasing } = useShop();
+  const { shopItems, purchaseItemAsync, purchasing } = useShop();
 
   const getPlantState = (plot: GardenPlot) => {
     if (!plot.plant_type || !plot.planted_at) return 'empty';
@@ -78,26 +77,7 @@ export const PlotGrid = ({
     
     setBuyingAndPlanting(true);
     try {
-      // Purchase the seed
-      await new Promise<void>((resolve, reject) => {
-        purchaseItem(shopItemId, 1);
-        
-        // Wait for purchase completion (we'll need to check if purchase was successful)
-        const checkPurchase = setInterval(() => {
-          if (!purchasing) {
-            clearInterval(checkPurchase);
-            resolve();
-          }
-        }, 100);
-        
-        // Timeout after 5 seconds
-        setTimeout(() => {
-          clearInterval(checkPurchase);
-          reject(new Error('Purchase timeout'));
-        }, 5000);
-      });
-      
-      // Plant the seed immediately after purchase
+      await purchaseItemAsync(shopItemId, 1);
       onPlantSeed(selectedPlot, plantTypeId);
       setShowSeedSelector(false);
       setSelectedPlot(null);
@@ -108,7 +88,7 @@ export const PlotGrid = ({
     }
   };
 
-  // Get available seeds with their plant type info
+  // Get available seeds with their plant type info (fixed logic)
   const getAvailableSeeds = () => {
     return seeds.map(seed => {
       // Extract plant type from seed name (e.g., "carrot_seed" -> "carrot")
@@ -121,11 +101,12 @@ export const PlotGrid = ({
     }).filter(seed => seed.plantType); // Only seeds with matching plant types
   };
 
-  // Get purchasable seeds from shop
+  // Get purchasable seeds from shop (fixed logic)
   const getPurchasableSeeds = () => {
     return shopItems
       .filter(item => item.item_type === 'seed')
       .map(shopItem => {
+        // Extract plant type from seed name (e.g., "carrot_seed" -> "carrot")
         const plantTypeName = shopItem.name.replace('_seed', '');
         const plantType = plantTypes.find(pt => pt.name === plantTypeName);
         return {
@@ -133,7 +114,7 @@ export const PlotGrid = ({
           plantType
         };
       })
-      .filter(item => item.plantType);
+      .filter(item => item.plantType); // Only seeds with matching plant types
   };
 
   const availableSeeds = getAvailableSeeds();
@@ -307,7 +288,7 @@ export const PlotGrid = ({
               <div className="text-center py-8">
                 <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 mb-2">Aucune graine disponible</p>
-                <p className="text-sm text-gray-500">Vérifiez la boutique pour de nouvelles graines !</p>
+                <p className="text-sm text-gray-500">Les graines correspondent maintenant aux plantes disponibles !</p>
               </div>
             )}
           </div>

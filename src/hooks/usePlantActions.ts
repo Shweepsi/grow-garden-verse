@@ -22,19 +22,29 @@ export const usePlantActions = () => {
 
       if (!plantType) throw new Error('Plant type not found');
 
+      // Create the correct seed name using the plant type name
       const seedName = `${plantType.name}_seed`;
 
-      // Check inventory for seed
+      // Check inventory for seed with corrected logic
       const { data: inventoryItem, error: inventoryError } = await supabase
         .from('player_inventory_items')
-        .select('id, quantity, shop_item:shop_items(name)')
+        .select(`
+          id, 
+          quantity, 
+          shop_item:shop_items(name)
+        `)
         .eq('user_id', user.id)
-        .eq('shop_items.name', seedName)
-        .gt('quantity', 0)
-        .single();
+        .gt('quantity', 0);
 
-      if (inventoryError || !inventoryItem) {
-        throw new Error('Vous n\'avez pas cette graine dans votre inventaire');
+      if (inventoryError) throw inventoryError;
+
+      // Find the matching seed in inventory
+      const matchingSeed = inventoryItem?.find(item => 
+        item.shop_item?.name === seedName
+      );
+
+      if (!matchingSeed) {
+        throw new Error(`Vous n'avez pas de graine de ${plantType.display_name} dans votre inventaire`);
       }
 
       // Plant the seed with real-time growth
@@ -55,13 +65,13 @@ export const usePlantActions = () => {
       if (error) throw error;
 
       // Decrease seed quantity
-      if (inventoryItem.quantity <= 1) {
-        await supabase.from('player_inventory_items').delete().eq('id', inventoryItem.id);
+      if (matchingSeed.quantity <= 1) {
+        await supabase.from('player_inventory_items').delete().eq('id', matchingSeed.id);
       } else {
         await supabase
           .from('player_inventory_items')
-          .update({ quantity: inventoryItem.quantity - 1 })
-          .eq('id', inventoryItem.id);
+          .update({ quantity: matchingSeed.quantity - 1 })
+          .eq('id', matchingSeed.id);
       }
     },
     onSuccess: () => {
