@@ -27,7 +27,8 @@ export const useGameData = () => {
     },
     enabled: !!user?.id,
     // Ajuster la fréquence de rafraîchissement selon les plantes actives
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
+      const data = query.state.data;
       if (!data?.plots) return 30000;
       
       // Vérifier s'il y a des plantes avec des temps de croissance courts
