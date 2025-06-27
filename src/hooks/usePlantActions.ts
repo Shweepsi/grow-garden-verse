@@ -12,7 +12,7 @@ export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
-  const { triggerCoinAnimation, triggerXpAnimation } = useAnimations();
+  const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
@@ -102,6 +102,7 @@ export const usePlantActions = () => {
       const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
       const expMultiplier = Math.max(0.1, multipliers.exp || 1);
       const plantCostReduction = Math.max(0.1, multipliers.plantCostReduction || 1);
+      const gemChance = Math.max(0, multipliers.gemChance || 0);
 
       const harvestReward = EconomyService.getHarvestReward(
         plantLevel,
@@ -113,12 +114,28 @@ export const usePlantActions = () => {
       
       const expReward = EconomyService.getExperienceReward(plantLevel, expMultiplier);
       
-      console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP`);
-      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier}, EXP: x${expMultiplier}, Coût: x${plantCostReduction}`);
+      // Calculer les gemmes avec la chance d'amélioration
+      let gemReward = 0;
+      if (gemChance > 0) {
+        const randomChance = Math.random();
+        console.log(`💎 Chance de gemmes: ${(gemChance * 100).toFixed(1)}%, tirage: ${(randomChance * 100).toFixed(1)}%`);
+        
+        if (randomChance <= gemChance) {
+          // Récompense de gemmes basée sur le niveau de la plante (1-3 gemmes)
+          gemReward = Math.floor(Math.random() * Math.min(3, plantLevel)) + 1;
+          console.log(`💎 Drop de gemmes réussi ! Récompense: ${gemReward} gemmes`);
+        } else {
+          console.log(`💎 Pas de drop de gemmes cette fois`);
+        }
+      }
+      
+      console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes`);
+      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier}, EXP: x${expMultiplier}, Coût: x${plantCostReduction}, Gemmes: ${(gemChance * 100).toFixed(1)}%`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
       const newCoins = Math.max(0, (garden.coins || 0) + harvestReward);
+      const newGems = Math.max(0, (garden.gems || 0) + gemReward);
       const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
 
       // Vider la parcelle en premier
@@ -140,11 +157,12 @@ export const usePlantActions = () => {
 
       console.log('🧹 Parcelle vidée avec succès');
 
-      // Mettre à jour les stats du jardin
+      // Mettre à jour les stats du jardin avec les gemmes
       const { error: updateGardenError } = await supabase
         .from('player_gardens')
         .update({
           coins: newCoins,
+          gems: newGems,
           experience: newExp,
           level: newLevel,
           total_harvests: newHarvests,
@@ -162,6 +180,9 @@ export const usePlantActions = () => {
       // Déclencher les animations de récompense
       triggerCoinAnimation(harvestReward);
       triggerXpAnimation(expReward);
+      if (gemReward > 0) {
+        triggerGemAnimation(gemReward);
+      }
 
       // Enregistrer la transaction
       try {
@@ -192,7 +213,11 @@ export const usePlantActions = () => {
         console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
       }
 
-      // Garder seulement le toast de niveau supérieur
+      // Messages de réussite
+      if (gemReward > 0) {
+        toast.success(`💎 ${gemReward} gemme${gemReward > 1 ? 's' : ''} trouvée${gemReward > 1 ? 's' : ''} !`);
+      }
+      
       if (newLevel > (garden.level || 1)) {
         toast.success(`🎉 Niveau ${newLevel} atteint !`);
         console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
