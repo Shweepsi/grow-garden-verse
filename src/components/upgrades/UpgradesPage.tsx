@@ -6,24 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Coins, Gem, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { LevelUpgrade } from '@/types/upgrades';
-
 export const UpgradesPage = () => {
-  const { data: gameData } = useGameData();
-  const { 
-    availableUpgrades, 
-    upgradesLoading, 
-    purchaseUpgrade, 
+  const {
+    data: gameData
+  } = useGameData();
+  const {
+    availableUpgrades,
+    upgradesLoading,
+    purchaseUpgrade,
     isUpgradePurchased,
-    isPurchasing 
+    isPurchasing
   } = useUpgrades();
-
   const playerLevel = gameData?.garden?.level || 1;
   const coins = gameData?.garden?.coins || 0;
   const gems = gameData?.garden?.gems || 0;
 
   // Trier les améliorations par prix (du moins cher au plus cher)
   const sortedUpgrades = [...availableUpgrades].sort((a, b) => a.cost_coins - b.cost_coins);
-
   const getEffectTypeColor = (effectType: string) => {
     if (effectType.includes('harvest')) return 'bg-yellow-500/20 text-yellow-700 border-yellow-300';
     if (effectType.includes('growth')) return 'bg-blue-500/20 text-blue-700 border-blue-300';
@@ -33,99 +32,75 @@ export const UpgradesPage = () => {
     if (effectType.includes('gem')) return 'bg-pink-500/20 text-pink-700 border-pink-300';
     return 'bg-gray-500/20 text-gray-700 border-gray-300';
   };
-
   const canPurchase = (upgrade: LevelUpgrade) => {
     const hasLevel = playerLevel >= upgrade.level_required;
-    const hasCoins = coins >= (upgrade.cost_coins + 100); // Protection 100 pièces
+    const hasCoins = coins >= upgrade.cost_coins + 100; // Protection 100 pièces
     const hasGems = gems >= upgrade.cost_gems;
     const notPurchased = !isUpgradePurchased(upgrade.id);
-    
     return hasLevel && hasCoins && hasGems && notPurchased;
   };
-
   const getButtonState = (upgrade: LevelUpgrade) => {
-    if (isUpgradePurchased(upgrade.id)) return { text: 'Acheté ✓', style: 'bg-green-600' };
-    if (playerLevel < upgrade.level_required) return { text: 'Verrouillé', style: 'bg-gray-400' };
-    if (coins < (upgrade.cost_coins + 100)) return { text: 'Pas assez de pièces', style: 'bg-red-400' };
-    if (gems < upgrade.cost_gems) return { text: 'Pas assez de gemmes', style: 'bg-red-400' };
-    if (isPurchasing) return { text: 'Achat...', style: 'bg-blue-400' };
-    return { text: 'Acheter', style: 'bg-blue-600 hover:bg-blue-700' };
+    if (isUpgradePurchased(upgrade.id)) return {
+      text: 'Acheté ✓',
+      style: 'bg-green-600'
+    };
+    if (playerLevel < upgrade.level_required) return {
+      text: 'Verrouillé',
+      style: 'bg-gray-400'
+    };
+    if (coins < upgrade.cost_coins + 100) return {
+      text: 'Pas assez de pièces',
+      style: 'bg-red-400'
+    };
+    if (gems < upgrade.cost_gems) return {
+      text: 'Pas assez de gemmes',
+      style: 'bg-red-400'
+    };
+    if (isPurchasing) return {
+      text: 'Achat...',
+      style: 'bg-blue-400'
+    };
+    return {
+      text: 'Acheter',
+      style: 'bg-blue-600 hover:bg-blue-700'
+    };
   };
-
   if (upgradesLoading) {
-    return (
-      <div className="min-h-screen garden-background flex items-center justify-center">
+    return <div className="min-h-screen garden-background flex items-center justify-center">
         <div className="glassmorphism rounded-xl p-6">
           <Loader2 className="h-6 w-6 animate-spin text-green-600" />
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen garden-background">
+  return <div className="min-h-screen garden-background">
       <GameHeader garden={gameData?.garden} />
       
       <div className="container mx-auto px-4 pb-20 pt-4">
         {/* En-tête de la page */}
-        <div className="glassmorphism rounded-2xl p-6 mb-6 text-center">
-          <h1 className="text-3xl font-bold text-green-800 mb-2">🌟 Améliorations Premium</h1>
-          <p className="text-green-700 mb-4">Débloquez des bonus permanents pour optimiser votre jardin</p>
-          
-          <div className="flex justify-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/50">Niveau {playerLevel}</Badge>
-            </div>
-            <div className="flex items-center gap-1 text-yellow-600">
-              <Coins className="h-4 w-4" />
-              <span className="font-medium">{coins.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-1 text-purple-600">
-              <Gem className="h-4 w-4" />
-              <span className="font-medium">{gems.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Grille des améliorations triées par prix */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedUpgrades.map((upgrade) => {
-            const isPurchased = isUpgradePurchased(upgrade.id);
-            const isLocked = playerLevel < upgrade.level_required;
-            const canBuy = canPurchase(upgrade);
-            const buttonState = getButtonState(upgrade);
-
-            return (
-              <Card 
-                key={upgrade.id} 
-                className={`glassmorphism transition-all hover:scale-105 ${
-                  isPurchased ? 'ring-2 ring-green-400' :
-                  isLocked ? 'opacity-60' :
-                  canBuy ? 'ring-2 ring-blue-400 shadow-lg' :
-                  'ring-1 ring-red-300'
-                }`}
-              >
+          {sortedUpgrades.map(upgrade => {
+          const isPurchased = isUpgradePurchased(upgrade.id);
+          const isLocked = playerLevel < upgrade.level_required;
+          const canBuy = canPurchase(upgrade);
+          const buttonState = getButtonState(upgrade);
+          return <Card key={upgrade.id} className={`glassmorphism transition-all hover:scale-105 ${isPurchased ? 'ring-2 ring-green-400' : isLocked ? 'opacity-60' : canBuy ? 'ring-2 ring-blue-400 shadow-lg' : 'ring-1 ring-red-300'}`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">{upgrade.emoji}</span>
                       <div>
                         <CardTitle className="text-lg text-green-800">{upgrade.display_name}</CardTitle>
-                        <Badge 
-                          variant="outline" 
-                          className={`mt-1 ${getEffectTypeColor(upgrade.effect_type)}`}
-                        >
+                        <Badge variant="outline" className={`mt-1 ${getEffectTypeColor(upgrade.effect_type)}`}>
                           Niveau {upgrade.level_required}
                         </Badge>
                       </div>
                     </div>
                     
-                    {isPurchased && (
-                      <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
-                    )}
-                    {isLocked && (
-                      <Lock className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                    )}
+                    {isPurchased && <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />}
+                    {isLocked && <Lock className="h-6 w-6 text-gray-400 flex-shrink-0" />}
                   </div>
                 </CardHeader>
 
@@ -136,63 +111,44 @@ export const UpgradesPage = () => {
                     {/* Coût */}
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        {upgrade.cost_coins > 0 && (
-                          <div className="flex items-center gap-2">
+                        {upgrade.cost_coins > 0 && <div className="flex items-center gap-2">
                             <Coins className="h-4 w-4 text-yellow-600" />
-                            <span className={`font-medium ${
-                              coins >= (upgrade.cost_coins + 100) ? 'text-green-600' : 'text-red-500'
-                            }`}>
+                            <span className={`font-medium ${coins >= upgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'}`}>
                               {upgrade.cost_coins.toLocaleString()}
                             </span>
-                          </div>
-                        )}
-                        {upgrade.cost_gems > 0 && (
-                          <div className="flex items-center gap-2">
+                          </div>}
+                        {upgrade.cost_gems > 0 && <div className="flex items-center gap-2">
                             <Gem className="h-4 w-4 text-purple-600" />
-                            <span className={`font-medium ${
-                              gems >= upgrade.cost_gems ? 'text-green-600' : 'text-red-500'
-                            }`}>
+                            <span className={`font-medium ${gems >= upgrade.cost_gems ? 'text-green-600' : 'text-red-500'}`}>
                               {upgrade.cost_gems.toLocaleString()}
                             </span>
-                          </div>
-                        )}
+                          </div>}
                       </div>
                     </div>
 
                     {/* Bouton d'achat */}
-                    <Button
-                      size="sm"
-                      disabled={!canBuy || isPurchased || isPurchasing}
-                      onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)}
-                      className={`w-full ${buttonState.style} transition-all`}
-                    >
+                    <Button size="sm" disabled={!canBuy || isPurchased || isPurchasing} onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)} className={`w-full ${buttonState.style} transition-all`}>
                       {buttonState.text}
                     </Button>
 
                     {/* Message d'aide */}
-                    {!isPurchased && coins < (upgrade.cost_coins + 100) && coins >= upgrade.cost_coins && (
-                      <p className="text-xs text-orange-600 text-center">
+                    {!isPurchased && coins < upgrade.cost_coins + 100 && coins >= upgrade.cost_coins && <p className="text-xs text-orange-600 text-center">
                         💡 Gardez 100 pièces de réserve pour continuer à planter
-                      </p>
-                    )}
+                      </p>}
                   </div>
                 </CardContent>
-              </Card>
-            );
-          })}
+              </Card>;
+        })}
         </div>
 
-        {availableUpgrades.length === 0 && (
-          <div className="glassmorphism rounded-2xl p-8 text-center">
+        {availableUpgrades.length === 0 && <div className="glassmorphism rounded-2xl p-8 text-center">
             <p className="text-green-700 text-lg">
               🎉 Toutes les améliorations disponibles ont été débloquées !
             </p>
             <p className="text-green-600 text-sm mt-2">
               Continuez à progresser pour débloquer de nouvelles améliorations.
             </p>
-          </div>
-        )}
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 };
