@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Coins, Sparkles, Lock, TrendingUp, Clock, Percent, Timer, Award } from 'lucide-react';
+import { Coins, TrendingUp, Clock, Percent, Timer, Award } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
 import { useUpgrades } from '@/hooks/useUpgrades';
@@ -115,7 +115,6 @@ export const PlantSelector = ({
                   {multipliers.exp > 1 && (
                     <div className="bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-purple-700">
-                        <Sparkles className="h-3 w-3" />
                         <span className="text-xs font-bold">XP +{Math.round((multipliers.exp - 1) * 100)}%</span>
                       </div>
                     </div>
@@ -133,7 +132,6 @@ export const PlantSelector = ({
               </div>
             ) : (
               <div className="flex items-center gap-2 text-green-600">
-                <Sparkles className="h-4 w-4" />
                 <span className="text-sm font-medium">Parcelle {plotNumber}</span>
               </div>
             )}
@@ -153,7 +151,6 @@ export const PlantSelector = ({
               <div>
                 <h3 className="text-base font-bold mb-3 text-green-800 flex items-center gap-2">
                   <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                    <Sparkles className="h-3 w-3 text-white" />
                   </div>
                   Plantes disponibles
                   <span className="text-sm font-normal text-green-600">({availablePlants.length})</span>
@@ -252,9 +249,6 @@ export const PlantSelector = ({
                                   <TrendingUp className="h-2.5 w-2.5" />
                                   <div className="text-xs font-bold">
                                     +{reward.toLocaleString()}
-                                    {multipliers.harvest > 1 && (
-                                      <Sparkles className="h-2 w-2 text-green-500 inline ml-1" />
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -284,7 +278,6 @@ export const PlantSelector = ({
               <div>
                 <h3 className="text-base font-bold mb-3 text-gray-600 flex items-center gap-2">
                   <div className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center">
-                    <Lock className="h-3 w-3 text-white" />
                   </div>
                   Plantes verrouillées
                   <span className="text-sm font-normal text-gray-500">({lockedPlants.length})</span>
@@ -304,7 +297,6 @@ export const PlantSelector = ({
                               {plantType.display_name}
                             </h4>
                             <div className="flex items-center justify-center gap-1">
-                              <Lock className="h-2 w-2 text-red-500" />
                               <span className="text-xs text-red-500 font-bold">
                                 {plantType.level_required}
                               </span>
@@ -322,7 +314,6 @@ export const PlantSelector = ({
             {availablePlants.length === 0 && lockedPlants.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="h-6 w-6 text-gray-400" />
                 </div>
                 <p className="text-base font-medium">Aucune plante disponible</p>
                 <p className="text-sm text-gray-400">Débloquez de nouvelles plantes en montant de niveau</p>
