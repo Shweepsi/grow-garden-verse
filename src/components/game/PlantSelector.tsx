@@ -7,7 +7,6 @@ import { Coins, TrendingUp, Clock, Percent, Timer, Award } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
 import { useUpgrades } from '@/hooks/useUpgrades';
-
 interface PlantSelectorProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,46 +15,38 @@ interface PlantSelectorProps {
   coins: number;
   onPlantDirect: (plotNumber: number, plantTypeId: string, cost: number) => void;
 }
-
-export const PlantSelector = ({ 
-  isOpen, 
-  onClose, 
-  plotNumber, 
+export const PlantSelector = ({
+  isOpen,
+  onClose,
+  plotNumber,
   plantTypes,
   coins,
   onPlantDirect
 }: PlantSelectorProps) => {
-  const { data: gameData } = useGameData();
-  const { getActiveMultipliers } = useUpgrades();
+  const {
+    data: gameData
+  } = useGameData();
+  const {
+    getActiveMultipliers
+  } = useUpgrades();
   const playerLevel = gameData?.garden?.level || 1;
 
   // Obtenir les multiplicateurs actifs
   const multipliers = getActiveMultipliers();
-
   const getPlantCost = (plantType: PlantType): number => {
     const baseCost = EconomyService.getPlantDirectCost(plantType.level_required || 1);
     return EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction);
   };
-
   const getPlantBaseCost = (plantType: PlantType): number => {
     return EconomyService.getPlantDirectCost(plantType.level_required || 1);
   };
-
   const getPlantReward = (plantType: PlantType): number => {
-    const baseReward = EconomyService.getHarvestReward(
-      plantType.level_required || 1,
-      plantType.base_growth_seconds || 60,
-      playerLevel,
-      multipliers.harvest,
-      multipliers.plantCostReduction
-    );
+    const baseReward = EconomyService.getHarvestReward(plantType.level_required || 1, plantType.base_growth_seconds || 60, playerLevel, multipliers.harvest, multipliers.plantCostReduction);
     return baseReward;
   };
-
   const getAdjustedGrowthTime = (baseGrowthSeconds: number): number => {
     return EconomyService.getAdjustedGrowthTime(baseGrowthSeconds, multipliers.growth);
   };
-
   const formatGrowthTime = (seconds: number): string => {
     if (seconds < 60) {
       return `${seconds}s`;
@@ -65,76 +56,56 @@ export const PlantSelector = ({
       return `${minutes}min`;
     }
     const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const minutes = Math.floor(seconds % 3600 / 60);
     return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
   };
-
   const handlePlantClick = (plantTypeId: string, cost: number) => {
     onPlantDirect(plotNumber, plantTypeId, cost);
     onClose();
   };
 
   // Filtrer les plantes selon le niveau du joueur
-  const availablePlants = plantTypes
-    .filter(plant => EconomyService.canAccessPlant(plant.level_required || 1, playerLevel))
-    .sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
-
-  const lockedPlants = plantTypes
-    .filter(plant => !EconomyService.canAccessPlant(plant.level_required || 1, playerLevel))
-    .sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+  const availablePlants = plantTypes.filter(plant => EconomyService.canAccessPlant(plant.level_required || 1, playerLevel)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
+  const lockedPlants = plantTypes.filter(plant => !EconomyService.canAccessPlant(plant.level_required || 1, playerLevel)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
+  return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[90vh] overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 p-0">
         {/* Header fixe avec informations importantes */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200 p-4">
           <div className="flex items-center justify-between mb-4">
             {/* Bonus actifs remplaçant l'icône et le texte de parcelle */}
-            {(multipliers.harvest > 1 || multipliers.growth > 1 || multipliers.exp > 1 || multipliers.plantCostReduction < 1) ? (
-              <div className="flex items-center gap-2">
+            {multipliers.harvest > 1 || multipliers.growth > 1 || multipliers.exp > 1 || multipliers.plantCostReduction < 1 ? <div className="flex items-center gap-2">
                 <Award className="h-4 w-4 text-green-600" />
                 <div className="flex flex-wrap gap-2">
-                  {multipliers.harvest > 1 && (
-                    <div className="bg-gradient-to-r from-green-100 to-green-50 border border-green-200 rounded px-2 py-1">
+                  {multipliers.harvest > 1 && <div className="bg-gradient-to-r from-green-100 to-green-50 border border-green-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-green-700">
                         <TrendingUp className="h-3 w-3" />
                         <span className="text-xs font-bold">Récolte +{Math.round((multipliers.harvest - 1) * 100)}%</span>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {multipliers.growth > 1 && (
-                    <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
+                  {multipliers.growth > 1 && <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-blue-700">
                         <Timer className="h-3 w-3" />
                         <span className="text-xs font-bold">Vitesse +{Math.round((multipliers.growth - 1) * 100)}%</span>
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
-                  {multipliers.exp > 1 && (
-                    <div className="bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded px-2 py-1">
+                  {multipliers.exp > 1 && <div className="bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-purple-700">
                         <span className="text-xs font-bold">XP +{Math.round((multipliers.exp - 1) * 100)}%</span>
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
-                  {multipliers.plantCostReduction < 1 && (
-                    <div className="bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 rounded px-2 py-1">
+                  {multipliers.plantCostReduction < 1 && <div className="bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-orange-700">
                         <Percent className="h-3 w-3" />
                         <span className="text-xs font-bold">Économie -{Math.round((1 - multipliers.plantCostReduction) * 100)}%</span>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-green-600">
+              </div> : <div className="flex items-center gap-2 text-green-600">
                 <span className="text-sm font-medium">Parcelle {plotNumber}</span>
-              </div>
-            )}
+              </div>}
             
             <div className="flex items-center gap-2 bg-yellow-100 px-3 py-2 rounded-lg border border-yellow-200">
               <Coins className="h-4 w-4 text-yellow-600" />
@@ -147,8 +118,7 @@ export const PlantSelector = ({
         <ScrollArea className="flex-1 px-4 pb-4">
           <div className="space-y-4">
             {/* Plantes disponibles */}
-            {availablePlants.length > 0 && (
-              <div>
+            {availablePlants.length > 0 && <div>
                 <h3 className="text-base font-bold mb-3 text-green-800 flex items-center gap-2">
                   <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                   </div>
@@ -157,26 +127,16 @@ export const PlantSelector = ({
                 </h3>
                 
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                  {availablePlants.map((plantType) => {
-                    const baseCost = getPlantBaseCost(plantType);
-                    const adjustedCost = getPlantCost(plantType);
-                    const reward = getPlantReward(plantType);
-                    const profit = reward - adjustedCost;
-                    const adjustedGrowthTime = getAdjustedGrowthTime(plantType.base_growth_seconds);
-                    const canAfford = EconomyService.canAffordPlant(coins, adjustedCost);
-                    const hasCostReduction = multipliers.plantCostReduction < 1;
-                    const hasGrowthBonus = multipliers.growth > 1;
-
-                    return (
-                      <Card
-                        key={plantType.id}
-                        className={`cursor-pointer transition-all duration-300 border-2 ${
-                          canAfford 
-                            ? 'bg-gradient-to-br from-white to-green-50 hover:from-green-50 hover:to-green-100 border-green-300 hover:border-green-400 hover:shadow-lg hover:scale-105' 
-                            : 'bg-gradient-to-br from-gray-50 to-gray-100 opacity-60 border-gray-200'
-                        }`}
-                        onClick={() => canAfford ? handlePlantClick(plantType.id, adjustedCost) : null}
-                      >
+                  {availablePlants.map(plantType => {
+                const baseCost = getPlantBaseCost(plantType);
+                const adjustedCost = getPlantCost(plantType);
+                const reward = getPlantReward(plantType);
+                const profit = reward - adjustedCost;
+                const adjustedGrowthTime = getAdjustedGrowthTime(plantType.base_growth_seconds);
+                const canAfford = EconomyService.canAffordPlant(coins, adjustedCost);
+                const hasCostReduction = multipliers.plantCostReduction < 1;
+                const hasGrowthBonus = multipliers.growth > 1;
+                return <Card key={plantType.id} className={`cursor-pointer transition-all duration-300 border-2 ${canAfford ? 'bg-gradient-to-br from-white to-green-50 hover:from-green-50 hover:to-green-100 border-green-300 hover:border-green-400 hover:shadow-lg hover:scale-105' : 'bg-gradient-to-br from-gray-50 to-gray-100 opacity-60 border-gray-200'}`} onClick={() => canAfford ? handlePlantClick(plantType.id, adjustedCost) : null}>
                         <CardContent className="p-3">
                           <div className="space-y-2">
                             {/* Header avec emoji et nom */}
@@ -191,10 +151,7 @@ export const PlantSelector = ({
                             
                             {/* Niveau requis */}
                             <div className="flex justify-center">
-                              <Badge 
-                                variant="outline" 
-                                className="text-xs bg-blue-100 text-blue-700 border-blue-300 font-bold px-1 py-0.5"
-                              >
+                              <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300 font-bold px-1 py-0.5">
                                 Niv.{plantType.level_required}
                               </Badge>
                             </div>
@@ -204,18 +161,14 @@ export const PlantSelector = ({
                               <div className="flex items-center justify-center gap-1 text-blue-700">
                                 <Clock className="h-2.5 w-2.5" />
                                 <div className="text-xs font-medium">
-                                  {hasGrowthBonus ? (
-                                    <div className="flex items-center gap-1">
+                                  {hasGrowthBonus ? <div className="flex items-center gap-1">
                                       <span className="line-through text-gray-400 text-xs">
                                         {formatGrowthTime(plantType.base_growth_seconds)}
                                       </span>
                                       <span className="text-blue-600 font-bold text-xs">
                                         {formatGrowthTime(adjustedGrowthTime)}
                                       </span>
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs">{formatGrowthTime(plantType.base_growth_seconds)}</span>
-                                  )}
+                                    </div> : <span className="text-xs">{formatGrowthTime(plantType.base_growth_seconds)}</span>}
                                 </div>
                               </div>
                             </div>
@@ -227,18 +180,14 @@ export const PlantSelector = ({
                                 <div className="flex items-center justify-center gap-1 text-red-700">
                                   <Coins className="h-2.5 w-2.5" />
                                   <div className="text-xs font-bold">
-                                    {hasCostReduction ? (
-                                      <div className="flex items-center gap-1">
+                                    {hasCostReduction ? <div className="flex items-center gap-1">
                                         <span className="line-through text-gray-400 text-xs">
                                           -{baseCost.toLocaleString()}
                                         </span>
                                         <span className="text-red-700 text-xs">
                                           -{adjustedCost.toLocaleString()}
                                         </span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs">-{adjustedCost.toLocaleString()}</span>
-                                    )}
+                                      </div> : <span className="text-xs">-{adjustedCost.toLocaleString()}</span>}
                                   </div>
                                 </div>
                               </div>
@@ -254,28 +203,17 @@ export const PlantSelector = ({
                               </div>
 
                               {/* Profit net */}
-                              <div className={`rounded p-1.5 border ${
-                                profit > 0 
-                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-                                  : 'bg-gray-50 border-gray-200 text-gray-600'
-                              }`}>
-                                <div className="text-center text-xs font-bold">
-                                  {profit > 0 ? '+' : ''}{profit.toLocaleString()}
-                                </div>
-                              </div>
+                              
                             </div>
                           </div>
                         </CardContent>
-                      </Card>
-                    );
-                  })}
+                      </Card>;
+              })}
                 </div>
-              </div>
-            )}
+              </div>}
 
             {/* Plantes verrouillées */}
-            {lockedPlants.length > 0 && (
-              <div>
+            {lockedPlants.length > 0 && <div>
                 <h3 className="text-base font-bold mb-3 text-gray-600 flex items-center gap-2">
                   <div className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center">
                   </div>
@@ -284,12 +222,8 @@ export const PlantSelector = ({
                 </h3>
                 
                 <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
-                  {lockedPlants.map((plantType) => {
-                    return (
-                      <Card
-                        key={plantType.id}
-                        className="opacity-50 border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100"
-                      >
+                  {lockedPlants.map(plantType => {
+                return <Card key={plantType.id} className="opacity-50 border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100">
                         <CardContent className="p-2">
                           <div className="text-center space-y-1">
                             <div className="text-xl grayscale">{plantType.emoji}</div>
@@ -303,25 +237,20 @@ export const PlantSelector = ({
                             </div>
                           </div>
                         </CardContent>
-                      </Card>
-                    );
-                  })}
+                      </Card>;
+              })}
                 </div>
-              </div>
-            )}
+              </div>}
 
             {/* Message si aucune plante */}
-            {availablePlants.length === 0 && lockedPlants.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+            {availablePlants.length === 0 && lockedPlants.length === 0 && <div className="text-center py-8 text-gray-500">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 </div>
                 <p className="text-base font-medium">Aucune plante disponible</p>
                 <p className="text-sm text-gray-400">Débloquez de nouvelles plantes en montant de niveau</p>
-              </div>
-            )}
+              </div>}
           </div>
         </ScrollArea>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
