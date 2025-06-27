@@ -1,4 +1,5 @@
-import { Coins, Sprout, Star } from 'lucide-react';
+
+import { Coins, Sprout, Star, Gem } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 import { useAnimations } from '@/contexts/AnimationContext';
@@ -49,7 +50,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
 
           {/* Statistiques - Layout vertical sur mobile */}
           <div className="space-y-2">
-            {/* Ligne 1: Coins et Niveau */}
+            {/* Ligne 1: Coins, Gemmes et Niveau */}
             <div className="flex items-center justify-between space-x-2">
               {/* Coins avec zone d'animation */}
               <div className="relative group flex-1">
@@ -71,6 +72,28 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 <div className="animation-zone">
                   {animations
                     .filter(anim => anim.type === 'coins')
+                    .map(anim => (
+                      <FloatingNumber key={anim.id} animation={anim} />
+                    ))
+                  }
+                </div>
+              </div>
+
+              {/* Gemmes avec zone d'animation */}
+              <div className="relative group flex-1">
+                <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
+                  <div className="w-5 h-5 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                    <Gem className="h-2.5 w-2.5 text-white" />
+                  </div>
+                  <span className="font-bold text-purple-700 mobile-text-sm">
+                    {(garden?.gems || 0).toLocaleString()}
+                  </span>
+                </div>
+                
+                {/* Zone d'animation pour les gemmes */}
+                <div className="animation-zone">
+                  {animations
+                    .filter(anim => anim.type === 'gems')
                     .map(anim => (
                       <FloatingNumber key={anim.id} animation={anim} />
                     ))
