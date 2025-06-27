@@ -1,31 +1,30 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 import { Trophy, Star, Coins, TrendingUp, Clock, Target } from 'lucide-react';
-
 interface PlayerStatsProps {
   garden: PlayerGarden | null;
   totalPlants: number;
   activePlants: number;
 }
-
-export const PlayerStats = ({ garden, totalPlants, activePlants }: PlayerStatsProps) => {
+export const PlayerStats = ({
+  garden,
+  totalPlants,
+  activePlants
+}: PlayerStatsProps) => {
   if (!garden) return null;
 
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
   };
-
   const currentLevel = garden.level;
   const currentXp = garden.experience;
   const xpForCurrentLevel = getXpForLevel(currentLevel - 1);
   const xpForNextLevel = getXpForLevel(currentLevel);
   const xpProgress = currentXp - xpForCurrentLevel;
   const xpNeeded = xpForNextLevel - xpForCurrentLevel;
-  const progressPercentage = Math.min((xpProgress / xpNeeded) * 100, 100);
-
+  const progressPercentage = Math.min(xpProgress / xpNeeded * 100, 100);
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: 'numeric',
@@ -33,19 +32,15 @@ export const PlayerStats = ({ garden, totalPlants, activePlants }: PlayerStatsPr
       year: 'numeric'
     });
   };
-
   const formatDuration = (dateString: string) => {
     const start = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    
     if (diffInDays === 0) return "Aujourd'hui";
     if (diffInDays === 1) return "1 jour";
     return `${diffInDays} jours`;
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Niveau et Expérience */}
       <Card>
         <CardHeader>
@@ -120,16 +115,12 @@ export const PlayerStats = ({ garden, totalPlants, activePlants }: PlayerStatsPr
             <span className="text-gray-600">Compte créé :</span>
             <span className="font-medium">{formatDate(garden.created_at)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Dernière connexion :</span>
-            <span className="font-medium">{formatDuration(garden.last_played)}</span>
-          </div>
+          
           <div className="flex justify-between">
             <span className="text-gray-600">Multiplicateur permanent :</span>
             <span className="font-medium text-green-600">x{garden.permanent_multiplier}</span>
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
