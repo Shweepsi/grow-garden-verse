@@ -1,4 +1,3 @@
-
 import { PlantType } from '@/types/game';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -90,64 +89,60 @@ export const PlantSelector = ({
         {/* Header fixe avec informations importantes */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200 p-4">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-green-600" />
+            {/* Bonus actifs remplaçant l'icône et le texte de parcelle */}
+            {(multipliers.harvest > 1 || multipliers.growth > 1 || multipliers.exp > 1 || multipliers.plantCostReduction < 1) ? (
+              <div className="flex items-center gap-2">
+                <Award className="h-4 w-4 text-green-600" />
+                <div className="flex flex-wrap gap-2">
+                  {multipliers.harvest > 1 && (
+                    <div className="bg-gradient-to-r from-green-100 to-green-50 border border-green-200 rounded px-2 py-1">
+                      <div className="flex items-center gap-1 text-green-700">
+                        <TrendingUp className="h-3 w-3" />
+                        <span className="text-xs font-bold">Récolte +{Math.round((multipliers.harvest - 1) * 100)}%</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {multipliers.growth > 1 && (
+                    <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
+                      <div className="flex items-center gap-1 text-blue-700">
+                        <Timer className="h-3 w-3" />
+                        <span className="text-xs font-bold">Vitesse +{Math.round((multipliers.growth - 1) * 100)}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {multipliers.exp > 1 && (
+                    <div className="bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded px-2 py-1">
+                      <div className="flex items-center gap-1 text-purple-700">
+                        <Sparkles className="h-3 w-3" />
+                        <span className="text-xs font-bold">XP +{Math.round((multipliers.exp - 1) * 100)}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {multipliers.plantCostReduction < 1 && (
+                    <div className="bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 rounded px-2 py-1">
+                      <div className="flex items-center gap-1 text-orange-700">
+                        <Percent className="h-3 w-3" />
+                        <span className="text-xs font-bold">Économie -{Math.round((1 - multipliers.plantCostReduction) * 100)}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="text-sm text-green-600 font-medium">Parcelle {plotNumber}</div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2 text-green-600">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-sm font-medium">Parcelle {plotNumber}</span>
+              </div>
+            )}
+            
             <div className="flex items-center gap-2 bg-yellow-100 px-3 py-2 rounded-lg border border-yellow-200">
               <Coins className="h-4 w-4 text-yellow-600" />
               <span className="font-bold text-yellow-700">{coins.toLocaleString()}</span>
             </div>
           </div>
-
-          {/* Bonus actifs - Version compacte */}
-          {(multipliers.harvest > 1 || multipliers.growth > 1 || multipliers.exp > 1 || multipliers.plantCostReduction < 1) && (
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-green-200/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="h-3 w-3 text-green-600" />
-                <span className="text-xs font-semibold text-green-800">Bonus actifs</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {multipliers.harvest > 1 && (
-                  <div className="bg-gradient-to-r from-green-100 to-green-50 border border-green-200 rounded px-2 py-1">
-                    <div className="flex items-center gap-1 text-green-700">
-                      <TrendingUp className="h-3 w-3" />
-                      <span className="text-xs font-bold">Récolte +{Math.round((multipliers.harvest - 1) * 100)}%</span>
-                    </div>
-                  </div>
-                )}
-                
-                {multipliers.growth > 1 && (
-                  <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
-                    <div className="flex items-center gap-1 text-blue-700">
-                      <Timer className="h-3 w-3" />
-                      <span className="text-xs font-bold">Vitesse +{Math.round((multipliers.growth - 1) * 100)}%</span>
-                    </div>
-                  </div>
-                )}
-
-                {multipliers.exp > 1 && (
-                  <div className="bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded px-2 py-1">
-                    <div className="flex items-center gap-1 text-purple-700">
-                      <Sparkles className="h-3 w-3" />
-                      <span className="text-xs font-bold">XP +{Math.round((multipliers.exp - 1) * 100)}%</span>
-                    </div>
-                  </div>
-                )}
-
-                {multipliers.plantCostReduction < 1 && (
-                  <div className="bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 rounded px-2 py-1">
-                    <div className="flex items-center gap-1 text-orange-700">
-                      <Percent className="h-3 w-3" />
-                      <span className="text-xs font-bold">Économie -{Math.round((1 - multipliers.plantCostReduction) * 100)}%</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Contenu scrollable */}
