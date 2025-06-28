@@ -1,18 +1,17 @@
-
 import { useEffect, useState } from 'react';
-import { PlantType, GardenPlot } from '@/types/game';
+import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
 
 interface PlantDisplayProps {
-  plot: GardenPlot;
   plantType: PlantType;
-  isReady: boolean;
-  onHarvest: () => void;
+  plantedAt: string | null;
+  growthTimeSeconds: number;
 }
 
-export const PlantDisplay = ({ plot, plantType, isReady, onHarvest }: PlantDisplayProps) => {
+export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantDisplayProps) => {
   const [progress, setProgress] = useState(0);
+  const [isReady, setIsReady] = useState(false);
 
   // Validation des props
   if (!plantType) {
@@ -25,23 +24,24 @@ export const PlantDisplay = ({ plot, plantType, isReady, onHarvest }: PlantDispl
   }
 
   useEffect(() => {
-    if (!plot.planted_at) return;
+    if (!plantedAt) return;
 
     const updateProgress = () => {
-      const growthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
-      const currentProgress = PlantGrowthService.calculateGrowthProgress(plot.planted_at, growthTime);
+      const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds);
+      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
+      
       setProgress(currentProgress * 100);
+      setIsReady(ready);
     };
 
     updateProgress();
     
     // Utiliser la même fréquence de mise à jour optimale que PlantTimer
-    const growthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
-    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTime);
+    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
     const interval = setInterval(updateProgress, updateInterval);
 
     return () => clearInterval(interval);
-  }, [plot.planted_at, plot.growth_time_seconds, plantType.base_growth_seconds]);
+  }, [plantedAt, growthTimeSeconds]);
 
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
@@ -67,14 +67,11 @@ export const PlantDisplay = ({ plot, plantType, isReady, onHarvest }: PlantDispl
 
   return (
     <div className="text-center relative">
-      <div 
-        className={`text-xl mb-1 transition-all duration-300 cursor-pointer ${
-          isReady 
-            ? 'animate-bounce transform scale-110 ' + getRarityGlow(plantType.rarity)
-            : 'hover:scale-105 ' + getRarityGlow(plantType.rarity)
-        }`}
-        onClick={isReady ? onHarvest : undefined}
-      >
+      <div className={`text-xl mb-1 transition-all duration-300 ${
+        isReady 
+          ? 'animate-bounce transform scale-110 ' + getRarityGlow(plantType.rarity)
+          : 'hover:scale-105 ' + getRarityGlow(plantType.rarity)
+      }`}>
         {isReady ? `✨${plantType.emoji || '🌱'}✨` : (plantType.emoji || '🌱')}
       </div>
       
@@ -104,9 +101,8 @@ export const PlantDisplay = ({ plot, plantType, isReady, onHarvest }: PlantDispl
 
       {isReady ? (
         <div className="relative">
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full mobile-text-xs font-bold animate-pulse shadow-lg cursor-pointer hover:from-yellow-500 hover:to-orange-600"
-               onClick={onHarvest}>
-            🎉 Récolter !
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full mobile-text-xs font-bold animate-pulse shadow-lg">
+            🎉 Prête !
           </div>
           {/* Effet de particules */}
           <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2">
@@ -115,8 +111,8 @@ export const PlantDisplay = ({ plot, plantType, isReady, onHarvest }: PlantDispl
         </div>
       ) : (
         <PlantTimer 
-          plantedAt={plot.planted_at}
-          growthTimeSeconds={plot.growth_time_seconds || plantType.base_growth_seconds || 60}
+          plantedAt={plantedAt}
+          growthTimeSeconds={growthTimeSeconds}
           className="text-blue-600 font-medium mobile-text-xs"
         />
       )}

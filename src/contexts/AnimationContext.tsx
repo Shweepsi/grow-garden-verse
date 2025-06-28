@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 export interface FloatingAnimation {
   id: string;
@@ -28,96 +27,103 @@ export const useAnimations = () => {
 
 export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [animations, setAnimations] = useState<FloatingAnimation[]>([]);
-  
-  // États d'accumulation optimisés avec useMemo pour éviter les re-renders
-  const [accumulators, setAccumulators] = useState<{
-    coin: { amount: number; timer: NodeJS.Timeout | null };
-    xp: { amount: number; timer: NodeJS.Timeout | null };
-    gem: { amount: number; timer: NodeJS.Timeout | null };
-  }>({
-    coin: { amount: 0, timer: null },
-    xp: { amount: 0, timer: null },
-    gem: { amount: 0, timer: null }
+  const [coinAccumulator, setCoinAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
+    amount: 0,
+    timer: null
+  });
+  const [xpAccumulator, setXpAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
+    amount: 0,
+    timer: null
+  });
+  const [gemAccumulator, setGemAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
+    amount: 0,
+    timer: null
   });
 
-  // Fonction générique optimisée pour déclencher les animations
-  const createAnimationTrigger = useCallback((
-    type: 'coins' | 'experience' | 'gems',
-    accumulatorKey: 'coin' | 'xp' | 'gem'
-  ) => {
-    return (amount: number) => {
-      setAccumulators(prev => {
-        const current = prev[accumulatorKey];
+  const triggerCoinAnimation = useCallback((amount: number) => {
+    setCoinAccumulator(prev => {
+      if (prev.timer) {
+        clearTimeout(prev.timer);
+      }
+      
+      const newAmount = prev.amount + amount;
+      
+      const timer = setTimeout(() => {
+        const id = `coin-${Date.now()}-${Math.random()}`;
+        setAnimations(current => [...current, {
+          id,
+          amount: newAmount,
+          type: 'coins',
+          timestamp: Date.now()
+        }]);
         
-        if (current.timer) {
-          clearTimeout(current.timer);
-        }
-        
-        const newAmount = current.amount + amount;
-        
-        // Debouncing optimisé pour mobile - délai réduit pour fluidité
-        const timer = setTimeout(() => {
-          const id = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          
-          setAnimations(current => {
-            // Limiter le nombre d'animations simultanées pour les performances
-            const filtered = current.filter(anim => 
-              Date.now() - anim.timestamp < 2000 // Garder seulement les animations récentes
-            );
-            
-            return [...filtered, {
-              id,
-              amount: newAmount,
-              type,
-              timestamp: Date.now()
-            }];
-          });
-          
-          setAccumulators(prevAcc => ({
-            ...prevAcc,
-            [accumulatorKey]: { amount: 0, timer: null }
-          }));
-        }, 200); // Délai réduit de 300ms à 200ms pour plus de réactivité
-        
-        return {
-          ...prev,
-          [accumulatorKey]: { amount: newAmount, timer }
-        };
-      });
-    };
+        setCoinAccumulator({ amount: 0, timer: null });
+      }, 300);
+      
+      return { amount: newAmount, timer };
+    });
   }, []);
 
-  // Mémoriser les triggers pour éviter les re-renders
-  const triggerCoinAnimation = useMemo(() => 
-    createAnimationTrigger('coins', 'coin'), 
-    [createAnimationTrigger]
-  );
-  
-  const triggerXpAnimation = useMemo(() => 
-    createAnimationTrigger('experience', 'xp'), 
-    [createAnimationTrigger]
-  );
-  
-  const triggerGemAnimation = useMemo(() => 
-    createAnimationTrigger('gems', 'gem'), 
-    [createAnimationTrigger]
-  );
+  const triggerXpAnimation = useCallback((amount: number) => {
+    setXpAccumulator(prev => {
+      if (prev.timer) {
+        clearTimeout(prev.timer);
+      }
+      
+      const newAmount = prev.amount + amount;
+      
+      const timer = setTimeout(() => {
+        const id = `xp-${Date.now()}-${Math.random()}`;
+        setAnimations(current => [...current, {
+          id,
+          amount: newAmount,
+          type: 'experience',
+          timestamp: Date.now()
+        }]);
+        
+        setXpAccumulator({ amount: 0, timer: null });
+      }, 300);
+      
+      return { amount: newAmount, timer };
+    });
+  }, []);
+
+  const triggerGemAnimation = useCallback((amount: number) => {
+    setGemAccumulator(prev => {
+      if (prev.timer) {
+        clearTimeout(prev.timer);
+      }
+      
+      const newAmount = prev.amount + amount;
+      
+      const timer = setTimeout(() => {
+        const id = `gem-${Date.now()}-${Math.random()}`;
+        setAnimations(current => [...current, {
+          id,
+          amount: newAmount,
+          type: 'gems',
+          timestamp: Date.now()
+        }]);
+        
+        setGemAccumulator({ amount: 0, timer: null });
+      }, 300);
+      
+      return { amount: newAmount, timer };
+    });
+  }, []);
 
   const removeAnimation = useCallback((id: string) => {
     setAnimations(current => current.filter(anim => anim.id !== id));
   }, []);
 
-  // Mémoriser la valeur du contexte pour éviter les re-renders inutiles
-  const contextValue = useMemo(() => ({
-    animations,
-    triggerCoinAnimation,
-    triggerXpAnimation,
-    triggerGemAnimation,
-    removeAnimation
-  }), [animations, triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation, removeAnimation]);
-
   return (
-    <AnimationContext.Provider value={contextValue}>
+    <AnimationContext.Provider value={{
+      animations,
+      triggerCoinAnimation,
+      triggerXpAnimation,
+      triggerGemAnimation,
+      removeAnimation
+    }}>
       {children}
     </AnimationContext.Provider>
   );

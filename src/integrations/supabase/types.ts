@@ -63,6 +63,39 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_challenges: {
+        Row: {
+          challenge_type: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          reward_coins: number | null
+          reward_gems: number | null
+          start_date: string | null
+          target_value: number
+        }
+        Insert: {
+          challenge_type: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          start_date?: string | null
+          target_value: number
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          start_date?: string | null
+          target_value?: number
+        }
+        Relationships: []
+      }
       garden_plots: {
         Row: {
           created_at: string
@@ -212,6 +245,84 @@ export type Database = {
         }
         Relationships: []
       }
+      player_achievements: {
+        Row: {
+          achievement_name: string
+          achievement_type: string
+          completed: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          progress: number | null
+          reward_coins: number | null
+          reward_gems: number | null
+          target: number
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_name: string
+          achievement_type: string
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          progress?: number | null
+          reward_coins?: number | null
+          reward_gems?: number | null
+          target: number
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_name?: string
+          achievement_type?: string
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          progress?: number | null
+          reward_coins?: number | null
+          reward_gems?: number | null
+          target?: number
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      player_collections: {
+        Row: {
+          collection_name: string
+          collection_type: string
+          completed: boolean | null
+          created_at: string | null
+          id: string
+          reward_coins: number | null
+          reward_gems: number | null
+          user_id: string
+        }
+        Insert: {
+          collection_name: string
+          collection_type: string
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          user_id: string
+        }
+        Update: {
+          collection_name?: string
+          collection_type?: string
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          reward_coins?: number | null
+          reward_gems?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       player_gardens: {
         Row: {
           active_plot: number
@@ -260,6 +371,65 @@ export type Database = {
         }
         Relationships: []
       }
+      player_inventory: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          item_type: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          item_type: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_type?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      player_inventory_items: {
+        Row: {
+          id: string
+          purchased_at: string
+          quantity: number
+          shop_item_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          purchased_at?: string
+          quantity?: number
+          shop_item_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          purchased_at?: string
+          quantity?: number
+          shop_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_inventory_items_shop_item_id_fkey"
+            columns: ["shop_item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_upgrades: {
         Row: {
           id: string
@@ -307,42 +477,89 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_history: {
+        Row: {
+          id: string
+          purchased_at: string
+          quantity: number
+          shop_item_id: string
+          total_cost: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          purchased_at?: string
+          quantity: number
+          shop_item_id: string
+          total_cost: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          purchased_at?: string
+          quantity?: number
+          shop_item_id?: string
+          total_cost?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_history_shop_item_id_fkey"
+            columns: ["shop_item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_items: {
         Row: {
+          available: boolean
           created_at: string
-          description: string
+          description: string | null
           display_name: string
           effects: Json | null
           emoji: string | null
           id: string
+          is_daily_special: boolean | null
+          is_premium: boolean
           item_type: string
           name: string
-          price_coins: number
-          price_gems: number
+          price: number
+          rarity: string
+          rotation_date: string | null
         }
         Insert: {
+          available?: boolean
           created_at?: string
-          description: string
+          description?: string | null
           display_name: string
           effects?: Json | null
           emoji?: string | null
           id?: string
+          is_daily_special?: boolean | null
+          is_premium?: boolean
           item_type: string
           name: string
-          price_coins?: number
-          price_gems?: number
+          price: number
+          rarity?: string
+          rotation_date?: string | null
         }
         Update: {
+          available?: boolean
           created_at?: string
-          description?: string
+          description?: string | null
           display_name?: string
           effects?: Json | null
           emoji?: string | null
           id?: string
+          is_daily_special?: boolean | null
+          is_premium?: boolean
           item_type?: string
           name?: string
-          price_coins?: number
-          price_gems?: number
+          price?: number
+          rarity?: string
+          rotation_date?: string | null
         }
         Relationships: []
       }
