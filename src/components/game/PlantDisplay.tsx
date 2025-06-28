@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, memo } from 'react';
 import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
@@ -9,7 +10,7 @@ interface PlantDisplayProps {
   growthTimeSeconds: number;
 }
 
-export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantDisplayProps) => {
+export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: PlantDisplayProps) => {
   const [progress, setProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
@@ -36,8 +37,11 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
 
     updateProgress();
     
-    // Utiliser la même fréquence de mise à jour optimale que PlantTimer
-    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
+    // Optimisation : intervalles plus intelligents selon le temps de croissance
+    let updateInterval = 30000; // 30s par défaut
+    if (growthTimeSeconds < 300) updateInterval = 5000;   // 5s pour < 5min
+    else if (growthTimeSeconds < 1800) updateInterval = 15000; // 15s pour < 30min
+    
     const interval = setInterval(updateProgress, updateInterval);
 
     return () => clearInterval(interval);
@@ -54,23 +58,10 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
     }
   };
 
-  const getRarityGlow = (rarity?: string) => {
-    switch (rarity) {
-      case 'mythic': return 'drop-shadow-lg filter drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]';
-      case 'legendary': return 'drop-shadow-lg filter drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]';
-      case 'epic': return 'drop-shadow-lg filter drop-shadow-[0_0_6px_rgba(139,92,246,0.5)]';
-      case 'rare': return 'drop-shadow-lg filter drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]';
-      case 'uncommon': return 'drop-shadow-lg filter drop-shadow-[0_0_4px_rgba(34,197,94,0.4)]';
-      default: return '';
-    }
-  };
-
   return (
     <div className="text-center relative">
-      <div className={`text-xl mb-1 transition-all duration-300 ${
-        isReady 
-          ? 'animate-bounce transform scale-110 ' + getRarityGlow(plantType.rarity)
-          : 'hover:scale-105 ' + getRarityGlow(plantType.rarity)
+      <div className={`text-xl mb-1 transition-transform duration-300 ${
+        isReady ? 'animate-bounce transform scale-110' : 'hover:scale-105'
       }`}>
         {isReady ? `✨${plantType.emoji || '🌱'}✨` : (plantType.emoji || '🌱')}
       </div>
@@ -79,35 +70,21 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
         {plantType.display_name || plantType.name || 'Plante inconnue'}
       </p>
 
-      {/* Barre de progression premium - Adaptée mobile */}
+      {/* Barre de progression optimisée */}
       <div className="w-full bg-gray-200/50 rounded-full h-2 mb-1 overflow-hidden backdrop-blur-sm border border-white/30">
         <div 
-          className={`h-full rounded-full transition-all duration-500 relative overflow-hidden ${
+          className={`h-full rounded-full transition-all duration-1000 ${
             isReady 
-              ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400' 
-              : 'bg-gradient-to-r from-green-400 via-blue-500 to-green-400'
+              ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
+              : 'bg-gradient-to-r from-green-400 to-blue-500'
           }`}
           style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-        >
-          {/* Effet de brillance animé */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent shimmer"></div>
-          
-          {/* Points de lumière */}
-          {isReady && (
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-300/50 to-orange-300/50 animate-pulse"></div>
-          )}
-        </div>
+        />
       </div>
 
       {isReady ? (
-        <div className="relative">
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full mobile-text-xs font-bold animate-pulse shadow-lg">
-            🎉 Prête !
-          </div>
-          {/* Effet de particules */}
-          <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2">
-            <div className="w-0.5 h-0.5 bg-yellow-400 rounded-full animate-ping"></div>
-          </div>
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full mobile-text-xs font-bold animate-pulse shadow-lg">
+          🎉 Prête !
         </div>
       ) : (
         <PlantTimer 
@@ -117,7 +94,7 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
         />
       )}
 
-      {/* Badge de rareté amélioré - Plus petit sur mobile */}
+      {/* Badge de rareté simplifié */}
       {plantType.rarity && plantType.rarity !== 'common' && (
         <div className="mt-1">
           <span className={`mobile-text-xs px-2 py-0.5 rounded-full font-bold shadow-lg ${getRarityColor(plantType.rarity)}`}>
@@ -127,4 +104,6 @@ export const PlantDisplay = ({ plantType, plantedAt, growthTimeSeconds }: PlantD
       )}
     </div>
   );
-};
+});
+
+PlantDisplay.displayName = 'PlantDisplay';
