@@ -13,15 +13,15 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
- - name: Install dependencies (compat mode)
-  run: npm install --legacy-peer-deps
+      - name: Install dependencies (compat mode)
+        run: npm install --legacy-peer-deps
 
-      - name: Install Capacitor Android
+      - name: Install Capacitor Android (if not already)
         run: npx cap add android || true
 
       - name: Setup Java & Gradle
@@ -30,10 +30,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build web app
+      - name: Build Web App
         run: npm run build
 
-      - name: Copy web to Android
+      - name: Copy Web to Android
         run: npx cap sync android
 
       - name: Build APK
