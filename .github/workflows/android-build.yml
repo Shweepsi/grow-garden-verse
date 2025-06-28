@@ -18,8 +18,8 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies
-        run: npm install
+ - name: Install dependencies (compat mode)
+  run: npm install --legacy-peer-deps
 
       - name: Install Capacitor Android
         run: npx cap add android || true
