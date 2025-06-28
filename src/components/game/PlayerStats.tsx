@@ -5,10 +5,12 @@ import { PlayerGarden } from '@/types/game';
 
 interface PlayerStatsProps {
   garden: PlayerGarden | null;
+  totalPlants?: number;
+  activePlants?: number;
 }
 
 // Mémorisation pour éviter les re-renders inutiles
-export const PlayerStats = React.memo(({ garden }: PlayerStatsProps) => {
+export const PlayerStats = React.memo(({ garden, totalPlants, activePlants }: PlayerStatsProps) => {
   // Mémoriser le calcul de l'expérience
   const experienceProgress = useMemo(() => {
     if (!garden) return { progress: 0, nextLevelXp: 100 };
@@ -58,6 +60,24 @@ export const PlayerStats = React.memo(({ garden }: PlayerStatsProps) => {
           <span className="text-sm font-semibold">{garden.total_harvests || 0}</span>
         </div>
       </div>
+
+      {/* Stats additionnelles pour la page profil */}
+      {(totalPlants !== undefined || activePlants !== undefined) && (
+        <div className="flex items-center gap-2">
+          {totalPlants !== undefined && (
+            <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
+              <span className="text-xs text-gray-600">Variétés:</span>
+              <span className="text-sm font-semibold">{totalPlants}</span>
+            </div>
+          )}
+          {activePlants !== undefined && (
+            <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
+              <span className="text-xs text-gray-600">Actives:</span>
+              <span className="text-sm font-semibold">{activePlants}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 });
