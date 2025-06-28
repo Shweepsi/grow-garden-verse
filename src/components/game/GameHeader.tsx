@@ -1,4 +1,5 @@
 
+import React, { useMemo, memo } from 'react';
 import { Coins, Sprout, Star, Gem } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
@@ -9,21 +10,58 @@ interface GameHeaderProps {
   garden: PlayerGarden | null;
 }
 
-export const GameHeader = ({ garden }: GameHeaderProps) => {
+export const GameHeader = memo(({ garden }: GameHeaderProps) => {
   const { animations } = useAnimations();
 
-  // Calculer l'XP nécessaire pour le prochain niveau
-  const getXpForLevel = (level: number) => {
-    return Math.pow(level, 2) * 100;
-  };
+  // Mémoriser les calculs d'XP pour éviter les recalculs
+  const xpData = useMemo(() => {
+    const getXpForLevel = (level: number) => Math.pow(level, 2) * 100;
+    
+    const currentLevel = garden?.level || 1;
+    const currentXp = garden?.experience || 0;
+    const xpForCurrentLevel = getXpForLevel(currentLevel - 1);
+    const xpForNextLevel = getXpForLevel(currentLevel);
+    const xpProgress = currentXp - xpForCurrentLevel;
+    const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+    const progressPercentage = Math.min((xpProgress / xpNeeded) * 100, 100);
+    
+    return {
+      currentLevel,
+      xpProgress,
+      xpNeeded,
+      progressPercentage
+    };
+  }, [garden?.level, garden?.experience]);
 
-  const currentLevel = garden?.level || 1;
-  const currentXp = garden?.experience || 0;
-  const xpForCurrentLevel = getXpForLevel(currentLevel - 1);
-  const xpForNextLevel = getXpForLevel(currentLevel);
-  const xpProgress = currentXp - xpForCurrentLevel;
-  const xpNeeded = xpForNextLevel - xpForCurrentLevel;
-  const progressPercentage = Math.min((xpProgress / xpNeeded) * 100, 100);
+  // Mémoriser le formatage des nombres pour éviter les recalculs
+  const formattedNumbers = useMemo(() => {
+    const formatNumber = (num: number) => {
+      if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+      if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+      return num.toLocaleString();
+    };
+
+    return {
+      coins: formatNumber(garden?.coins || 0),
+      gems: (garden?.gems || 0).toLocaleString()
+    };
+  }, [garden?.coins, garden?.gems]);
+
+  // Filtrer les animations par type pour optimiser les renders
+  const coinAnimations = useMemo(() => 
+    animations.filter(anim => anim.type === 'coins'), 
+    [animations]
+  );
+  
+  const gemAnimations = useMemo(() => 
+    animations.filter(anim => anim.type === 'gems'), 
+    [animations]
+  );
+  
+  const xpAnimations = useMemo(() => 
+    animations.filter(anim => anim.type === 'experience'), 
+    [animations]
+  );
 
   return (
     <div className="relative z-20">
@@ -52,52 +90,41 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
           <div className="space-y-2">
             {/* Ligne 1: Coins, Gemmes et Niveau */}
             <div className="flex items-center justify-between space-x-2">
-              {/* Coins avec zone d'animation */}
-              <div className="relative group flex-1">
+              {/* Coins avec zone d'animation - Optimisé GPU */}
+              <div className="relative group flex-1" style={{ willChange: 'transform' }}>
                 <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
                   <div className="w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                     <Coins className="h-2.5 w-2.5 text-white" />
                   </div>
                   <span className="font-bold text-yellow-700 mobile-text-sm">
-                    {(garden?.coins || 0) >= 1000000 
-                      ? `${((garden?.coins || 0) / 1000000).toFixed(1)}M`
-                      : (garden?.coins || 0) >= 1000
-                      ? `${((garden?.coins || 0) / 1000).toFixed(1)}K`
-                      : (garden?.coins || 0).toLocaleString()
-                    }
+                    {formattedNumbers.coins}
                   </span>
                 </div>
                 
                 {/* Zone d'animation pour les pièces */}
                 <div className="animation-zone">
-                  {animations
-                    .filter(anim => anim.type === 'coins')
-                    .map(anim => (
-                      <FloatingNumber key={anim.id} animation={anim} />
-                    ))
-                  }
+                  {coinAnimations.map(anim => (
+                    <FloatingNumber key={anim.id} animation={anim} />
+                  ))}
                 </div>
               </div>
 
-              {/* Gemmes avec zone d'animation */}
-              <div className="relative group flex-1">
+              {/* Gemmes avec zone d'animation - Optimisé GPU */}
+              <div className="relative group flex-1" style={{ willChange: 'transform' }}>
                 <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
                   <div className="w-5 h-5 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
                     <Gem className="h-2.5 w-2.5 text-white" />
                   </div>
                   <span className="font-bold text-purple-700 mobile-text-sm">
-                    {(garden?.gems || 0).toLocaleString()}
+                    {formattedNumbers.gems}
                   </span>
                 </div>
                 
                 {/* Zone d'animation pour les gemmes */}
                 <div className="animation-zone">
-                  {animations
-                    .filter(anim => anim.type === 'gems')
-                    .map(anim => (
-                      <FloatingNumber key={anim.id} animation={anim} />
-                    ))
-                  }
+                  {gemAnimations.map(anim => (
+                    <FloatingNumber key={anim.id} animation={anim} />
+                  ))}
                 </div>
               </div>
               
@@ -108,45 +135,45 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                     <Star className="h-2.5 w-2.5 text-white" />
                   </div>
                   <span className="font-bold text-blue-700 mobile-text-sm">
-                    Niv. {currentLevel}
+                    Niv. {xpData.currentLevel}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Ligne 2: Barre d'XP avec pourcentage et animations */}
-            <div className="relative premium-card rounded-lg p-2">
+            <div className="relative premium-card rounded-lg p-2" style={{ willChange: 'transform' }}>
               <div className="flex items-center justify-between mb-1">
                 <span className="mobile-text-xs text-blue-600 font-medium">Expérience</span>
                 <span className="mobile-text-xs text-blue-600 font-bold">
-                  {Math.floor(progressPercentage)}%
+                  {Math.floor(xpData.progressPercentage)}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 relative"
-                  style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}
+                  style={{ 
+                    width: `${Math.max(0, Math.min(100, xpData.progressPercentage))}%`,
+                    transform: 'translate3d(0,0,0)' // Force GPU acceleration
+                  }}
                 >
                   <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-1">
                 <span className="mobile-text-xs text-gray-500">
-                  {xpProgress.toLocaleString()} XP
+                  {xpData.xpProgress.toLocaleString()} XP
                 </span>
                 <span className="mobile-text-xs text-gray-500">
-                  {xpNeeded.toLocaleString()} XP
+                  {xpData.xpNeeded.toLocaleString()} XP
                 </span>
               </div>
               
               {/* Zone d'animation pour l'XP */}
               <div className="animation-zone">
-                {animations
-                  .filter(anim => anim.type === 'experience')
-                  .map(anim => (
-                    <FloatingNumber key={anim.id} animation={anim} />
-                  ))
-                }
+                {xpAnimations.map(anim => (
+                  <FloatingNumber key={anim.id} animation={anim} />
+                ))}
               </div>
             </div>
           </div>
@@ -154,4 +181,6 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
       </div>
     </div>
   );
-};
+});
+
+GameHeader.displayName = 'GameHeader';
