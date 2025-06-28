@@ -1,7 +1,7 @@
 const config = {
   appId: 'com.shweepsi.growgarden',
   appName: 'Grow Garden Verse',
-  webDir: 'public',
+  webDir: 'dist', // ✅ ici le bon dossier
   bundledWebRuntime: false,
 };
 
