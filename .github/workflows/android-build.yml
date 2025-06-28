@@ -1,9 +1,9 @@
 name: Build Android APK
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -22,12 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build project
-        run: npm run build
+      - name: Install Capacitor Android
+        run: npm install @capacitor/cli @capacitor/android
 
-      - name: Install Capacitor & Android
+      - name: Capacitor sync & init android
         run: |
-          npm install @capacitor/cli @capacitor/android
           npx cap sync
           npx cap add android
 
