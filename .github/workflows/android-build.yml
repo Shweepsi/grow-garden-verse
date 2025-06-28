@@ -23,7 +23,7 @@ jobs:
         run: npm install
 
       - name: Install Capacitor Android
-        run: npm install @capacitor/cli @capacitor/android
+        run: npm install @capacitor/cli@5.7.8 @capacitor/android@5.7.8 --legacy-peer-deps
 
       - name: Capacitor sync & init android
         run: |
