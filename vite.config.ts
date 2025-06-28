@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           // Séparer les dépendances lourdes
           vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-button'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-slot'],
           supabase: ['@supabase/supabase-js'],
           query: ['@tanstack/react-query']
         }
