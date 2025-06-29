@@ -25,10 +25,14 @@ export const ProfilePage = () => {
   const totalPlants = gameState.plantTypes.length;
 
   return (
-    <div className="min-h-screen garden-background">
-      <GameHeader garden={gameState.garden} />
+    <div className="min-h-screen garden-background flex flex-col">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-40 bg-gradient-to-b from-white/20 to-transparent backdrop-blur-sm">
+        <GameHeader garden={gameState.garden} />
+      </div>
       
-      <div className="p-3 pb-20">
+      {/* Scrollable content */}
+      <div className="flex-1 p-3">
         <h1 className="mobile-text-xl font-bold text-green-800 mb-4">Profil du Jardinier</h1>
         
         <PlayerStats 
