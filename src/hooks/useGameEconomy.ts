@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { GameBalanceService } from '@/services/GameBalanceService';
+import { EconomyService } from '@/services/EconomyService';
 
 export const useGameEconomy = () => {
   const { user } = useAuth();
@@ -21,8 +22,13 @@ export const useGameEconomy = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (!garden || garden.coins < cost) {
-        throw new Error('Pas assez de pièces');
+      if (!garden) {
+        throw new Error('Jardin non trouvé');
+      }
+
+      // Utiliser la même logique que pour les améliorations avec protection des 100 pièces
+      if (!EconomyService.canAffordUpgrade(garden.coins, cost)) {
+        throw new Error('Pas assez de pièces (minimum 100 pièces à conserver)');
       }
 
       // Unlock plot

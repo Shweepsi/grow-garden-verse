@@ -1,4 +1,3 @@
-
 import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { GardenPlot, PlantType } from '@/types/game';
@@ -6,6 +5,7 @@ import { Lock, Sprout, Gift } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { GameBalanceService } from '@/services/GameBalanceService';
+import { EconomyService } from '@/services/EconomyService';
 
 interface PlotCardProps {
   plot: GardenPlot;
@@ -37,6 +37,7 @@ export const PlotCard = memo(({
 
   const state = getPlantState();
   const unlockCost = GameBalanceService.getUnlockCost(plot.plot_number);
+  const canAffordUnlock = EconomyService.canAffordUpgrade(coins, unlockCost);
 
   const handleClick = () => {
     if (!isPlanting) {
@@ -73,8 +74,8 @@ export const PlotCard = memo(({
             <Button
               size="sm"
               onClick={handleUnlockClick}
-              disabled={coins < unlockCost}
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white mobile-text-xs px-2 py-1 h-auto rounded-md shadow-lg transform hover:scale-105 transition-all duration-200 touch-target"
+              disabled={!canAffordUnlock}
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white mobile-text-xs px-2 py-1 h-auto rounded-md shadow-lg transform hover:scale-105 transition-all duration-200 touch-target disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {unlockCost >= 1000000 
                 ? `${(unlockCost / 1000000).toFixed(1)}M 🪙`
@@ -83,6 +84,11 @@ export const PlotCard = memo(({
                 : `${unlockCost.toLocaleString()} 🪙`
               }
             </Button>
+            {!canAffordUnlock && (
+              <p className="mobile-text-xs text-red-500 mt-1 font-medium">
+                Garde 100🪙
+              </p>
+            )}
           </div>
         ) : (
           <div className="text-center h-full flex flex-col justify-center w-full relative z-10">
