@@ -1,35 +1,63 @@
-
 export class GameBalanceService {
-  // Coûts de déblocage des parcelles avec limite de 100 pièces
+  // Updated costs to match the new database function
   static getUnlockCost(plotNumber: number): number {
-    const costs = [
-      0,     // Parcelle 1 - gratuite
-      30,    // Parcelle 2 - réduit de 300 à 30
-      50,    // Parcelle 3 - réduit de 800 à 50  
-      70,    // Parcelle 4 - réduit de 2200 à 70
-      90,    // Parcelle 5 - réduit de 6000 à 90
-      100,   // Parcelle 6 - plafonné à 100
-      100,   // Parcelle 7 - plafonné à 100
-      100,   // Parcelle 8 - plafonné à 100
-      100    // Parcelle 9 - plafonné à 100
-    ];
-    
-    return costs[plotNumber - 1] || 100;
+    const costs = [0, 300, 800, 2200, 6000, 18000, 50000, 140000, 400000];
+    return costs[plotNumber - 1] || 1200000;
   }
 
-  // Coûts des améliorations avec limite de 100 pièces
-  static getUpgradeCost(level: number): number {
-    const baseCost = Math.pow(level, 1.5) * 10;
-    return Math.min(Math.ceil(baseCost), 100);
+  // Nouveau système de récompenses logarithmiques
+  static getHarvestReward(plantStage: number, seedPrice: number, level: number = 1, multiplier: number = 1): number {
+    // Les récompenses sont proportionnelles au prix de la graine
+    const baseReward = Math.floor(seedPrice * 0.2 * plantStage); // 20% du prix par étape
+    const levelBonus = Math.floor(level * 2);
+    return Math.floor((baseReward + levelBonus) * multiplier);
   }
 
-  // Multiplicateur d'expérience par niveau
-  static getXpMultiplier(level: number): number {
-    return 1 + (level - 1) * 0.1;
+  static getExperienceReward(plantStage: number, rarity: string): number {
+    const baseExp = plantStage * 10;
+    const rarityMultiplier = this.getRarityMultiplier(rarity);
+    return Math.floor(baseExp * rarityMultiplier);
   }
 
-  // Bonus de récolte par niveau  
-  static getHarvestBonus(level: number): number {
-    return Math.floor(level / 5) * 5;
+  static getLevelFromExperience(experience: number): number {
+    return Math.floor(Math.sqrt(experience / 100)) + 1;
+  }
+
+  static getExperienceForNextLevel(currentLevel: number): number {
+    return Math.pow(currentLevel, 2) * 100;
+  }
+
+  static getRarityMultiplier(rarity: string): number {
+    switch (rarity) {
+      case 'mythic': return 5;
+      case 'legendary': return 3;
+      case 'epic': return 2;
+      case 'rare': return 1.5;
+      case 'uncommon': return 1.2;
+      default: return 1;
+    }
+  }
+
+  static getDropChance(rarity: string): number {
+    switch (rarity) {
+      case 'mythic': return 0.01;
+      case 'legendary': return 0.05;
+      case 'epic': return 0.15;
+      case 'rare': return 0.25;
+      case 'uncommon': return 0.40;
+      default: return 0.60;
+    }
+  }
+
+  // Calculer le prix des graines selon la rareté
+  static getSeedPriceRange(rarity: string): { min: number; max: number } {
+    switch (rarity) {
+      case 'mythic': return { min: 1000000, max: 10000000 };
+      case 'legendary': return { min: 50000, max: 1000000 };
+      case 'epic': return { min: 5000, max: 50000 };
+      case 'rare': return { min: 500, max: 5000 };
+      case 'uncommon': return { min: 100, max: 500 };
+      default: return { min: 50, max: 100 };
+    }
   }
 }
