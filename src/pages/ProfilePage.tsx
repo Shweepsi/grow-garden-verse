@@ -26,10 +26,14 @@ export const ProfilePage = () => {
 
   return (
     <div className="min-h-screen garden-background">
-      <GameHeader garden={gameState.garden} />
+      {/* Sticky header */}
+      <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
+        <GameHeader garden={gameState.garden} />
+      </div>
       
-      <div className="p-3 pb-20">
-        <h1 className="mobile-text-xl font-bold text-green-800 mb-4">Profil du Jardinier</h1>
+      {/* Content with padding to avoid overlap */}
+      <div className="px-3 pb-6 space-y-4">
+        <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
         
         <PlayerStats 
           garden={gameState.garden} 
@@ -38,7 +42,7 @@ export const ProfilePage = () => {
         />
 
         {/* Section Paramètres */}
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4">
           <h2 className="mobile-text-lg font-bold text-green-700 flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Paramètres
