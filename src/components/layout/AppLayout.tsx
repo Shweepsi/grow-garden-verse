@@ -36,12 +36,15 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         <div className="particle"></div>
       </div>
       
-      {/* Main content */}
-      <div className="relative z-10">
+      {/* Main content with padding for sticky header and footer */}
+      <div className="relative z-10 pb-20">
         {children}
       </div>
       
-      <BottomNavigation />
+      {/* Sticky bottom navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        <BottomNavigation />
+      </div>
     </div>
   );
 };
