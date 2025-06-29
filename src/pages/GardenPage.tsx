@@ -23,14 +23,10 @@ export const GardenPage = () => {
   }
 
   return (
-    <div className="min-h-screen garden-background flex flex-col">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-40 bg-gradient-to-b from-white/20 to-transparent backdrop-blur-sm">
-        <GameHeader garden={gameState.garden} />
-      </div>
+    <div className="min-h-screen garden-background">
+      <GameHeader garden={gameState.garden} />
       
-      {/* Scrollable content */}
-      <div className="flex-1 space-y-3">
+      <div className="pb-20 space-y-3">
         {/* Garden Grid with premium styling - Optimisé mobile */}
         <PlotGrid
           plots={gameState.plots}

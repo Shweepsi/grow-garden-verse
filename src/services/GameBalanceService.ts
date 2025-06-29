@@ -1,9 +1,8 @@
 export class GameBalanceService {
-  // Updated costs - limited to 100 coins maximum like upgrades
+  // Updated costs to match the new database function
   static getUnlockCost(plotNumber: number): number {
-    // All plot unlocks now cost maximum 100 coins
-    const costs = [0, 50, 75, 100, 100, 100, 100, 100, 100];
-    return costs[plotNumber - 1] || 100;
+    const costs = [0, 300, 800, 2200, 6000, 18000, 50000, 140000, 400000];
+    return costs[plotNumber - 1] || 1200000;
   }
 
   // Nouveau système de récompenses logarithmiques

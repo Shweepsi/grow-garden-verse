@@ -26,7 +26,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen garden-background relative flex flex-col">
+    <div className="min-h-screen garden-background relative">
       {/* Floating particles for ambiance */}
       <div className="floating-particles">
         <div className="particle"></div>
@@ -36,17 +36,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         <div className="particle"></div>
       </div>
       
-      {/* Main content with proper spacing for sticky elements */}
-      <div className="relative z-10 flex-1 flex flex-col">
-        <div className="flex-1 pb-20">
-          {children}
-        </div>
+      {/* Main content */}
+      <div className="relative z-10">
+        {children}
       </div>
       
-      {/* Sticky bottom navigation */}
-      <div className="sticky bottom-0 z-50">
-        <BottomNavigation />
-      </div>
+      <BottomNavigation />
     </div>
   );
 };
