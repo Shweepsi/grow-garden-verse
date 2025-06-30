@@ -9,33 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      active_effects: {
-        Row: {
-          created_at: string
-          effect_type: string
-          effect_value: number
-          expires_at: string | null
-          id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          effect_type: string
-          effect_value?: number
-          expires_at?: string | null
-          id?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          effect_type?: string
-          effect_value?: number
-          expires_at?: string | null
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       coin_transactions: {
         Row: {
           amount: number
@@ -306,80 +279,6 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
-      }
-      shop_items: {
-        Row: {
-          created_at: string
-          description: string
-          display_name: string
-          effects: Json | null
-          emoji: string | null
-          id: string
-          item_type: string
-          name: string
-          price_coins: number
-          price_gems: number
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          display_name: string
-          effects?: Json | null
-          emoji?: string | null
-          id?: string
-          item_type: string
-          name: string
-          price_coins?: number
-          price_gems?: number
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          display_name?: string
-          effects?: Json | null
-          emoji?: string | null
-          id?: string
-          item_type?: string
-          name?: string
-          price_coins?: number
-          price_gems?: number
-        }
-        Relationships: []
-      }
-      tool_uses: {
-        Row: {
-          effect_applied: Json | null
-          id: string
-          plot_number: number
-          shop_item_id: string
-          used_at: string
-          user_id: string
-        }
-        Insert: {
-          effect_applied?: Json | null
-          id?: string
-          plot_number: number
-          shop_item_id: string
-          used_at?: string
-          user_id: string
-        }
-        Update: {
-          effect_applied?: Json | null
-          id?: string
-          plot_number?: number
-          shop_item_id?: string
-          used_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tool_uses_shop_item_id_fkey"
-            columns: ["shop_item_id"]
-            isOneToOne: false
-            referencedRelation: "shop_items"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {
