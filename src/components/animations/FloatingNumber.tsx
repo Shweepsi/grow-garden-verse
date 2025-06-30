@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Coins, Star, Gem } from 'lucide-react';
+import { Coins, Star } from 'lucide-react';
 import { FloatingAnimation, useAnimations } from '@/contexts/AnimationContext';
 
 interface FloatingNumberProps {
@@ -24,7 +24,6 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
     switch (animation.type) {
       case 'coins': return Coins;
       case 'experience': return Star;
-      case 'gems': return Gem;
       default: return Coins;
     }
   };

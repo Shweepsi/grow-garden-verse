@@ -11,18 +11,17 @@ export const useGameData = () => {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      const [gardenResult, plotsResult, plantTypesResult, activeEffectsResult] = await Promise.all([
+      const [gardenResult, plotsResult, plantTypesResult] = await Promise.all([
         supabase.from('player_gardens').select('*').eq('user_id', user.id).single(),
         supabase.from('garden_plots').select('*').eq('user_id', user.id).order('plot_number'),
-        supabase.from('plant_types').select('*'),
-        supabase.from('active_effects').select('*').eq('user_id', user.id)
+        supabase.from('plant_types').select('*')
       ]);
 
       return {
         garden: gardenResult.data,
         plots: plotsResult.data || [],
         plantTypes: plantTypesResult.data || [],
-        activeEffects: activeEffectsResult.data || []
+        activeEffects: [] // Tableau vide pour compatibilité
       };
     },
     enabled: !!user?.id,

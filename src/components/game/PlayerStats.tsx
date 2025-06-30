@@ -1,12 +1,15 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 import { Trophy, Star, Coins, TrendingUp, Clock, Target } from 'lucide-react';
+
 interface PlayerStatsProps {
   garden: PlayerGarden | null;
   totalPlants: number;
   activePlants: number;
 }
+
 export const PlayerStats = ({
   garden,
   totalPlants,
@@ -18,6 +21,7 @@ export const PlayerStats = ({
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
   };
+
   const currentLevel = garden.level;
   const currentXp = garden.experience;
   const xpForCurrentLevel = getXpForLevel(currentLevel - 1);
@@ -25,6 +29,7 @@ export const PlayerStats = ({
   const xpProgress = currentXp - xpForCurrentLevel;
   const xpNeeded = xpForNextLevel - xpForCurrentLevel;
   const progressPercentage = Math.min(xpProgress / xpNeeded * 100, 100);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: 'numeric',
@@ -32,15 +37,9 @@ export const PlayerStats = ({
       year: 'numeric'
     });
   };
-  const formatDuration = (dateString: string) => {
-    const start = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffInDays === 0) return "Aujourd'hui";
-    if (diffInDays === 1) return "1 jour";
-    return `${diffInDays} jours`;
-  };
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       {/* Niveau et Expérience */}
       <Card>
         <CardHeader>
@@ -122,5 +121,6 @@ export const PlayerStats = ({
           </div>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };
