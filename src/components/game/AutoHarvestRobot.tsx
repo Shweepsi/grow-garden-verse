@@ -31,46 +31,44 @@ export const AutoHarvestRobot = ({
 
   return (
     <>
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {/* Robot visual */}
-        <div className={`transform transition-all duration-500 ${isActive ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}>
-          <div className="relative">
-            {/* Robot body */}
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shadow-lg animate-pulse">
-              <Bot className="h-6 w-6 text-white" />
-            </div>
-            
-            {/* Status indicator */}
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
-            
-            {/* Plant info if selected */}
-            {selectedPlantType && (
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-white rounded-lg px-2 py-1 shadow-lg border border-blue-200">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm">{selectedPlantType.emoji}</span>
-                  <span className="text-xs font-medium text-blue-700">{selectedPlantType.display_name}</span>
-                </div>
-              </div>
-            )}
+      <div className="relative bg-white rounded-lg shadow-lg p-2 border-2 border-blue-300 min-w-[120px]">
+        {/* Robot header */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <Bot className="h-4 w-4 text-blue-600" />
+            <span className="text-xs font-semibold text-blue-700">Auto-Bot</span>
           </div>
-        </div>
-      </div>
-
-      {/* Robot controls */}
-      {isActive && (
-        <div className="absolute top-2 right-2 pointer-events-auto">
           <Button
             size="sm"
             variant="outline"
             onClick={() => setShowPlantSelector(true)}
-            className="bg-white/90 hover:bg-white border-blue-300 text-blue-700 h-8 w-8 p-0"
+            className="h-6 w-6 p-0 border-blue-300 text-blue-700 hover:bg-blue-50"
           >
             <Settings className="h-3 w-3" />
           </Button>
         </div>
-      )}
 
-      {/* Plant selector for robot */}
+        {/* Plant info */}
+        {selectedPlantType ? (
+          <div className="flex items-center gap-1 bg-blue-50 rounded px-2 py-1">
+            <span className="text-sm">{selectedPlantType.emoji}</span>
+            <span className="text-xs font-medium text-blue-700 truncate">
+              {selectedPlantType.display_name}
+            </span>
+          </div>
+        ) : (
+          <div className="text-xs text-gray-500 text-center py-1">
+            Choisir plante
+          </div>
+        )}
+
+        {/* Status indicator */}
+        <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+          isActive && selectedPlantType ? 'bg-green-400 animate-pulse' : 'bg-gray-300'
+        }`}></div>
+      </div>
+
+      {/* Plant selector */}
       <PlantSelector
         isOpen={showPlantSelector}
         onClose={() => setShowPlantSelector(false)}
