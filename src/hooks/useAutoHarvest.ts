@@ -17,14 +17,20 @@ export const useAutoHarvest = () => {
   const [selectedPlantType, setSelectedPlantType] = useState<string | null>(null);
 
   // Vérifier si l'amélioration de récolte automatique est achetée
-  const hasAutoHarvest = isUpgradePurchased('auto_harvest_upgrade_id'); // ID à définir dans la DB
+  // On cherche une amélioration avec effect_type 'auto_harvest'
+  const availableUpgrades = useUpgrades().availableUpgrades;
+  const autoHarvestUpgrade = availableUpgrades.find(upgrade => 
+    upgrade.effect_type === 'auto_harvest'
+  );
+  
+  const hasAutoHarvest = autoHarvestUpgrade ? isUpgradePurchased(autoHarvestUpgrade.id) : false;
 
   const autoHarvestMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.id || !selectedPlantType || !hasAutoHarvest) return;
+      if (!user?.id || !selectedPlantType || !hasAutoHarvest) return null;
 
       // Vérifier si la parcelle 1 a une plante prête
-      const { data: plot } = await supabase
+      const { data: plot, error: plotError } = await supabase
         .from('garden_plots')
         .select(`
           *, 
@@ -34,27 +40,27 @@ export const useAutoHarvest = () => {
         .eq('plot_number', 1)
         .single();
 
-      if (!plot || !plot.plant_type || !plot.planted_at) return;
+      if (plotError || !plot || !plot.plant_type || !plot.planted_at) return null;
 
-      const growthTime = plot.growth_time_seconds || plot.plant_types?.base_growth_seconds || 60;
+      const plantType = Array.isArray(plot.plant_types) ? plot.plant_types[0] : plot.plant_types;
+      if (!plantType) return null;
+
+      const growthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
       const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime);
 
-      if (!isReady) return;
+      if (!isReady) return null;
 
       // Récolter automatiquement
       const multipliers = getActiveMultipliers();
-      const plantType = plot.plant_types;
       
-      if (!plantType) return;
-
       // Obtenir les données du jardin
-      const { data: garden } = await supabase
+      const { data: garden, error: gardenError } = await supabase
         .from('player_gardens')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (!garden) return;
+      if (gardenError || !garden) return null;
 
       // Calculer les récompenses
       const plantLevel = Math.max(1, plantType.level_required || 1);
@@ -159,9 +165,13 @@ export const useAutoHarvest = () => {
       // Déclencher les animations
       triggerCoinAnimation(harvestReward);
       triggerXpAnimation(expReward);
+
+      return { harvestReward, expReward };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
+    onSuccess: (result) => {
+      if (result) {
+        queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      }
     },
     onError: (error: any) => {
       console.error('Erreur récolte automatique:', error);
@@ -177,7 +187,7 @@ export const useAutoHarvest = () => {
     }, 10000); // Vérifier toutes les 10 secondes
 
     return () => clearInterval(interval);
-  }, [hasAutoHarvest, selectedPlantType, autoHarvestMutation]);
+  }, [hasAutoHarvest, selectedPlantType]);
 
   return {
     hasAutoHarvest,

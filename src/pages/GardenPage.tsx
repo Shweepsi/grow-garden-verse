@@ -13,8 +13,10 @@ export const GardenPage = () => {
     unlockPlot 
   } = useRefactoredGame();
 
-  // Bloquer le scroll sur cette page
+  // Bloquer le scroll sur cette page et réinitialiser le scroll en haut
   useEffect(() => {
+    // Réinitialiser le scroll en haut
+    window.scrollTo(0, 0);
     document.body.style.overflow = 'hidden';
     
     return () => {

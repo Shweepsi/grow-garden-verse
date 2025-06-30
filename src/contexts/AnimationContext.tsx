@@ -1,9 +1,10 @@
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
 export interface FloatingAnimation {
   id: string;
   amount: number;
-  type: 'coins' | 'experience' | 'gems';
+  type: 'coins' | 'experience';
   timestamp: number;
 }
 
@@ -11,7 +12,6 @@ interface AnimationContextType {
   animations: FloatingAnimation[];
   triggerCoinAnimation: (amount: number) => void;
   triggerXpAnimation: (amount: number) => void;
-  triggerGemAnimation: (amount: number) => void;
   removeAnimation: (id: string) => void;
 }
 
@@ -32,10 +32,6 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     timer: null
   });
   const [xpAccumulator, setXpAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
-    amount: 0,
-    timer: null
-  });
-  const [gemAccumulator, setGemAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
     amount: 0,
     timer: null
   });
@@ -88,30 +84,6 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, []);
 
-  const triggerGemAnimation = useCallback((amount: number) => {
-    setGemAccumulator(prev => {
-      if (prev.timer) {
-        clearTimeout(prev.timer);
-      }
-      
-      const newAmount = prev.amount + amount;
-      
-      const timer = setTimeout(() => {
-        const id = `gem-${Date.now()}-${Math.random()}`;
-        setAnimations(current => [...current, {
-          id,
-          amount: newAmount,
-          type: 'gems',
-          timestamp: Date.now()
-        }]);
-        
-        setGemAccumulator({ amount: 0, timer: null });
-      }, 300);
-      
-      return { amount: newAmount, timer };
-    });
-  }, []);
-
   const removeAnimation = useCallback((id: string) => {
     setAnimations(current => current.filter(anim => anim.id !== id));
   }, []);
@@ -121,7 +93,6 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       animations,
       triggerCoinAnimation,
       triggerXpAnimation,
-      triggerGemAnimation,
       removeAnimation
     }}>
       {children}
