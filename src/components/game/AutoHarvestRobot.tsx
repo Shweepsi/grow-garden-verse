@@ -76,8 +76,8 @@ export const AutoHarvestRobot = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[90vh] bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-blue-800 flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               🤖
@@ -89,52 +89,52 @@ export const AutoHarvestRobot = ({
           </p>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col space-y-4">
-          {/* Plante actuelle */}
-          {currentPlantType && (
-            <div className="bg-green-100 border border-green-300 rounded-lg p-3">
-              <div className="flex items-center gap-3">
-                <div className="text-2xl">{currentPlantType.emoji}</div>
-                <div>
-                  <h3 className="font-bold text-green-800">
-                    Actuellement cultivé: {currentPlantType.display_name}
-                  </h3>
-                  <p className="text-sm text-green-600">
-                    Le robot cultive automatiquement cette plante
-                  </p>
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-4">
+            {/* Plante actuelle */}
+            {currentPlantType && (
+              <div className="bg-green-100 border border-green-300 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{currentPlantType.emoji}</div>
+                  <div>
+                    <h3 className="font-bold text-green-800">
+                      Actuellement cultivé: {currentPlantType.display_name}
+                    </h3>
+                    <p className="text-sm text-green-600">
+                      Le robot cultive automatiquement cette plante
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Informations sur les bonus */}
-          <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-blue-800">Bonus actifs</span>
+            {/* Informations sur les bonus */}
+            <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-blue-800">Bonus actifs</span>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {multipliers.harvest > 1 && (
+                  <Badge variant="outline" className="bg-green-100 text-green-700">
+                    Récolte +{Math.round((multipliers.harvest - 1) * 100)}%
+                  </Badge>
+                )}
+                {multipliers.growth > 1 && (
+                  <Badge variant="outline" className="bg-blue-100 text-blue-700">
+                    Vitesse +{Math.round((multipliers.growth - 1) * 100)}%
+                  </Badge>
+                )}
+                {multipliers.plantCostReduction < 1 && (
+                  <Badge variant="outline" className="bg-orange-100 text-orange-700">
+                    Coût -{Math.round((1 - multipliers.plantCostReduction) * 100)}%
+                  </Badge>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {multipliers.harvest > 1 && (
-                <Badge variant="outline" className="bg-green-100 text-green-700">
-                  Récolte +{Math.round((multipliers.harvest - 1) * 100)}%
-                </Badge>
-              )}
-              {multipliers.growth > 1 && (
-                <Badge variant="outline" className="bg-blue-100 text-blue-700">
-                  Vitesse +{Math.round((multipliers.growth - 1) * 100)}%
-                </Badge>
-              )}
-              {multipliers.plantCostReduction < 1 && (
-                <Badge variant="outline" className="bg-orange-100 text-orange-700">
-                  Coût -{Math.round((1 - multipliers.plantCostReduction) * 100)}%
-                </Badge>
-              )}
-            </div>
-          </div>
 
-          {/* Sélection de plante */}
-          <ScrollArea className="flex-1">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pr-4">
+            {/* Sélection de plante */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {availablePlants.map((plantType) => {
                 const cost = getPlantCost(plantType);
                 const reward = getPlantReward(plantType);
@@ -204,26 +204,26 @@ export const AutoHarvestRobot = ({
                 );
               })}
             </div>
-          </ScrollArea>
-
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
-              Annuler
-            </Button>
-            <Button
-              onClick={handleConfirmSelection}
-              disabled={!selectedPlant}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Configurer le Robot
-            </Button>
           </div>
+        </ScrollArea>
+
+        {/* Actions */}
+        <div className="flex gap-2 flex-shrink-0 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex-1"
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleConfirmSelection}
+            disabled={!selectedPlant}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Configurer le Robot
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

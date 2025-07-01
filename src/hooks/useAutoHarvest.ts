@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,12 +6,14 @@ import { useAnimations } from '@/contexts/AnimationContext';
 import { EconomyService } from '@/services/EconomyService';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { toast } from 'sonner';
+import { useEffect, useRef } from 'react';
 
 export const useAutoHarvest = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { playerUpgrades, getActiveMultipliers } = useUpgrades();
   const { triggerCoinAnimation, triggerXpAnimation } = useAnimations();
+  const realtimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Vérifier si l'amélioration auto-récolte est débloquée
   const hasAutoHarvest = playerUpgrades.some(upgrade => 
@@ -36,6 +37,124 @@ export const useAutoHarvest = () => {
     },
     enabled: !!user?.id && hasAutoHarvest
   });
+
+  // Gestion des récompenses en temps réel
+  useEffect(() => {
+    if (!hasAutoHarvest || !autoHarvestState?.plant_type || !autoHarvestState?.planted_at) {
+      if (realtimeIntervalRef.current) {
+        clearInterval(realtimeIntervalRef.current);
+        realtimeIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const checkAndHarvestRealtime = async () => {
+      try {
+        const growthTime = autoHarvestState.growth_time_seconds || 3600;
+        const isReady = PlantGrowthService.isPlantReady(autoHarvestState.planted_at, growthTime);
+        
+        if (isReady) {
+          await processAutoHarvest();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification auto-récolte:', error);
+      }
+    };
+
+    // Vérifier toutes les 5 secondes si une récolte est prête
+    realtimeIntervalRef.current = setInterval(checkAndHarvestRealtime, 5000);
+
+    return () => {
+      if (realtimeIntervalRef.current) {
+        clearInterval(realtimeIntervalRef.current);
+      }
+    };
+  }, [hasAutoHarvest, autoHarvestState?.plant_type, autoHarvestState?.planted_at, autoHarvestState?.growth_time_seconds]);
+
+  // Traitement de l'auto-récolte
+  const processAutoHarvest = async () => {
+    if (!user?.id || !autoHarvestState?.plant_type) return;
+
+    const { data: garden } = await supabase
+      .from('player_gardens')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!garden) return;
+
+    const { data: plantType } = await supabase
+      .from('plant_types')
+      .select('*')
+      .eq('id', autoHarvestState.plant_type)
+      .single();
+
+    if (!plantType) return;
+
+    const multipliers = getActiveMultipliers();
+    
+    // Calculer les récompenses
+    const harvestReward = EconomyService.getHarvestReward(
+      plantType.level_required || 1,
+      plantType.base_growth_seconds,
+      garden.level || 1,
+      multipliers.harvest,
+      multipliers.plantCostReduction
+    );
+
+    const expReward = EconomyService.getExperienceReward(
+      plantType.level_required || 1,
+      multipliers.exp
+    );
+
+    const newExp = (garden.experience || 0) + expReward;
+    const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
+    const newCoins = (garden.coins || 0) + harvestReward;
+    const newHarvests = (garden.total_harvests || 0) + 1;
+
+    // Mettre à jour le jardin
+    const { error: gardenError } = await supabase
+      .from('player_gardens')
+      .update({
+        coins: newCoins,
+        experience: newExp,
+        level: newLevel,
+        total_harvests: newHarvests,
+        last_played: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (gardenError) throw gardenError;
+
+    // Replanter immédiatement
+    const { error: plotError } = await supabase
+      .from('garden_plots')
+      .update({
+        planted_at: new Date().toISOString(),
+        growth_time_seconds: EconomyService.getAdjustedGrowthTime(
+          plantType.base_growth_seconds,
+          multipliers.growth
+        ),
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('plot_number', 1);
+
+    if (plotError) throw plotError;
+
+    // Déclencher les animations
+    triggerCoinAnimation(harvestReward);
+    triggerXpAnimation(expReward);
+
+    // Invalider les requêtes pour rafraîchir l'UI
+    queryClient.invalidateQueries({ queryKey: ['gameData'] });
+    queryClient.invalidateQueries({ queryKey: ['autoHarvestState'] });
+
+    // Toast discret pour indiquer l'auto-récolte
+    toast.success('🤖 Auto-récolte', {
+      description: `+${harvestReward.toLocaleString()} 🪙 • +${expReward} EXP`
+    });
+  };
 
   // Calculer les récompenses hors-ligne
   const calculateOfflineRewards = async () => {
