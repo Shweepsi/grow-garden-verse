@@ -63,7 +63,7 @@ export const useAutoHarvest = () => {
     };
 
     // Vérifier toutes les 5 secondes si une récolte est prête
-    realtimeIntervalRef.current = setInterval(checkAndHarvestRealtime, 5000);
+    realtimeIntervalRef.current = setInterval(checkAndHarvestRealtime, 15000);
 
     return () => {
       if (realtimeIntervalRef.current) {
@@ -169,12 +169,6 @@ export const useAutoHarvest = () => {
     // Invalider les requêtes pour rafraîchir l'UI
     queryClient.invalidateQueries({ queryKey: ['gameData'] });
     queryClient.invalidateQueries({ queryKey: ['autoHarvestState'] });
-
-    // Toast discret pour indiquer l'auto-récolte
-    toast.success('🤖 Auto-récolte', {
-      description: `+${harvestReward.toLocaleString()} 🪙 • +${expReward} EXP`
-    });
-  };
 
   // Calculer les récompenses hors-ligne
   const calculateOfflineRewards = async () => {
