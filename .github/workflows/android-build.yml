@@ -41,8 +41,11 @@ jobs:
           cd android
           ./gradlew assembleDebug
 
+      - name: Move APK to root
+        run: mv android/app/build/outputs/apk/debug/*.apk ./GrowGardenVerse.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: GrowGardenVerse
-          path: android/app/build/outputs/apk/debug/GrowGardenVerse.apk
+          path: GrowGardenVerse.apk
