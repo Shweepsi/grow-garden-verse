@@ -150,6 +150,7 @@ export const useAutoHarvest = () => {
     // Invalider les requêtes pour rafraîchir l'UI
     queryClient.invalidateQueries({ queryKey: ['gameData'] });
     queryClient.invalidateQueries({ queryKey: ['autoHarvestState'] });
+};
 
   // Calculer les récompenses hors-ligne
   const calculateOfflineRewards = async () => {
