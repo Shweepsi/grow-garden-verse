@@ -85,7 +85,7 @@ export const AutoHarvestRobot = ({
             Configuration du Robot Auto-Récolte
           </DialogTitle>
           <p className="text-blue-600 text-sm">
-            Sélectionnez la plante que le robot doit cultiver automatiquement sur la parcelle 1
+            Sélectionnez la plante que le robot doit cultiver automatiquement
           </p>
         </DialogHeader>
 
