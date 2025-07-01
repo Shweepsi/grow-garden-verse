@@ -3,7 +3,6 @@ import { GameHeader } from '@/components/game/GameHeader';
 import { PlotGrid } from '@/components/game/PlotGrid';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
 
 export const GardenPage = () => {
   const { 
@@ -12,17 +11,6 @@ export const GardenPage = () => {
     harvestPlant, 
     unlockPlot 
   } = useRefactoredGame();
-
-  // Bloquer le scroll sur cette page et réinitialiser le scroll en haut
-  useEffect(() => {
-    // Réinitialiser le scroll en haut
-    window.scrollTo(0, 0);
-    document.body.style.overflow = 'hidden';
-    
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -35,14 +23,14 @@ export const GardenPage = () => {
   }
 
   return (
-    <div className="h-screen garden-background flex flex-col overflow-hidden">
-      {/* Header fixe */}
-      <div className="flex-shrink-0">
+    <div className="min-h-screen garden-background">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
         <GameHeader garden={gameState.garden} />
       </div>
       
-      {/* Contenu avec scroll interne */}
-      <div className="flex-1 overflow-y-auto px-3 pb-6 space-y-3">
+      {/* Content with padding to avoid overlap */}
+      <div className="px-3 pb-6 space-y-3">
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}

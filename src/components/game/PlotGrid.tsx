@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { GardenPlot, PlantType } from '@/types/game';
 import { PlotCard } from './PlotCard';
@@ -64,7 +65,6 @@ export const PlotGrid = ({
             plot={plot}
             plantType={plantTypeMap.get(plot.plant_type || '')}
             plantTypesCount={plantTypes.length}
-            plantTypes={plantTypes}
             coins={coins}
             isPlanting={isPlanting}
             onPlotClick={handlePlotClick}
