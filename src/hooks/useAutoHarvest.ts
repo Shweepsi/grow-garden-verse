@@ -63,7 +63,7 @@ export const useAutoHarvest = () => {
     };
 
     // Vérifier toutes les 5 secondes si une récolte est prête
-    realtimeIntervalRef.current = setInterval(checkAndHarvestRealtime, 15000);
+    realtimeIntervalRef.current = setInterval(checkAndHarvestRealtime, 5000);
 
     return () => {
       if (realtimeIntervalRef.current) {
@@ -71,25 +71,6 @@ export const useAutoHarvest = () => {
       }
     };
   }, [hasAutoHarvest, autoHarvestState?.plant_type, autoHarvestState?.planted_at, autoHarvestState?.growth_time_seconds]);
-
-  // Vérifier et réclamer les récompenses hors-ligne au chargement
-  useEffect(() => {
-    if (hasAutoHarvest && autoHarvestState?.plant_type && !offlineRewardsClaimedRef.current) {
-      calculateOfflineRewards().then(rewards => {
-        if (rewards && rewards.cycles > 0) {
-          offlineRewardsClaimedRef.current = true;
-          // Afficher un seul toast avec le total des récoltes
-          toast.info(`🤖 Robot actif pendant votre absence !`, {
-            description: `${rewards.cycles} récoltes automatiques effectuées`,
-            action: {
-              label: "Réclamer",
-              onClick: () => claimOfflineRewards()
-            }
-          });
-        }
-      });
-    }
-  }, [hasAutoHarvest, autoHarvestState?.plant_type]);
 
   // Traitement de l'auto-récolte
   const processAutoHarvest = async () => {
