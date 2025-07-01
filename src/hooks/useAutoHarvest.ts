@@ -14,6 +14,7 @@ export const useAutoHarvest = () => {
   const { playerUpgrades, getActiveMultipliers } = useUpgrades();
   const { triggerCoinAnimation, triggerXpAnimation } = useAnimations();
   const realtimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const offlineRewardsClaimedRef = useRef(false);
 
   // Vérifier si l'amélioration auto-récolte est débloquée
   const hasAutoHarvest = playerUpgrades.some(upgrade => 
@@ -70,6 +71,25 @@ export const useAutoHarvest = () => {
       }
     };
   }, [hasAutoHarvest, autoHarvestState?.plant_type, autoHarvestState?.planted_at, autoHarvestState?.growth_time_seconds]);
+
+  // Vérifier et réclamer les récompenses hors-ligne au chargement
+  useEffect(() => {
+    if (hasAutoHarvest && autoHarvestState?.plant_type && !offlineRewardsClaimedRef.current) {
+      calculateOfflineRewards().then(rewards => {
+        if (rewards && rewards.cycles > 0) {
+          offlineRewardsClaimedRef.current = true;
+          // Afficher un seul toast avec le total des récoltes
+          toast.info(`🤖 Robot actif pendant votre absence !`, {
+            description: `${rewards.cycles} récoltes automatiques effectuées`,
+            action: {
+              label: "Réclamer",
+              onClick: () => claimOfflineRewards()
+            }
+          });
+        }
+      });
+    }
+  }, [hasAutoHarvest, autoHarvestState?.plant_type]);
 
   // Traitement de l'auto-récolte
   const processAutoHarvest = async () => {
@@ -339,8 +359,8 @@ export const useAutoHarvest = () => {
     },
     onSuccess: (rewards) => {
       if (rewards) {
-        toast.success(`Récolte hors-ligne !`, {
-          description: `${rewards.cycles} cycles • +${rewards.totalCoins.toLocaleString()} 🪙 • +${rewards.totalExp} EXP`
+        toast.success(`🤖 Récompenses hors-ligne réclamées !`, {
+          description: `${rewards.cycles} récoltes • +${rewards.totalCoins.toLocaleString()} 🪙 • +${rewards.totalExp} EXP`
         });
       }
       queryClient.invalidateQueries({ queryKey: ['gameData'] });

@@ -76,7 +76,7 @@ export const AutoHarvestRobot = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 flex flex-col">
+      <DialogContent className="max-w-4xl h-[90vh] bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-blue-800 flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -89,8 +89,8 @@ export const AutoHarvestRobot = ({
           </p>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1">
+          <div className="space-y-4 pr-4">
             {/* Plante actuelle */}
             {currentPlantType && (
               <div className="bg-green-100 border border-green-300 rounded-lg p-3">
