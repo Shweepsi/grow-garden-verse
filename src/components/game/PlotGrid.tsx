@@ -1,9 +1,12 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { GardenPlot, PlantType } from '@/types/game';
 import { PlotCard } from './PlotCard';
 import { PlantSelector } from './PlantSelector';
+import { AutoHarvestRobot } from './AutoHarvestRobot';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
+import { useAutoHarvest } from '@/hooks/useAutoHarvest';
+import { toast } from 'sonner';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -22,7 +25,16 @@ export const PlotGrid = ({
 }: PlotGridProps) => {
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
+  const [showAutoHarvestConfig, setShowAutoHarvestConfig] = useState(false);
   const { plantDirect, isPlanting } = useDirectPlanting();
+  const { 
+    hasAutoHarvest, 
+    autoHarvestState, 
+    setAutoHarvestPlant, 
+    claimOfflineRewards,
+    calculateOfflineRewards,
+    isSettingPlant 
+  } = useAutoHarvest();
 
   // Mémoriser les données des plantes pour éviter les recalculs
   const plantTypeMap = useMemo(() => {
@@ -31,8 +43,32 @@ export const PlotGrid = ({
     return map;
   }, [plantTypes]);
 
+  // Vérifier et réclamer les récompenses hors-ligne au chargement
+  useEffect(() => {
+    if (hasAutoHarvest && autoHarvestState?.plant_type) {
+      calculateOfflineRewards().then(rewards => {
+        if (rewards && rewards.cycles > 0) {
+          // Afficher un toast informatif puis réclamer automatiquement
+          toast.info(`Robot actif pendant votre absence !`, {
+            description: `${rewards.cycles} récoltes disponibles`,
+            action: {
+              label: "Réclamer",
+              onClick: () => claimOfflineRewards()
+            }
+          });
+        }
+      });
+    }
+  }, [hasAutoHarvest, autoHarvestState?.plant_type]);
+
   const handlePlotClick = (plot: GardenPlot) => {
     if (!plot.unlocked) return;
+    
+    // Parcelle 1 avec auto-récolte active
+    if (plot.plot_number === 1 && hasAutoHarvest) {
+      setShowAutoHarvestConfig(true);
+      return;
+    }
     
     const hasPlant = !!plot.plant_type;
     const isReady = hasPlant && plot.planted_at && plot.growth_time_seconds
@@ -56,23 +92,38 @@ export const PlotGrid = ({
     setSelectedPlot(null);
   };
 
+  const handleCloseAutoHarvestConfig = () => {
+    setShowAutoHarvestConfig(false);
+  };
+
+  const handleSetAutoHarvestPlant = (plantTypeId: string) => {
+    setAutoHarvestPlant(plantTypeId);
+  };
+
   return (
     <>
       <div className="grid grid-cols-3 gap-2 p-3">
-        {plots.map((plot) => (
-          <PlotCard
-            key={plot.id}
-            plot={plot}
-            plantType={plantTypeMap.get(plot.plant_type || '')}
-            plantTypesCount={plantTypes.length}
-            coins={coins}
-            isPlanting={isPlanting}
-            onPlotClick={handlePlotClick}
-            onUnlockPlot={onUnlockPlot}
-          />
-        ))}
+        {plots.map((plot) => {
+          const plantType = plantTypeMap.get(plot.plant_type || '');
+          const isAutoHarvestPlot = plot.plot_number === 1 && hasAutoHarvest;
+          
+          return (
+            <PlotCard
+              key={plot.id}
+              plot={plot}
+              plantType={plantType}
+              plantTypesCount={plantTypes.length}
+              coins={coins}
+              isPlanting={isPlanting || isSettingPlant}
+              hasAutoHarvest={isAutoHarvestPlot}
+              onPlotClick={handlePlotClick}
+              onUnlockPlot={onUnlockPlot}
+            />
+          );
+        })}
       </div>
 
+      {/* Sélecteur de plante classique */}
       <PlantSelector
         isOpen={showPlantSelector}
         onClose={handleClosePlantSelector}
@@ -80,6 +131,16 @@ export const PlotGrid = ({
         plantTypes={plantTypes}
         coins={coins}
         onPlantDirect={handlePlantSelection}
+      />
+
+      {/* Configuration du robot auto-récolte */}
+      <AutoHarvestRobot
+        isOpen={showAutoHarvestConfig}
+        onClose={handleCloseAutoHarvestConfig}
+        plantTypes={plantTypes}
+        coins={coins}
+        currentPlantType={autoHarvestState?.plant_type ? plantTypeMap.get(autoHarvestState.plant_type) : undefined}
+        onSetPlant={handleSetAutoHarvestPlant}
       />
     </>
   );
