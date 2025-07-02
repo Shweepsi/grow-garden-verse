@@ -66,8 +66,8 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
       const { error } = await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins - nextPrestige.cost_coins + 50, // Déduire le coût + reset à 50
-          gems: (garden.gems || 0) - nextPrestige.cost_gems,
+          coins: 100, // Reset à 100 pièces (le coût a été vérifié mais pas déduit)
+          gems: garden.gems, // Gemmes conservées (le coût a été vérifié mais pas déduit)
           experience: 0,
           level: 1,
           permanent_multiplier: nextPrestige.effect_value,
@@ -184,7 +184,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
                   <div>Le prestige remet votre progression à zéro :</div>
                   <ul className="list-disc list-inside mt-1 space-y-1">
                     <li>Niveau → 1</li>
-                    <li>Pièces → 50</li>
+                    <li>Pièces → 100</li>
                     <li>Expérience → 0</li>
                     <li>Améliorations → supprimées</li>
                     <li>Parcelles → seule la première reste débloquée</li>
