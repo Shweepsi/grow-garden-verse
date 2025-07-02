@@ -2,10 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
-import { Crown, Star, Zap, AlertTriangle } from 'lucide-react';
+import { Crown, Star, Zap, AlertTriangle, Gem } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useUpgrades } from '@/hooks/useUpgrades';
+import { LevelUpgrade } from '@/types/upgrades';
 
 interface PrestigeSystemProps {
   garden: PlayerGarden;
@@ -14,47 +16,62 @@ interface PrestigeSystemProps {
 
 export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [prestigeUpgrades, setPrestigeUpgrades] = useState<LevelUpgrade[]>([]);
+  const { availableUpgrades, isUpgradePurchased } = useUpgrades();
 
-  // Calculer les seuils de prestige
-  const getPrestigeThreshold = (level: number) => {
-    switch (level) {
-      case 0: return 100000; // 100k pièces pour X2
-      case 1: return 500000; // 500k pièces pour X5  
-      case 2: return 2000000; // 2M pièces pour X10
-      default: return Infinity;
-    }
+  useEffect(() => {
+    // Filtrer les améliorations de prestige
+    const prestige = availableUpgrades.filter(upgrade => upgrade.effect_type === 'prestige');
+    setPrestigeUpgrades(prestige.sort((a, b) => a.effect_value - b.effect_value));
+  }, [availableUpgrades]);
+
+  // Obtenir la prochaine amélioration de prestige disponible
+  const getNextPrestigeUpgrade = () => {
+    return prestigeUpgrades.find(upgrade => !isUpgradePurchased(upgrade.id));
   };
 
-  const getPrestigeMultiplier = (level: number) => {
-    switch (level) {
-      case 0: return 2;
-      case 1: return 5;
-      case 2: return 10;
-      default: return 10;
-    }
-  };
-
-  const currentThreshold = getPrestigeThreshold(garden.prestige_level || 0);
-  const nextMultiplier = getPrestigeMultiplier(garden.prestige_level || 0);
-  const canPrestige = garden.coins >= currentThreshold && (garden.prestige_level || 0) < 3;
-  const isMaxPrestige = (garden.prestige_level || 0) >= 3;
+  const nextPrestige = getNextPrestigeUpgrade();
+  const currentPrestigeLevel = prestigeUpgrades.filter(upgrade => isUpgradePurchased(upgrade.id)).length;
+  const canPrestige = nextPrestige && 
+    garden.coins >= nextPrestige.cost_coins && 
+    (garden.gems || 0) >= nextPrestige.cost_gems &&
+    garden.level >= nextPrestige.level_required;
+  const isMaxPrestige = currentPrestigeLevel >= prestigeUpgrades.length;
 
   const handlePrestige = async () => {
-    if (!canPrestige || isProcessing) return;
+    if (!canPrestige || isProcessing || !nextPrestige) return;
 
     try {
       setIsProcessing(true);
 
-      // Effectuer le reset avec le nouveau niveau de prestige
+      // Acheter l'amélioration de prestige
+      const { error: upgradeError } = await supabase
+        .from('player_upgrades')
+        .insert({
+          user_id: garden.user_id,
+          upgrade_id: nextPrestige.id
+        });
+
+      if (upgradeError) throw upgradeError;
+
+      // Reset des améliorations (sauf prestige)
+      await supabase
+        .from('player_upgrades')
+        .delete()
+        .eq('user_id', garden.user_id)
+        .neq('upgrade_id', nextPrestige.id)
+        .in('upgrade_id', availableUpgrades.filter(u => u.effect_type !== 'prestige').map(u => u.id));
+
+      // Effectuer le reset SANS réinitialiser total_harvests
       const { error } = await supabase
         .from('player_gardens')
         .update({
-          coins: 50, // Reset à 50 pièces de départ
+          coins: garden.coins - nextPrestige.cost_coins + 50, // Déduire le coût + reset à 50
+          gems: (garden.gems || 0) - nextPrestige.cost_gems,
           experience: 0,
           level: 1,
-          total_harvests: 0,
-          prestige_level: (garden.prestige_level || 0) + 1,
-          permanent_multiplier: nextMultiplier,
+          permanent_multiplier: nextPrestige.effect_value,
+          prestige_level: currentPrestigeLevel + 1,
           prestige_points: (garden.prestige_points || 0) + 1
         })
         .eq('user_id', garden.user_id);
@@ -87,8 +104,18 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
         .eq('user_id', garden.user_id)
         .eq('plot_number', 1);
 
-      toast.success(`🎉 Prestige accompli ! Multiplicateur permanent : X${nextMultiplier}`, {
-        description: `Vous repartez de zéro avec un bonus permanent de X${nextMultiplier} sur tous les gains !`
+      // Enregistrer la transaction
+      await supabase
+        .from('coin_transactions')
+        .insert({
+          user_id: garden.user_id,
+          amount: -nextPrestige.cost_coins,
+          transaction_type: 'prestige',
+          description: `Prestige ${nextPrestige.display_name}`
+        });
+
+      toast.success(`🎉 ${nextPrestige.display_name} accompli ! Multiplicateur permanent : X${nextPrestige.effect_value}`, {
+        description: `Vous repartez de zéro avec un bonus permanent de X${nextPrestige.effect_value} sur tous les gains !`
       });
 
       onPrestige();
@@ -101,7 +128,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
     }
   };
 
-  const progressPercentage = Math.min((garden.coins / currentThreshold) * 100, 100);
+  const progressPercentage = nextPrestige ? Math.min((garden.coins / nextPrestige.cost_coins) * 100, 100) : 0;
 
   return (
     <Card className="border-2 border-purple-200">
@@ -117,7 +144,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
           <div className="flex items-center justify-center gap-2">
             <Star className="h-5 w-5 text-yellow-500" />
             <span className="text-lg font-bold">
-              Prestige {garden.prestige_level || 0}
+              Prestige {currentPrestigeLevel}
             </span>
           </div>
           <div className="flex items-center justify-center gap-2 text-purple-600">
@@ -128,17 +155,23 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
           </div>
         </div>
 
-        {!isMaxPrestige ? (
+        {!isMaxPrestige && nextPrestige ? (
           <>
             {/* Progression vers le prochain prestige */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Progrès vers Prestige {(garden.prestige_level || 0) + 1}</span>
-                <span>{garden.coins.toLocaleString()} / {currentThreshold.toLocaleString()}</span>
+                <span>Progrès vers {nextPrestige.display_name}</span>
+                <div className="text-right">
+                  <div>{garden.coins.toLocaleString()} / {nextPrestige.cost_coins.toLocaleString()} pièces</div>
+                  <div className="flex items-center gap-1 text-purple-600">
+                    <Gem className="h-3 w-3" />
+                    {garden.gems || 0} / {nextPrestige.cost_gems} gemmes
+                  </div>
+                </div>
               </div>
               <Progress value={progressPercentage} className="h-3" />
               <div className="text-center text-sm text-purple-600">
-                Prochain multiplicateur : X{nextMultiplier}
+                Prochain multiplicateur : X{nextPrestige.effect_value}
               </div>
             </div>
 
@@ -153,12 +186,30 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
                     <li>Niveau → 1</li>
                     <li>Pièces → 50</li>
                     <li>Expérience → 0</li>
+                    <li>Améliorations → supprimées</li>
                     <li>Parcelles → seule la première reste débloquée</li>
                     <li>Toutes les plantes sont supprimées</li>
                   </ul>
                   <div className="font-semibold mt-2 text-green-700">
-                    ✓ Vous gardez : multiplicateur permanent X{nextMultiplier}
+                    ✓ Vous gardez : total des récoltes & multiplicateur permanent X{nextPrestige.effect_value}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Coût du prestige */}
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <div className="text-sm text-purple-800">
+                <div className="font-semibold mb-2">Coût du {nextPrestige.display_name} :</div>
+                <div className="flex justify-between items-center">
+                  <span>💰 {nextPrestige.cost_coins.toLocaleString()} pièces</span>
+                  <span className="flex items-center gap-1">
+                    <Gem className="h-4 w-4" />
+                    {nextPrestige.cost_gems} gemmes
+                  </span>
+                </div>
+                <div className="mt-1 text-xs">
+                  Niveau requis : {nextPrestige.level_required}
                 </div>
               </div>
             </div>
@@ -176,10 +227,10 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
               ) : canPrestige ? (
                 <>
                   <Crown className="h-4 w-4 mr-2" />
-                  Effectuer le Prestige (X{nextMultiplier})
+                  Effectuer le {nextPrestige.display_name}
                 </>
               ) : (
-                `Il faut ${currentThreshold.toLocaleString()} pièces`
+                `Conditions non remplies`
               )}
             </Button>
           </>
