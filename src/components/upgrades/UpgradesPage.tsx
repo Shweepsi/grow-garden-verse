@@ -23,9 +23,8 @@ export const UpgradesPage = () => {
   const coins = gameData?.garden?.coins || 0;
   const gems = gameData?.garden?.gems || 0;
 
-  // Filtrer et trier les améliorations (exclure le prestige)
-  const nonPrestigeUpgrades = availableUpgrades.filter(upgrade => upgrade.effect_type !== 'prestige');
-  const sortedUpgrades = [...nonPrestigeUpgrades].sort((a, b) => a.cost_coins - b.cost_coins);
+  // Trier les améliorations par prix (du moins cher au plus cher)
+  const sortedUpgrades = [...availableUpgrades].sort((a, b) => a.cost_coins - b.cost_coins);
   
   const getEffectTypeColor = (effectType: string) => {
     if (effectType.includes('harvest')) return 'bg-yellow-500/20 text-yellow-700 border-yellow-300';
