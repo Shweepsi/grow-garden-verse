@@ -1,14 +1,22 @@
 
 import { GameHeader } from '@/components/game/GameHeader';
 import { PlayerStats } from '@/components/game/PlayerStats';
+import { PrestigeSystem } from '@/components/game/PrestigeSystem';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Loader2, LogOut, Settings } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const ProfilePage = () => {
   const { gameState, loading } = useRefactoredGame();
   const { signOut } = useAuth();
+  const queryClient = useQueryClient();
+
+  const handlePrestige = () => {
+    // Invalider les queries pour rafraîchir les données
+    queryClient.invalidateQueries({ queryKey: ['gameData'] });
+  };
 
   if (loading) {
     return (
@@ -40,6 +48,14 @@ export const ProfilePage = () => {
           totalPlants={totalPlants}
           activePlants={activePlants}
         />
+
+        {/* Système de Prestige */}
+        {gameState.garden && (
+          <PrestigeSystem 
+            garden={gameState.garden}
+            onPrestige={handlePrestige}
+          />
+        )}
 
         {/* Section Paramètres */}
         <div className="space-y-4">
