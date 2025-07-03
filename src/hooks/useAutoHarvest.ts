@@ -100,7 +100,8 @@ export const useAutoHarvest = () => {
       plantType.base_growth_seconds,
       garden.level || 1,
       multipliers.harvest,
-      multipliers.plantCostReduction
+      multipliers.plantCostReduction,
+      garden.permanent_multiplier || 1
     );
 
     const expReward = EconomyService.getExperienceReward(
@@ -158,7 +159,7 @@ export const useAutoHarvest = () => {
 
     const { data: garden } = await supabase
       .from('player_gardens')
-      .select('last_played, level')
+      .select('last_played, level, permanent_multiplier')
       .eq('user_id', user.id)
       .single();
 
@@ -194,7 +195,8 @@ export const useAutoHarvest = () => {
       plantType.base_growth_seconds,
       garden.level || 1,
       multipliers.harvest,
-      multipliers.plantCostReduction
+      multipliers.plantCostReduction,
+      garden.permanent_multiplier || 1
     );
 
     const expReward = EconomyService.getExperienceReward(

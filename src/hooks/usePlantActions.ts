@@ -109,7 +109,8 @@ export const usePlantActions = () => {
         baseGrowthSeconds,
         playerLevel,
         harvestMultiplier,
-        plantCostReduction
+        plantCostReduction,
+        garden.permanent_multiplier || 1
       );
       
       const expReward = EconomyService.getExperienceReward(plantLevel, expMultiplier);

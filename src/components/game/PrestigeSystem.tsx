@@ -63,7 +63,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
       const { error } = await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins - costCoins + 100, // Déduire le coût puis remettre à 100
+          coins: 100, // Remettre à 100 pièces après avoir payé le coût
           gems: (garden.gems || 0) - costGems, // Déduire le coût des gemmes
           experience: 0,
           level: 1,

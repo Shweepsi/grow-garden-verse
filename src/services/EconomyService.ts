@@ -28,7 +28,8 @@ export class EconomyService {
     growthTimeSeconds: number,
     playerLevel: number = 1,
     harvestMultiplier: number = 1,
-    plantCostReduction: number = 1
+    plantCostReduction: number = 1,
+    permanentMultiplier: number = 1
   ): number {
     // Validation des paramètres
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
@@ -44,7 +45,7 @@ export class EconomyService {
     const levelBonus = 1 + (playerLevel * 0.02); // 2% par niveau du joueur
     
     const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
-    return Math.floor(finalReward * harvestMultiplier);
+    return Math.floor(finalReward * harvestMultiplier * permanentMultiplier);
   }
 
   // Expérience avec multiplicateur d'amélioration
