@@ -76,10 +76,15 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
       if (error) throw error;
 
       // Réinitialiser les améliorations débloquées
-      await supabase
+      const { error: upgradeDeleteError } = await supabase
         .from('player_upgrades')
         .delete()
         .eq('user_id', garden.user_id);
+      
+      if (upgradeDeleteError) {
+        console.error('Erreur lors de la suppression des améliorations:', upgradeDeleteError);
+        throw new Error(`Erreur lors de la réinitialisation des améliorations: ${upgradeDeleteError.message}`);
+      }
 
       // Reset des parcelles (garder seulement la première débloquée)
       await supabase
