@@ -176,9 +176,9 @@ export const PrestigeSystem = ({
                     <li>Niveau → 1</li>
                     <li>Pièces → 100</li>
                     <li>Améliorations → toutes réinitialisées</li>
-                    <li>Expérience → 0</li>
+                    
                     <li>Parcelles → seule la première reste débloquée</li>
-                    <li>Toutes les plantes sont supprimées</li>
+                    
                   </ul>
                   <div className="font-semibold mt-2 text-green-700">
                     ✓ Vous gardez : multiplicateur permanent X{nextMultiplier}
