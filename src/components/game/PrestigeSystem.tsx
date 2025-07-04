@@ -84,10 +84,15 @@ export const PrestigeSystem = ({
       if (error) throw error;
 
       // Désactiver les améliorations débloquées au lieu de les supprimer
-      await supabase
+      const { error: upgradesError } = await supabase
         .from('player_upgrades')
         .update({ active: false })
         .eq('user_id', garden.user_id);
+
+      if (upgradesError) {
+        console.error('Erreur lors de la désactivation des améliorations:', upgradesError);
+        throw new Error('Impossible de désactiver les améliorations');
+      }
 
       // Reset des parcelles (garder seulement la première débloquée)
       await supabase.from('garden_plots').update({
