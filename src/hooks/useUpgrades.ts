@@ -34,7 +34,8 @@ export const useUpgrades = () => {
           *,
           level_upgrades(*)
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('active', true);
       
       if (error) throw error;
       return data as PlayerUpgrade[];

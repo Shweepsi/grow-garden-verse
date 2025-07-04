@@ -235,18 +235,21 @@ export type Database = {
       }
       player_upgrades: {
         Row: {
+          active: boolean
           id: string
           purchased_at: string | null
           upgrade_id: string
           user_id: string
         }
         Insert: {
+          active?: boolean
           id?: string
           purchased_at?: string | null
           upgrade_id: string
           user_id: string
         }
         Update: {
+          active?: boolean
           id?: string
           purchased_at?: string | null
           upgrade_id?: string

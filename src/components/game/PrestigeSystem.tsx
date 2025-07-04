@@ -83,8 +83,11 @@ export const PrestigeSystem = ({
       }).eq('user_id', garden.user_id);
       if (error) throw error;
 
-      // Réinitialiser les améliorations débloquées
-      await supabase.from('player_upgrades').delete().eq('user_id', garden.user_id);
+      // Désactiver les améliorations débloquées au lieu de les supprimer
+      await supabase
+        .from('player_upgrades')
+        .update({ active: false })
+        .eq('user_id', garden.user_id);
 
       // Reset des parcelles (garder seulement la première débloquée)
       await supabase.from('garden_plots').update({

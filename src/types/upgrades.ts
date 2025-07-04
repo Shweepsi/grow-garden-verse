@@ -18,5 +18,6 @@ export interface PlayerUpgrade {
   user_id: string;
   upgrade_id: string;
   purchased_at: string;
+  active: boolean;
   level_upgrades?: LevelUpgrade;
 }
