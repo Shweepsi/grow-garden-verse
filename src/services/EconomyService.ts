@@ -102,10 +102,6 @@ export class EconomyService {
     return Math.floor(baseCost * costReduction);
   }
 
-  // Déterminer si une parcelle doit être débloquée automatiquement
-  static shouldAutoUnlockPlot(playerLevel: number, plotNumber: number, autoUnlockLevel: number): boolean {
-    return playerLevel >= autoUnlockLevel && plotNumber <= autoUnlockLevel;
-  }
 
   // Calculer les multiplicateurs actifs des améliorations
   static calculateActiveMultipliers(playerUpgrades: PlayerUpgrade[]) {
