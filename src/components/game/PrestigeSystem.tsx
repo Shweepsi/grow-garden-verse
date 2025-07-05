@@ -6,32 +6,15 @@ import { Crown, Star, Zap, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
+
 interface PrestigeSystemProps {
   garden: PlayerGarden;
   onPrestige: () => void;
 }
-export const PrestigeSystem = ({
-  garden,
-  onPrestige
-}: PrestigeSystemProps) => {
+
+export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Calculer les seuils de prestige
-  const getPrestigeThreshold = (level: number) => {
-    switch (level) {
-      case 0:
-        return 100000;
-      // 100k pièces pour X2
-      case 1:
-        return 500000;
-      // 500k pièces pour X5  
-      case 2:
-        return 2000000;
-      // 2M pièces pour X10
-      default:
-        return Infinity;
-    }
-  };
   const getPrestigeMultiplier = (level: number) => {
     switch (level) {
       case 0:
@@ -44,46 +27,42 @@ export const PrestigeSystem = ({
         return 10;
     }
   };
+
   const prestigeLevel = garden.prestige_level || 0;
-  const costCoins = Math.pow(10, prestigeLevel + 3); // 1000, 10000, 100000...
-  const costGems = Math.pow(2, prestigeLevel) * 10; // 10, 20, 40...
+  const prestigeCostsCoins = [200_000, 500_000, 1_000_000];
+  const prestigeCostsGems = [20, 50, 100];
+  const costCoins = prestigeCostsCoins[prestigeLevel] || Infinity;
+  const costGems = prestigeCostsGems[prestigeLevel] || Infinity;
   const nextMultiplier = getPrestigeMultiplier(prestigeLevel);
   const canPrestige = garden.coins >= costCoins && (garden.gems || 0) >= costGems && prestigeLevel < 3;
   const isMaxPrestige = prestigeLevel >= 3;
+
   const handlePrestige = async () => {
     if (!canPrestige || isProcessing) return;
     try {
       setIsProcessing(true);
 
-      // Coût du prestige basé sur le niveau actuel
-      const prestigeLevel = garden.prestige_level || 0;
-      const costCoins = Math.pow(10, prestigeLevel + 3); // 1000, 10000, 100000...
-      const costGems = Math.pow(2, prestigeLevel) * 10; // 10, 20, 40...
+      const costCoins = prestigeCostsCoins[prestigeLevel] || Infinity;
+      const costGems = prestigeCostsGems[prestigeLevel] || Infinity;
 
-      // Vérifier les fonds
       if (garden.coins < costCoins || (garden.gems || 0) < costGems) {
         toast.error('Fonds insuffisants pour le prestige');
         setIsProcessing(false);
         return;
       }
 
-      // Effectuer le reset avec le nouveau niveau de prestige
-      const {
-        error
-      } = await supabase.from('player_gardens').update({
+      const { error } = await supabase.from('player_gardens').update({
         coins: 100,
-        // Remettre à 100 pièces après avoir payé le coût
         gems: (garden.gems || 0) - costGems,
-        // Déduire le coût des gemmes
         experience: 0,
         level: 1,
-        prestige_level: (garden.prestige_level || 0) + 1,
+        prestige_level: prestigeLevel + 1,
         permanent_multiplier: nextMultiplier,
         prestige_points: (garden.prestige_points || 0) + 1
       }).eq('user_id', garden.user_id);
+
       if (error) throw error;
 
-      // Désactiver les améliorations débloquées au lieu de les supprimer
       const { error: upgradesError } = await supabase
         .from('player_upgrades')
         .update({ active: false })
@@ -91,10 +70,8 @@ export const PrestigeSystem = ({
 
       if (upgradesError) {
         console.error('Erreur lors de la désactivation des améliorations:', upgradesError);
-        // Ne pas bloquer le prestige pour cette erreur
       }
 
-      // Reset des parcelles (garder seulement la première débloquée)
       await supabase.from('garden_plots').update({
         plant_type: null,
         planted_at: null,
@@ -103,7 +80,6 @@ export const PrestigeSystem = ({
         unlocked: false
       }).eq('user_id', garden.user_id).neq('plot_number', 1);
 
-      // S'assurer que la première parcelle reste débloquée
       await supabase.from('garden_plots').update({
         plant_type: null,
         planted_at: null,
@@ -111,6 +87,7 @@ export const PrestigeSystem = ({
         plant_metadata: null,
         unlocked: true
       }).eq('user_id', garden.user_id).eq('plot_number', 1);
+
       toast.success(`🎉 Prestige accompli ! Multiplicateur permanent : X${nextMultiplier}`, {
         description: `Vous repartez de zéro avec un bonus permanent de X${nextMultiplier} sur tous les gains !`
       });
@@ -123,8 +100,11 @@ export const PrestigeSystem = ({
       setIsProcessing(false);
     }
   };
+
   const progressPercentage = Math.min(garden.coins / costCoins * 100, 100);
-  return <Card className="border-2 border-purple-200">
+
+  return (
+    <Card className="border-2 border-purple-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-purple-700">
           <Crown className="h-6 w-6" />
@@ -132,13 +112,10 @@ export const PrestigeSystem = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Statut actuel */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
             <Star className="h-5 w-5 text-yellow-500" />
-            <span className="text-lg font-bold">
-              Prestige {garden.prestige_level || 0}
-            </span>
+            <span className="text-lg font-bold">Prestige {prestigeLevel}</span>
           </div>
           <div className="flex items-center justify-center gap-2 text-purple-600">
             <Zap className="h-4 w-4" />
@@ -148,11 +125,13 @@ export const PrestigeSystem = ({
           </div>
         </div>
 
-        {!isMaxPrestige ? <>
-            {/* Coût du prestige */}
+        {!isMaxPrestige ? (
+          <>
             <div className="space-y-3">
               <div className="text-center">
-                <h3 className="font-semibold text-purple-700 mb-2">Coût du Prestige {prestigeLevel + 1}</h3>
+                <h3 className="font-semibold text-purple-700 mb-2">
+                  Coût du Prestige {prestigeLevel + 1}
+                </h3>
                 <div className="flex justify-center gap-4">
                   <div className="flex items-center gap-1">
                     <span className="text-yellow-600">🪙</span>
@@ -173,7 +152,6 @@ export const PrestigeSystem = ({
               </div>
             </div>
 
-            {/* Avertissement */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -184,9 +162,7 @@ export const PrestigeSystem = ({
                     <li>Niveau → 1</li>
                     <li>Pièces → 100</li>
                     <li>Améliorations → toutes réinitialisées</li>
-                    
                     <li>Parcelles → seule la première reste débloquée</li>
-                    
                   </ul>
                   <div className="font-semibold mt-2 text-green-700">
                     ✓ Vous gardez : multiplicateur permanent X{nextMultiplier}
@@ -195,17 +171,24 @@ export const PrestigeSystem = ({
               </div>
             </div>
 
-            {/* Bouton de prestige */}
-            <Button onClick={handlePrestige} disabled={!canPrestige || isProcessing} variant={canPrestige ? "default" : "secondary"} size="lg" className="w-full">
-              {isProcessing ? "Prestige en cours..." : canPrestige ? <>
+            <Button
+              onClick={handlePrestige}
+              disabled={!canPrestige || isProcessing}
+              variant={canPrestige ? 'default' : 'secondary'}
+              size="lg"
+              className="w-full"
+            >
+              {isProcessing ? 'Prestige en cours...' : canPrestige ? (
+                <>
                   <Crown className="h-4 w-4 mr-2" />
                   Effectuer le Prestige (X{nextMultiplier})
-                </> : `Fonds insuffisants`}
+                </>
+              ) : 'Fonds insuffisants'}
             </Button>
-          </> : <div className="text-center space-y-3">
-            <div className="text-lg font-bold text-purple-700">
-              🏆 Prestige Maximum Atteint !
-            </div>
+          </>
+        ) : (
+          <div className="text-center space-y-3">
+            <div className="text-lg font-bold text-purple-700">🏆 Prestige Maximum Atteint !</div>
             <div className="text-purple-600">
               Vous avez atteint le niveau de prestige maximum avec un multiplicateur permanent de X{garden.permanent_multiplier || 1}.
             </div>
@@ -214,10 +197,9 @@ export const PrestigeSystem = ({
                 Félicitations ! Vous pouvez maintenant profiter pleinement de votre jardin avec le multiplicateur maximum.
               </div>
             </div>
-          </div>}
-
-        {/* Historique des prestiges */}
-        {(garden.prestige_points || 0) > 0}
+          </div>
+        )}
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
