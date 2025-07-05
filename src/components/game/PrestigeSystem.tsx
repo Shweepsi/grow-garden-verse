@@ -30,7 +30,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
 
   const prestigeLevel = garden.prestige_level || 0;
   const prestigeCostsCoins = [200_000, 500_000, 1_000_000];
-  const prestigeCostsGems = [20, 50, 100];
+  const prestigeCostsGems = [10, 25, 50];
   const costCoins = prestigeCostsCoins[prestigeLevel] || Infinity;
   const costGems = prestigeCostsGems[prestigeLevel] || Infinity;
   const nextMultiplier = getPrestigeMultiplier(prestigeLevel);
