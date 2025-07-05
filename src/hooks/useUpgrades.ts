@@ -69,13 +69,33 @@ export const useUpgrades = () => {
         throw new Error('Pas assez de gemmes');
       }
 
-      // Acheter l'amélioration
-      const { error: upgradeError } = await supabase
+      // Vérifier si l'amélioration existe déjà (désactivée)
+      const { data: existingUpgrade } = await supabase
         .from('player_upgrades')
-        .insert({
-          user_id: user.id,
-          upgrade_id: upgradeId
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('upgrade_id', upgradeId)
+        .single();
+
+      let upgradeError;
+      if (existingUpgrade) {
+        // Réactiver l'amélioration existante
+        const result = await supabase
+          .from('player_upgrades')
+          .update({ active: true })
+          .eq('user_id', user.id)
+          .eq('upgrade_id', upgradeId);
+        upgradeError = result.error;
+      } else {
+        // Créer une nouvelle amélioration
+        const result = await supabase
+          .from('player_upgrades')
+          .insert({
+            user_id: user.id,
+            upgrade_id: upgradeId
+          });
+        upgradeError = result.error;
+      }
 
       if (upgradeError) throw upgradeError;
 
