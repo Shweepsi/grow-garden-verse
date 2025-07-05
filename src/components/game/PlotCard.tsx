@@ -45,8 +45,8 @@ export const PlotCard = memo(({
     e.stopPropagation();
     onUnlockPlot(plot.plot_number);
   };
-  return <div className={`aspect-square cursor-pointer transition-transform duration-200 relative group touch-target ${isPlanting ? 'pointer-events-none opacity-50' : ''} ${plot.unlocked && (state === 'ready' || isAutoHarvestPlot) ? 'hover:scale-105' : ''}`} onClick={handleClick}>
-      <div className={`premium-card rounded-xl p-2 h-full flex flex-col items-center justify-center relative overflow-hidden ${plot.unlocked ? isAutoHarvestPlot ? 'ring-2 ring-blue-400/50 shadow-blue-400/20 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50' : state === 'ready' ? 'ring-2 ring-yellow-400/50 shadow-yellow-400/20 shadow-lg' : 'hover:shadow-lg' : 'opacity-60'}`}>
+  return <div className={`aspect-square cursor-pointer transition-all duration-300 relative group touch-target ${isPlanting ? 'pointer-events-none opacity-50' : ''} ${plot.unlocked && (state === 'ready' || isAutoHarvestPlot) ? 'hover:scale-[1.02]' : ''}`} onClick={handleClick}>
+      <div className={`bg-white/80 backdrop-blur-sm rounded-lg p-3 h-full flex flex-col items-center justify-center relative border border-gray-200/50 transition-all duration-300 ${plot.unlocked ? isAutoHarvestPlot ? 'border-blue-300/60 bg-blue-50/40' : state === 'ready' ? 'border-yellow-300/60 bg-yellow-50/40' : 'hover:border-gray-300/60 hover:bg-white/90' : 'opacity-60'}`}>
         
         {!plot.unlocked ? <div className="text-center">
             <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg flex items-center justify-center mb-2 mx-auto">

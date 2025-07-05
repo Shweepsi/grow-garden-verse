@@ -102,7 +102,7 @@ export const PlotGrid = ({
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-2 p-3">
+      <div className="grid grid-cols-3 gap-3 p-4">
         {plots.map((plot) => {
           const plantType = plantTypeMap.get(plot.plant_type || '');
           const isAutoHarvestPlot = plot.plot_number === 1 && hasAutoHarvest;
