@@ -214,11 +214,7 @@ export const usePlantActions = () => {
         console.warn('⚠️ Erreur lors de l\'enregistrement de la découverte:', error);
       }
 
-      // Messages de réussite
-      if (gemReward > 0) {
-        toast.success(`💎 ${gemReward} gemme${gemReward > 1 ? 's' : ''} trouvée${gemReward > 1 ? 's' : ''} !`);
-      }
-      
+      // Messages de réussite  
       if (newLevel > (garden.level || 1)) {
         toast.success(`🎉 Niveau ${newLevel} atteint !`);
         console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
