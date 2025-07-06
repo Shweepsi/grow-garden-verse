@@ -1,17 +1,19 @@
-
 import { GameHeader } from '@/components/game/GameHeader';
 import { PlayerStats } from '@/components/game/PlayerStats';
 import { PrestigeSystem } from '@/components/game/PrestigeSystem';
+import { LadderModal } from '@/components/game/LadderModal';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Loader2, LogOut, Settings } from 'lucide-react';
+import { Loader2, LogOut, Settings, Trophy } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 export const ProfilePage = () => {
   const { gameState, loading } = useRefactoredGame();
   const { signOut } = useAuth();
   const queryClient = useQueryClient();
+  const [showLadder, setShowLadder] = useState(false);
 
   const handlePrestige = () => {
     // Invalider les queries pour rafraîchir les données
@@ -64,6 +66,28 @@ export const ProfilePage = () => {
             Paramètres
           </h2>
 
+          {/* Carte des classements */}
+          <div className="glassmorphism rounded-xl p-4 shadow-lg">
+            <div className="space-y-3">
+              <div>
+                <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Classements</h3>
+                <p className="mobile-text-sm text-gray-600">
+                  Découvrez votre position parmi les meilleurs jardiniers
+                </p>
+              </div>
+              
+              <Button 
+                onClick={() => setShowLadder(true)}
+                variant="outline" 
+                size="lg"
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0"
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                Voir les Classements
+              </Button>
+            </div>
+          </div>
+
           {/* Carte de déconnexion */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
             <div className="space-y-3">
@@ -87,6 +111,12 @@ export const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modale des classements */}
+      <LadderModal 
+        isOpen={showLadder} 
+        onClose={() => setShowLadder(false)} 
+      />
     </div>
   );
 };
