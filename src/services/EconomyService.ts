@@ -107,7 +107,9 @@ export class EconomyService {
         case 'plant_cost_reduction':
           multipliers.plantCostReduction *= levelUpgrade.effect_value;
           break;
-
+        case 'gem_chance':
+          multipliers.gemChance += levelUpgrade.effect_value;
+          break;
       }
     });
 
