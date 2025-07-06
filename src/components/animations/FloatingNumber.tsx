@@ -20,15 +20,18 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
 
   const isPositive = animation.amount > 0;
   
-  const getIcon = () => {
+  const renderIcon = () => {
     switch (animation.type) {
-      case 'coins': return Coins;
-      case 'experience': return Star;
-      default: return Coins;
+      case 'coins': 
+        return <Coins className="w-3 h-3" />;
+      case 'experience': 
+        return <Star className="w-3 h-3" />;
+      case 'gems': 
+        return <span className="text-xs">💎</span>;
+      default: 
+        return <Coins className="w-3 h-3" />;
     }
   };
-  
-  const Icon = getIcon();
   
   return (
     <div 
@@ -36,7 +39,7 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
       key={animation.id}
     >
       <div className="flex items-center space-x-1">
-        <Icon className="w-3 h-3" />
+        {renderIcon()}
         <span className="font-bold mobile-text-sm">
           {isPositive ? '+' : ''}{animation.amount.toLocaleString()}
         </span>

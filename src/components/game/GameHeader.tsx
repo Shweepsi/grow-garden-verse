@@ -89,6 +89,16 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                     {(garden?.gems || 0).toLocaleString()}
                   </span>
                 </div>
+                
+                {/* Zone d'animation pour les gemmes */}
+                <div className="animation-zone">
+                  {animations
+                    .filter(anim => anim.type === 'gems')
+                    .map(anim => (
+                      <FloatingNumber key={anim.id} animation={anim} />
+                    ))
+                  }
+                </div>
               </div>
               
               {/* Niveau */}
