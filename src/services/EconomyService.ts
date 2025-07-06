@@ -74,29 +74,6 @@ export class EconomyService {
     return playerLevel >= plantLevel;
   }
 
-  // Calculer le retour sur investissement
-  static getROIPercentage(plantLevel: number, growthTimeSeconds: number): number {
-    const cost = this.getPlantDirectCost(plantLevel);
-    const reward = this.getHarvestReward(plantLevel, growthTimeSeconds);
-    if (cost <= 0) return 0;
-    return Math.floor(((reward - cost) / cost) * 100);
-  }
-
-  // Calculer le gain par minute
-  static getProfitPerMinute(plantLevel: number, growthTimeSeconds: number): number {
-    if (!growthTimeSeconds || growthTimeSeconds <= 0) return 0;
-    
-    const cost = this.getPlantDirectCost(plantLevel);
-    const reward = this.getHarvestReward(plantLevel, growthTimeSeconds);
-    const profit = reward - cost;
-    return Math.floor((profit / growthTimeSeconds) * 60); // Profit par seconde * 60 = par minute
-  }
-
-  // Calculer la chance de gemmes lors de la récolte
-  static getGemChance(baseChance: number = 0): number {
-    return Math.min(0.5, baseChance); // Maximum 50% de chance
-  }
-
   // Calculer le coût d'une plante avec réduction
   static getAdjustedPlantCost(baseCost: number, costReduction: number = 1): number {
     return Math.floor(baseCost * costReduction);
@@ -130,9 +107,7 @@ export class EconomyService {
         case 'plant_cost_reduction':
           multipliers.plantCostReduction *= levelUpgrade.effect_value;
           break;
-        case 'gem_chance':
-          multipliers.gemChance += levelUpgrade.effect_value;
-          break;
+
       }
     });
 

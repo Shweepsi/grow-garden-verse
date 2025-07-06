@@ -91,9 +91,6 @@ export const AutoHarvestRobot = ({
                 </div>
               </div>}
 
-            {/* Informations sur les bonus */}
-            
-
             {/* Sélection de plante */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {availablePlants.map(plantType => {
