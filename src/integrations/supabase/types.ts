@@ -301,6 +301,22 @@ export type Database = {
         Args: { plot_number: number }
         Returns: number
       }
+      get_user_coins_rank: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      get_user_harvest_rank: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      get_user_level_rank: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      get_user_prestige_rank: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
