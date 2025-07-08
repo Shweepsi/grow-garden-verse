@@ -61,45 +61,56 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
     rank, 
     value, 
     icon, 
-    suffix = '' 
+    suffix = '',
+    nextPlayerValue
   }: { 
     player: any; 
     rank: number; 
     value: number; 
     icon: React.ReactNode; 
     suffix?: string;
-  }) => (
-    <Card className={`transition-all duration-200 hover:shadow-md ${
-      rank <= 3 ? 'ring-2 ring-opacity-50' : ''
-    } ${
-      rank === 1 ? 'ring-yellow-400 bg-gradient-to-r from-yellow-50 to-yellow-100' :
-      rank === 2 ? 'ring-gray-400 bg-gradient-to-r from-gray-50 to-gray-100' :
-      rank === 3 ? 'ring-amber-400 bg-gradient-to-r from-amber-50 to-amber-100' :
-      'bg-white'
-    }`}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8">
-              {getRankIcon(rank)}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800">
-                {player.profiles?.username || 'Jardinier Anonyme'}
-              </p>
-              <div className="flex items-center space-x-1 text-sm text-gray-600">
-                {icon}
-                <span>{formatNumber(value)}{suffix}</span>
+    nextPlayerValue?: number;
+  }) => {
+    const difference = nextPlayerValue ? nextPlayerValue - value : 0;
+    
+    return (
+      <Card className={`transition-all duration-200 hover:shadow-md ${
+        rank <= 3 ? 'ring-2 ring-opacity-50' : ''
+      } ${
+        rank === 1 ? 'ring-yellow-400 bg-gradient-to-r from-yellow-50 to-yellow-100' :
+        rank === 2 ? 'ring-gray-400 bg-gradient-to-r from-gray-50 to-gray-100' :
+        rank === 3 ? 'ring-amber-400 bg-gradient-to-r from-amber-50 to-amber-100' :
+        'bg-white'
+      }`}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-8 h-8">
+                {getRankIcon(rank)}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800">
+                  {player.username || 'Jardinier Anonyme'}
+                </p>
+                <div className="flex items-center space-x-1 text-sm text-gray-600">
+                  {icon}
+                  <span>{formatNumber(value)}{suffix}</span>
+                </div>
+                {difference > 0 && rank > 1 && (
+                  <div className="text-xs text-orange-600 mt-1">
+                    +{formatNumber(difference)} pour passer #{rank - 1}
+                  </div>
+                )}
               </div>
             </div>
+            <Badge className={getRankBadgeColor(rank)}>
+              #{rank}
+            </Badge>
           </div>
-          <Badge className={getRankBadgeColor(rank)}>
-            #{rank}
-          </Badge>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const LoadingSkeleton = () => (
     <div className="space-y-3">
@@ -184,16 +195,17 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
                   <LoadingSkeleton />
                 ) : (
                   <div className="space-y-2">
-                    {harvestLeaders.map((player, index) => (
-                      <LeaderboardCard
-                        key={player.user_id}
-                        player={player}
-                        rank={index + 1}
-                        value={player.total_harvests}
-                        icon={<TrendingUp className="h-3 w-3 text-green-600" />}
-                        suffix=" récoltes"
-                      />
-                    ))}
+                     {harvestLeaders.map((player, index) => (
+                       <LeaderboardCard
+                         key={player.user_id || player.id}
+                         player={player}
+                         rank={index + 1}
+                         value={player.total_harvests}
+                         icon={<TrendingUp className="h-3 w-3 text-green-600" />}
+                         suffix=" récoltes"
+                         nextPlayerValue={index > 0 ? harvestLeaders[index - 1].total_harvests : undefined}
+                       />
+                     ))}
                   </div>
                 )}
               </ScrollArea>
@@ -206,16 +218,17 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
                   <LoadingSkeleton />
                 ) : (
                   <div className="space-y-2">
-                    {coinsLeaders.map((player, index) => (
-                      <LeaderboardCard
-                        key={player.user_id}
-                        player={player}
-                        rank={index + 1}
-                        value={player.coins}
-                        icon={<Coins className="h-3 w-3 text-yellow-600" />}
-                        suffix=" 🪙"
-                      />
-                    ))}
+                     {coinsLeaders.map((player, index) => (
+                       <LeaderboardCard
+                         key={player.user_id || player.id}
+                         player={player}
+                         rank={index + 1}
+                         value={player.coins}
+                         icon={<Coins className="h-3 w-3 text-yellow-600" />}
+                         suffix=" 🪙"
+                         nextPlayerValue={index > 0 ? coinsLeaders[index - 1].coins : undefined}
+                       />
+                     ))}
                   </div>
                 )}
               </ScrollArea>
@@ -228,16 +241,17 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
                   <LoadingSkeleton />
                 ) : (
                   <div className="space-y-2">
-                    {prestigeLeaders.map((player, index) => (
-                      <LeaderboardCard
-                        key={player.user_id}
-                        player={player}
-                        rank={index + 1}
-                        value={player.prestige_level || 0}
-                        icon={<Crown className="h-3 w-3 text-purple-600" />}
-                        suffix=" prestige"
-                      />
-                    ))}
+                     {prestigeLeaders.map((player, index) => (
+                       <LeaderboardCard
+                         key={player.user_id || player.id}
+                         player={player}
+                         rank={index + 1}
+                         value={player.prestige_level || 0}
+                         icon={<Crown className="h-3 w-3 text-purple-600" />}
+                         suffix=" prestige"
+                         nextPlayerValue={index > 0 ? (prestigeLeaders[index - 1].prestige_level || 0) : undefined}
+                       />
+                     ))}
                   </div>
                 )}
               </ScrollArea>
@@ -250,16 +264,17 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
                   <LoadingSkeleton />
                 ) : (
                   <div className="space-y-2">
-                    {levelLeaders.map((player, index) => (
-                      <LeaderboardCard
-                        key={player.user_id}
-                        player={player}
-                        rank={index + 1}
-                        value={player.level || 1}
-                        icon={<Star className="h-3 w-3 text-blue-600" />}
-                        suffix=""
-                      />
-                    ))}
+                     {levelLeaders.map((player, index) => (
+                       <LeaderboardCard
+                         key={player.user_id || player.id}
+                         player={player}
+                         rank={index + 1}
+                         value={player.level || 1}
+                         icon={<Star className="h-3 w-3 text-blue-600" />}
+                         suffix=""
+                         nextPlayerValue={index > 0 ? (levelLeaders[index - 1].level || 1) : undefined}
+                       />
+                     ))}
                   </div>
                 )}
               </ScrollArea>

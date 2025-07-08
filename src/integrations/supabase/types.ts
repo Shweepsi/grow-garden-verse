@@ -88,6 +88,42 @@ export type Database = {
           },
         ]
       }
+      leaderboard_bots: {
+        Row: {
+          coins: number
+          created_at: string
+          experience: number
+          id: string
+          level: number
+          prestige_level: number
+          prestige_points: number
+          total_harvests: number
+          username: string
+        }
+        Insert: {
+          coins?: number
+          created_at?: string
+          experience?: number
+          id?: string
+          level?: number
+          prestige_level?: number
+          prestige_points?: number
+          total_harvests?: number
+          username: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          experience?: number
+          id?: string
+          level?: number
+          prestige_level?: number
+          prestige_points?: number
+          total_harvests?: number
+          username?: string
+        }
+        Relationships: []
+      }
       level_upgrades: {
         Row: {
           cost_coins: number

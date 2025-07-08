@@ -3,14 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 interface LeaderboardPlayer {
-  user_id: string;
+  user_id?: string;
+  id?: string;
+  username: string;
   total_harvests: number;
   coins: number;
   level: number;
   prestige_level: number;
-  profiles?: {
-    username: string;
-  };
+  experience?: number;
+  is_bot?: boolean;
 }
 
 export const useLadder = () => {
@@ -20,18 +21,53 @@ export const useLadder = () => {
   const { data: harvestLeaders = [], isLoading: harvestLoading } = useQuery({
     queryKey: ['leaderboard', 'harvests'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Récupérer les joueurs réels avec leurs profils
+      const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select(`
-          user_id,
-          total_harvests,
-          profiles(username)
-        `)
-        .order('total_harvests', { ascending: false })
-        .limit(50);
+        .select('user_id, total_harvests');
 
-      if (error) throw error;
-      return data as LeaderboardPlayer[];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username');
+
+      // Récupérer les bots
+      const { data: bots, error: botsError } = await supabase
+        .from('leaderboard_bots')
+        .select('id, username, total_harvests');
+
+      if (gardensError) throw gardensError;
+      if (profilesError) throw profilesError;
+      if (botsError) throw botsError;
+
+      // Créer un map des profils pour une recherche rapide
+      const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+      // Combiner et formater les données
+      const allPlayers: LeaderboardPlayer[] = [
+        ...(gardens || []).map(g => ({
+          user_id: g.user_id,
+          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+          total_harvests: g.total_harvests,
+          coins: 0,
+          level: 0,
+          prestige_level: 0,
+          is_bot: false
+        })),
+        ...(bots || []).map(b => ({
+          id: b.id,
+          username: b.username,
+          total_harvests: b.total_harvests,
+          coins: 0,
+          level: 0,
+          prestige_level: 0,
+          is_bot: true
+        }))
+      ];
+
+      // Trier par récoltes décroissantes et limiter à 50
+      return allPlayers
+        .sort((a, b) => b.total_harvests - a.total_harvests)
+        .slice(0, 50);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -40,18 +76,53 @@ export const useLadder = () => {
   const { data: coinsLeaders = [], isLoading: coinsLoading } = useQuery({
     queryKey: ['leaderboard', 'coins'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Récupérer les joueurs réels avec leurs profils
+      const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select(`
-          user_id,
-          coins,
-          profiles(username)
-        `)
-        .order('coins', { ascending: false })
-        .limit(50);
+        .select('user_id, coins');
 
-      if (error) throw error;
-      return data as LeaderboardPlayer[];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username');
+
+      // Récupérer les bots
+      const { data: bots, error: botsError } = await supabase
+        .from('leaderboard_bots')
+        .select('id, username, coins');
+
+      if (gardensError) throw gardensError;
+      if (profilesError) throw profilesError;
+      if (botsError) throw botsError;
+
+      // Créer un map des profils pour une recherche rapide
+      const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+      // Combiner et formater les données
+      const allPlayers: LeaderboardPlayer[] = [
+        ...(gardens || []).map(g => ({
+          user_id: g.user_id,
+          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+          total_harvests: 0,
+          coins: g.coins,
+          level: 0,
+          prestige_level: 0,
+          is_bot: false
+        })),
+        ...(bots || []).map(b => ({
+          id: b.id,
+          username: b.username,
+          total_harvests: 0,
+          coins: b.coins,
+          level: 0,
+          prestige_level: 0,
+          is_bot: true
+        }))
+      ];
+
+      // Trier par pièces décroissantes et limiter à 50
+      return allPlayers
+        .sort((a, b) => b.coins - a.coins)
+        .slice(0, 50);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -60,18 +131,53 @@ export const useLadder = () => {
   const { data: prestigeLeaders = [], isLoading: prestigeLoading } = useQuery({
     queryKey: ['leaderboard', 'prestige'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Récupérer les joueurs réels avec leurs profils
+      const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select(`
-          user_id,
-          prestige_level,
-          profiles(username)
-        `)
-        .order('prestige_level', { ascending: false })
-        .limit(50);
+        .select('user_id, prestige_level');
 
-      if (error) throw error;
-      return data as LeaderboardPlayer[];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username');
+
+      // Récupérer les bots
+      const { data: bots, error: botsError } = await supabase
+        .from('leaderboard_bots')
+        .select('id, username, prestige_level');
+
+      if (gardensError) throw gardensError;
+      if (profilesError) throw profilesError;
+      if (botsError) throw botsError;
+
+      // Créer un map des profils pour une recherche rapide
+      const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+      // Combiner et formater les données
+      const allPlayers: LeaderboardPlayer[] = [
+        ...(gardens || []).map(g => ({
+          user_id: g.user_id,
+          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+          total_harvests: 0,
+          coins: 0,
+          level: 0,
+          prestige_level: g.prestige_level || 0,
+          is_bot: false
+        })),
+        ...(bots || []).map(b => ({
+          id: b.id,
+          username: b.username,
+          total_harvests: 0,
+          coins: 0,
+          level: 0,
+          prestige_level: b.prestige_level || 0,
+          is_bot: true
+        }))
+      ];
+
+      // Trier par prestige décroissant et limiter à 50
+      return allPlayers
+        .sort((a, b) => b.prestige_level - a.prestige_level)
+        .slice(0, 50);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -80,20 +186,58 @@ export const useLadder = () => {
   const { data: levelLeaders = [], isLoading: levelLoading } = useQuery({
     queryKey: ['leaderboard', 'level'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Récupérer les joueurs réels avec leurs profils
+      const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select(`
-          user_id,
-          level,
-          experience,
-          profiles(username)
-        `)
-        .order('level', { ascending: false })
-        .order('experience', { ascending: false })
-        .limit(50);
+        .select('user_id, level, experience');
 
-      if (error) throw error;
-      return data as LeaderboardPlayer[];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username');
+
+      // Récupérer les bots
+      const { data: bots, error: botsError } = await supabase
+        .from('leaderboard_bots')
+        .select('id, username, level, experience');
+
+      if (gardensError) throw gardensError;
+      if (profilesError) throw profilesError;
+      if (botsError) throw botsError;
+
+      // Créer un map des profils pour une recherche rapide
+      const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+      // Combiner et formater les données
+      const allPlayers: LeaderboardPlayer[] = [
+        ...(gardens || []).map(g => ({
+          user_id: g.user_id,
+          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+          total_harvests: 0,
+          coins: 0,
+          level: g.level || 1,
+          experience: g.experience || 0,
+          prestige_level: 0,
+          is_bot: false
+        })),
+        ...(bots || []).map(b => ({
+          id: b.id,
+          username: b.username,
+          total_harvests: 0,
+          coins: 0,
+          level: b.level || 1,
+          experience: b.experience || 0,
+          prestige_level: 0,
+          is_bot: true
+        }))
+      ];
+
+      // Trier par niveau puis expérience décroissants et limiter à 50
+      return allPlayers
+        .sort((a, b) => {
+          if (b.level !== a.level) return b.level - a.level;
+          return (b.experience || 0) - (a.experience || 0);
+        })
+        .slice(0, 50);
     },
     staleTime: 5 * 60 * 1000,
   });
