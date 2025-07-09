@@ -82,29 +82,28 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
         rank === 3 ? 'ring-amber-400 bg-gradient-to-r from-amber-50 to-amber-100' :
         'bg-white'
       }`}>
-        <CardContent className="p-3 sm:p-4">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-              <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-8 h-8">
                 {getRankIcon(rank)}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-800 text-sm sm:text-base truncate">
+              <div>
+                <p className="font-semibold text-gray-800">
                   {player.username || 'Jardinier Anonyme'}
                 </p>
-                <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-600">
+                <div className="flex items-center space-x-1 text-sm text-gray-600">
                   {icon}
-                  <span className="truncate">{formatNumber(value)}{suffix}</span>
+                  <span>{formatNumber(value)}{suffix}</span>
                 </div>
                 {difference > 0 && rank > 1 && (
                   <div className="text-xs text-orange-600 mt-1">
-                    <span className="hidden sm:inline">+{formatNumber(difference)} pour passer #{rank - 1}</span>
-                    <span className="sm:hidden">+{formatNumber(difference)}</span>
+                    +{formatNumber(difference)} pour passer #{rank - 1}
                   </div>
                 )}
               </div>
             </div>
-            <Badge className={`${getRankBadgeColor(rank)} text-xs sm:text-sm flex-shrink-0 ml-2`}>
+            <Badge className={getRankBadgeColor(rank)}>
               #{rank}
             </Badge>
           </div>
@@ -157,7 +156,7 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl h-[85vh] sm:h-[80vh] mx-2 sm:mx-auto bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+      <DialogContent className="max-w-2xl h-[80vh] bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-500" />
@@ -169,26 +168,22 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-white/50 gap-1 sm:gap-0">
-            <TabsTrigger value="harvests" className="text-xs sm:text-sm flex-col sm:flex-row gap-1 py-2 sm:py-1.5">
-              <TrendingUp className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">Récoltes</span>
-              <span className="sm:hidden">Récolt.</span>
+          <TabsList className="grid w-full grid-cols-4 bg-white/50">
+            <TabsTrigger value="harvests" className="text-xs">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              Récoltes
             </TabsTrigger>
-            <TabsTrigger value="coins" className="text-xs sm:text-sm flex-col sm:flex-row gap-1 py-2 sm:py-1.5">
-              <Coins className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">Pièces</span>
-              <span className="sm:hidden">Pièces</span>
+            <TabsTrigger value="coins" className="text-xs">
+              <Coins className="h-3 w-3 mr-1" />
+              Pièces
             </TabsTrigger>
-            <TabsTrigger value="prestige" className="text-xs sm:text-sm flex-col sm:flex-row gap-1 py-2 sm:py-1.5">
-              <Crown className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">Prestige</span>
-              <span className="sm:hidden">Prest.</span>
+            <TabsTrigger value="prestige" className="text-xs">
+              <Crown className="h-3 w-3 mr-1" />
+              Prestige
             </TabsTrigger>
-            <TabsTrigger value="level" className="text-xs sm:text-sm flex-col sm:flex-row gap-1 py-2 sm:py-1.5">
-              <Star className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">Niveau</span>
-              <span className="sm:hidden">Niv.</span>
+            <TabsTrigger value="level" className="text-xs">
+              <Star className="h-3 w-3 mr-1" />
+              Niveau
             </TabsTrigger>
           </TabsList>
 
@@ -198,9 +193,9 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
               <ScrollArea className="h-full">
                 {loading ? (
                   <LoadingSkeleton />
-                 ) : (
-                   <div className="space-y-1.5 sm:space-y-2">
-                      {harvestLeaders.map((player, index) => (
+                ) : (
+                  <div className="space-y-2">
+                     {harvestLeaders.map((player, index) => (
                        <LeaderboardCard
                          key={player.user_id || player.id}
                          player={player}
@@ -221,9 +216,9 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
               <ScrollArea className="h-full">
                 {loading ? (
                   <LoadingSkeleton />
-                 ) : (
-                   <div className="space-y-1.5 sm:space-y-2">
-                      {coinsLeaders.map((player, index) => (
+                ) : (
+                  <div className="space-y-2">
+                     {coinsLeaders.map((player, index) => (
                        <LeaderboardCard
                          key={player.user_id || player.id}
                          player={player}
@@ -244,9 +239,9 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
               <ScrollArea className="h-full">
                 {loading ? (
                   <LoadingSkeleton />
-                 ) : (
-                   <div className="space-y-1.5 sm:space-y-2">
-                      {prestigeLeaders.map((player, index) => (
+                ) : (
+                  <div className="space-y-2">
+                     {prestigeLeaders.map((player, index) => (
                        <LeaderboardCard
                          key={player.user_id || player.id}
                          player={player}
@@ -267,9 +262,9 @@ export const LadderModal = ({ isOpen, onClose }: LadderModalProps) => {
               <ScrollArea className="h-full">
                 {loading ? (
                   <LoadingSkeleton />
-                 ) : (
-                   <div className="space-y-1.5 sm:space-y-2">
-                      {levelLeaders.map((player, index) => (
+                ) : (
+                  <div className="space-y-2">
+                     {levelLeaders.map((player, index) => (
                        <LeaderboardCard
                          key={player.user_id || player.id}
                          player={player}
