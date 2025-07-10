@@ -183,7 +183,7 @@ export const LadderModal = ({
                 <ScrollArea className="h-[400px]">
                   <div className="pr-4">
                     {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
-                         {coinsLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.coins} icon={<Coins className="h-3 w-3 text-yellow-600" />} suffix=" 🪙" nextPlayerValue={index > 0 ? coinsLeaders[index - 1].coins : undefined} />)}
+                         {coinsLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.coins} icon={<Coins className="h-3 w-3 text-yellow-600" />} suffix=" pièces" nextPlayerValue={index > 0 ? coinsLeaders[index - 1].coins : undefined} />)}
                       </div>}
                   </div>
                 </ScrollArea>
