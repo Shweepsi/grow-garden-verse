@@ -132,8 +132,8 @@ export const LadderModal = ({
       </Card>;
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-2xl h-[80vh] bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+        <DialogHeader>
           <DialogTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-500" />
             Classement des Jardiniers
@@ -143,8 +143,8 @@ export const LadderModal = ({
           </p>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-4 bg-white/50 flex-shrink-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="grid w-full grid-cols-4 bg-white/50">
             <TabsTrigger value="harvests" className="text-xs">
               <TrendingUp className="h-3 w-3 mr-1" />
               Récoltes
@@ -163,57 +163,41 @@ export const LadderModal = ({
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 mt-4 min-h-0 overflow-hidden">
-            <TabsContent value="harvests" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+          <div className="flex-1 mt-4">
+            <TabsContent value="harvests" className="h-full">
               <CurrentUserRank category="harvests" />
-              <div className="flex-1 min-h-0">
-                <ScrollArea className="h-[400px]">
-                  <div className="pr-4">
-                    {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
-                         {harvestLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.total_harvests} icon={<TrendingUp className="h-3 w-3 text-green-600" />} suffix=" récoltes" nextPlayerValue={index > 0 ? harvestLeaders[index - 1].total_harvests : undefined} />)}
-                      </div>}
-                  </div>
-                </ScrollArea>
-              </div>
+              <ScrollArea className="h-full">
+                {loading ? <LoadingSkeleton /> : <div className="space-y-2">
+                     {harvestLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.total_harvests} icon={<TrendingUp className="h-3 w-3 text-green-600" />} suffix=" récoltes" nextPlayerValue={index > 0 ? harvestLeaders[index - 1].total_harvests : undefined} />)}
+                  </div>}
+              </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="coins" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+            <TabsContent value="coins" className="h-full">
               <CurrentUserRank category="coins" />
-              <div className="flex-1 min-h-0">
-                <ScrollArea className="h-[400px]">
-                  <div className="pr-4">
-                    {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
-                         {coinsLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.coins} icon={<Coins className="h-3 w-3 text-yellow-600" />} suffix=" pièces" nextPlayerValue={index > 0 ? coinsLeaders[index - 1].coins : undefined} />)}
-                      </div>}
-                  </div>
-                </ScrollArea>
-              </div>
+              <ScrollArea className="h-full">
+                {loading ? <LoadingSkeleton /> : <div className="space-y-2">
+                     {coinsLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.coins} icon={<Coins className="h-3 w-3 text-yellow-600" />} suffix=" 🪙" nextPlayerValue={index > 0 ? coinsLeaders[index - 1].coins : undefined} />)}
+                  </div>}
+              </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="prestige" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+            <TabsContent value="prestige" className="h-full">
               <CurrentUserRank category="prestige" />
-              <div className="flex-1 min-h-0">
-                <ScrollArea className="h-[400px]">
-                  <div className="pr-4">
-                    {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
-                         {prestigeLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.prestige_level || 0} icon={<Crown className="h-3 w-3 text-purple-600" />} suffix=" prestige" nextPlayerValue={index > 0 ? prestigeLeaders[index - 1].prestige_level || 0 : undefined} />)}
-                      </div>}
-                  </div>
-                </ScrollArea>
-              </div>
+              <ScrollArea className="h-full">
+                {loading ? <LoadingSkeleton /> : <div className="space-y-2">
+                     {prestigeLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.prestige_level || 0} icon={<Crown className="h-3 w-3 text-purple-600" />} suffix=" prestige" nextPlayerValue={index > 0 ? prestigeLeaders[index - 1].prestige_level || 0 : undefined} />)}
+                  </div>}
+              </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="level" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+            <TabsContent value="level" className="h-full">
               <CurrentUserRank category="level" />
-              <div className="flex-1 min-h-0">
-                <ScrollArea className="h-[400px]">
-                  <div className="pr-4">
-                    {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
-                         {levelLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.level || 1} icon={<Star className="h-3 w-3 text-blue-600" />} suffix="Niveau" nextPlayerValue={index > 0 ? levelLeaders[index - 1].level || 1 : undefined} />)}
-                      </div>}
-                  </div>
-                </ScrollArea>
-              </div>
+              <ScrollArea className="h-full">
+                {loading ? <LoadingSkeleton /> : <div className="space-y-2">
+                     {levelLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.level || 1} suffix="Niveau" icon={<Star className="h-3 w-3 text-blue-600" />} nextPlayerValue={index > 0 ? levelLeaders[index - 1].level || 1 : undefined} />)}
+                  </div>}
+              </ScrollArea>
             </TabsContent>
           </div>
         </Tabs>
