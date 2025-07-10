@@ -64,10 +64,10 @@ export const useLadder = () => {
         }))
       ];
 
-      // Trier par récoltes décroissantes et limiter à 50
+      // Trier par récoltes décroissantes et limiter à 100
       return allPlayers
         .sort((a, b) => b.total_harvests - a.total_harvests)
-        .slice(0, 50);
+        .slice(0, 100);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -119,10 +119,10 @@ export const useLadder = () => {
         }))
       ];
 
-      // Trier par pièces décroissantes et limiter à 50
+      // Trier par pièces décroissantes et limiter à 100
       return allPlayers
         .sort((a, b) => b.coins - a.coins)
-        .slice(0, 50);
+        .slice(0, 100);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -174,10 +174,10 @@ export const useLadder = () => {
         }))
       ];
 
-      // Trier par prestige décroissant et limiter à 50
+      // Trier par prestige décroissant et limiter à 100
       return allPlayers
         .sort((a, b) => b.prestige_level - a.prestige_level)
-        .slice(0, 50);
+        .slice(0, 100);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -231,13 +231,13 @@ export const useLadder = () => {
         }))
       ];
 
-      // Trier par niveau puis expérience décroissants et limiter à 50
+      // Trier par niveau puis expérience décroissants et limiter à 100
       return allPlayers
         .sort((a, b) => {
           if (b.level !== a.level) return b.level - a.level;
           return (b.experience || 0) - (a.experience || 0);
         })
-        .slice(0, 50);
+        .slice(0, 100);
     },
     staleTime: 5 * 60 * 1000,
   });
