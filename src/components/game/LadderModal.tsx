@@ -167,7 +167,7 @@ export const LadderModal = ({
             <TabsContent value="harvests" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
               <CurrentUserRank category="harvests" />
               <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-[400px]">
                   <div className="pr-4">
                     {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
                          {harvestLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.total_harvests} icon={<TrendingUp className="h-3 w-3 text-green-600" />} suffix=" récoltes" nextPlayerValue={index > 0 ? harvestLeaders[index - 1].total_harvests : undefined} />)}
@@ -180,7 +180,7 @@ export const LadderModal = ({
             <TabsContent value="coins" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
               <CurrentUserRank category="coins" />
               <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-[400px]">
                   <div className="pr-4">
                     {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
                          {coinsLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.coins} icon={<Coins className="h-3 w-3 text-yellow-600" />} suffix=" 🪙" nextPlayerValue={index > 0 ? coinsLeaders[index - 1].coins : undefined} />)}
@@ -193,7 +193,7 @@ export const LadderModal = ({
             <TabsContent value="prestige" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
               <CurrentUserRank category="prestige" />
               <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-[400px]">
                   <div className="pr-4">
                     {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
                          {prestigeLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.prestige_level || 0} icon={<Crown className="h-3 w-3 text-purple-600" />} suffix=" prestige" nextPlayerValue={index > 0 ? prestigeLeaders[index - 1].prestige_level || 0 : undefined} />)}
@@ -206,7 +206,7 @@ export const LadderModal = ({
             <TabsContent value="level" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
               <CurrentUserRank category="level" />
               <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-[400px]">
                   <div className="pr-4">
                     {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
                          {levelLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.level || 1} icon={<Star className="h-3 w-3 text-blue-600" />} suffix="" nextPlayerValue={index > 0 ? levelLeaders[index - 1].level || 1 : undefined} />)}
