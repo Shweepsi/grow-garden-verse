@@ -47,16 +47,6 @@ export const ProfilePage = () => {
         
         <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
 
-        {/* Système de Prestige */}
-        {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
-
-        {/* Section Paramètres */}
-        <div className="space-y-4">
-          <h2 className="mobile-text-lg font-bold text-green-700 flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Paramètres
-          </h2>
-
           {/* Carte des classements */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
             <div className="space-y-3">
@@ -71,6 +61,16 @@ export const ProfilePage = () => {
               </Button>
             </div>
           </div>
+        
+        {/* Système de Prestige */}
+        {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
+
+        {/* Section Paramètres */}
+        <div className="space-y-4">
+          <h2 className="mobile-text-lg font-bold text-green-700 flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Paramètres
+          </h2>
 
           {/* Carte de déconnexion */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
