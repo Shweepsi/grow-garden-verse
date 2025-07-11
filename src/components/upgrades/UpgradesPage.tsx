@@ -95,11 +95,7 @@ export const UpgradesPage = () => {
               <div className="text-xs text-green-600">
                 {progress.purchased}/{progress.total}
               </div>
-              <div className="w-full bg-green-200 rounded-full h-2 mt-2">
-                <div className="bg-green-600 h-2 rounded-full transition-all" style={{
-              width: `${progress.purchased / progress.total * 100}%`
-            }} />
-              </div>
+              
             </div>)}
         </div>
 
