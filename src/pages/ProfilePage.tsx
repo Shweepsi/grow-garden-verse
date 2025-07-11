@@ -40,6 +40,9 @@ export const ProfilePage = () => {
       <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
         <GameHeader garden={gameState.garden} />
       </div>
+    
+      {/* Content with padding to avoid overlap */}
+      <div className="px-3 pb-6 space-y-4">
 
           {/* Carte des classements */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
@@ -55,9 +58,7 @@ export const ProfilePage = () => {
               </Button>
             </div>
           </div>
-    
-      {/* Content with padding to avoid overlap */}
-      <div className="px-3 pb-6 space-y-4">
+        
         <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
         
         <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
