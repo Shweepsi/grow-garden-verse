@@ -90,9 +90,7 @@ export const PlotCard = memo(({
           </div>}
 
         {/* Indicateur d'état */}
-        {plot.unlocked && !isAutoHarvestPlot && state !== 'empty' && <div className="absolute top-1.5 right-1.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${state === 'ready' ? 'bg-yellow-400' : 'bg-blue-400'}`}></div>
-          </div>}
+        {plot.unlocked && !isAutoHarvestPlot && state !== 'empty'}
 
         {/* Indicateur spécial pour l'auto-récolte */}
         {isAutoHarvestPlot && <div className="absolute top-1.5 right-1.5">
