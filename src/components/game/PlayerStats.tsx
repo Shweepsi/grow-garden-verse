@@ -60,21 +60,6 @@ export const PlayerStats = ({
       </div>
 
       {/* Informations du compte */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-500" />
-            Informations du compte
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Compte créé :</span>
-            <span className="font-medium">{formatDate(garden.created_at)}</span>
-          </div>
-          
-          
-        </CardContent>
-      </Card>
+      
     </div>;
 };
