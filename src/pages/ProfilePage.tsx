@@ -8,34 +8,34 @@ import { Button } from '@/components/ui/button';
 import { Loader2, LogOut, Settings, Trophy } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-
 export const ProfilePage = () => {
-  const { gameState, loading } = useRefactoredGame();
-  const { signOut } = useAuth();
+  const {
+    gameState,
+    loading
+  } = useRefactoredGame();
+  const {
+    signOut
+  } = useAuth();
   const queryClient = useQueryClient();
   const [showLadder, setShowLadder] = useState(false);
-
   const handlePrestige = () => {
     // Invalider les queries pour rafraîchir les données
-    queryClient.invalidateQueries({ queryKey: ['gameData'] });
+    queryClient.invalidateQueries({
+      queryKey: ['gameData']
+    });
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen garden-background flex items-center justify-center">
+    return <div className="min-h-screen garden-background flex items-center justify-center">
         <div className="glassmorphism rounded-xl p-6">
           <Loader2 className="h-6 w-6 animate-spin text-green-600" />
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // Calculer les statistiques
   const activePlants = gameState.plots.filter(plot => plot.plant_type && plot.planted_at).length;
   const totalPlants = gameState.plantTypes.length;
-
-  return (
-    <div className="min-h-screen garden-background">
+  return <div className="min-h-screen garden-background">
       {/* Sticky header */}
       <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
         <GameHeader garden={gameState.garden} />
@@ -45,19 +45,10 @@ export const ProfilePage = () => {
       <div className="px-3 pb-6 space-y-4">
         <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
         
-        <PlayerStats 
-          garden={gameState.garden} 
-          totalPlants={totalPlants}
-          activePlants={activePlants}
-        />
+        <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
 
         {/* Système de Prestige */}
-        {gameState.garden && (
-          <PrestigeSystem 
-            garden={gameState.garden}
-            onPrestige={handlePrestige}
-          />
-        )}
+        {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
 
         {/* Section Paramètres */}
         <div className="space-y-4">
@@ -71,17 +62,10 @@ export const ProfilePage = () => {
             <div className="space-y-3">
               <div>
                 <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Classements</h3>
-                <p className="mobile-text-sm text-gray-600">
-                  Découvrez votre position parmi les meilleurs jardiniers
-                </p>
+                
               </div>
               
-              <Button 
-                onClick={() => setShowLadder(true)}
-                variant="outline" 
-                size="lg"
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0"
-              >
+              <Button onClick={() => setShowLadder(true)} variant="outline" size="lg" className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0">
                 <Trophy className="h-4 w-4 mr-2" />
                 Voir les Classements
               </Button>
@@ -93,17 +77,10 @@ export const ProfilePage = () => {
             <div className="space-y-3">
               <div>
                 <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Compte</h3>
-                <p className="mobile-text-sm text-gray-600">
-                  Gérez votre compte et vos préférences
-                </p>
+                
               </div>
               
-              <Button 
-                onClick={signOut}
-                variant="destructive" 
-                size="lg"
-                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target"
-              >
+              <Button onClick={signOut} variant="destructive" size="lg" className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target">
                 <LogOut className="h-4 w-4 mr-2" />
                 Se déconnecter
               </Button>
@@ -113,10 +90,6 @@ export const ProfilePage = () => {
       </div>
 
       {/* Modale des classements */}
-      <LadderModal 
-        isOpen={showLadder} 
-        onClose={() => setShowLadder(false)} 
-      />
-    </div>
-  );
+      <LadderModal isOpen={showLadder} onClose={() => setShowLadder(false)} />
+    </div>;
 };
