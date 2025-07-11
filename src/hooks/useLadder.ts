@@ -24,7 +24,7 @@ export const useLadder = () => {
       // Récupérer les joueurs réels avec leurs profils
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, total_harvests');
+        .select('user_id, total_harvests, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -33,7 +33,7 @@ export const useLadder = () => {
       // Récupérer les bots
       const { data: bots, error: botsError } = await supabase
         .from('leaderboard_bots')
-        .select('id, username, total_harvests');
+        .select('id, username, total_harvests, created_at');
 
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
@@ -43,7 +43,7 @@ export const useLadder = () => {
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
       // Combiner et formater les données
-      const allPlayers: LeaderboardPlayer[] = [
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
         ...(gardens || []).map(g => ({
           user_id: g.user_id,
           username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
@@ -51,7 +51,8 @@ export const useLadder = () => {
           coins: 0,
           level: 0,
           prestige_level: 0,
-          is_bot: false
+          is_bot: false,
+          created_at: g.created_at
         })),
         ...(bots || []).map(b => ({
           id: b.id,
@@ -60,13 +61,17 @@ export const useLadder = () => {
           coins: 0,
           level: 0,
           prestige_level: 0,
-          is_bot: true
+          is_bot: true,
+          created_at: b.created_at
         }))
       ];
 
-      // Trier par récoltes décroissantes et limiter à 100
+      // Trier par récoltes décroissantes, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
-        .sort((a, b) => b.total_harvests - a.total_harvests)
+        .sort((a, b) => {
+          if (b.total_harvests !== a.total_harvests) return b.total_harvests - a.total_harvests;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        })
         .slice(0, 100);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -79,7 +84,7 @@ export const useLadder = () => {
       // Récupérer les joueurs réels avec leurs profils
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, coins');
+        .select('user_id, coins, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -88,7 +93,7 @@ export const useLadder = () => {
       // Récupérer les bots
       const { data: bots, error: botsError } = await supabase
         .from('leaderboard_bots')
-        .select('id, username, coins');
+        .select('id, username, coins, created_at');
 
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
@@ -98,7 +103,7 @@ export const useLadder = () => {
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
       // Combiner et formater les données
-      const allPlayers: LeaderboardPlayer[] = [
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
         ...(gardens || []).map(g => ({
           user_id: g.user_id,
           username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
@@ -106,7 +111,8 @@ export const useLadder = () => {
           coins: g.coins,
           level: 0,
           prestige_level: 0,
-          is_bot: false
+          is_bot: false,
+          created_at: g.created_at
         })),
         ...(bots || []).map(b => ({
           id: b.id,
@@ -115,13 +121,17 @@ export const useLadder = () => {
           coins: b.coins,
           level: 0,
           prestige_level: 0,
-          is_bot: true
+          is_bot: true,
+          created_at: b.created_at
         }))
       ];
 
-      // Trier par pièces décroissantes et limiter à 100
+      // Trier par pièces décroissantes, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
-        .sort((a, b) => b.coins - a.coins)
+        .sort((a, b) => {
+          if (b.coins !== a.coins) return b.coins - a.coins;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        })
         .slice(0, 100);
     },
     staleTime: 5 * 60 * 1000,
@@ -134,7 +144,7 @@ export const useLadder = () => {
       // Récupérer les joueurs réels avec leurs profils
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, prestige_level');
+        .select('user_id, prestige_level, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -143,7 +153,7 @@ export const useLadder = () => {
       // Récupérer les bots
       const { data: bots, error: botsError } = await supabase
         .from('leaderboard_bots')
-        .select('id, username, prestige_level');
+        .select('id, username, prestige_level, created_at');
 
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
@@ -153,7 +163,7 @@ export const useLadder = () => {
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
       // Combiner et formater les données
-      const allPlayers: LeaderboardPlayer[] = [
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
         ...(gardens || []).map(g => ({
           user_id: g.user_id,
           username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
@@ -161,7 +171,8 @@ export const useLadder = () => {
           coins: 0,
           level: 0,
           prestige_level: g.prestige_level || 0,
-          is_bot: false
+          is_bot: false,
+          created_at: g.created_at
         })),
         ...(bots || []).map(b => ({
           id: b.id,
@@ -170,13 +181,17 @@ export const useLadder = () => {
           coins: 0,
           level: 0,
           prestige_level: b.prestige_level || 0,
-          is_bot: true
+          is_bot: true,
+          created_at: b.created_at
         }))
       ];
 
-      // Trier par prestige décroissant et limiter à 100
+      // Trier par prestige décroissant, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
-        .sort((a, b) => b.prestige_level - a.prestige_level)
+        .sort((a, b) => {
+          if (b.prestige_level !== a.prestige_level) return b.prestige_level - a.prestige_level;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        })
         .slice(0, 100);
     },
     staleTime: 5 * 60 * 1000,
@@ -189,7 +204,7 @@ export const useLadder = () => {
       // Récupérer les joueurs réels avec leurs profils
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, level, experience');
+        .select('user_id, level, experience, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -198,7 +213,7 @@ export const useLadder = () => {
       // Récupérer les bots
       const { data: bots, error: botsError } = await supabase
         .from('leaderboard_bots')
-        .select('id, username, level, experience');
+        .select('id, username, level, experience, created_at');
 
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
@@ -208,7 +223,7 @@ export const useLadder = () => {
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
       // Combiner et formater les données
-      const allPlayers: LeaderboardPlayer[] = [
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
         ...(gardens || []).map(g => ({
           user_id: g.user_id,
           username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
@@ -217,7 +232,8 @@ export const useLadder = () => {
           level: g.level || 1,
           experience: g.experience || 0,
           prestige_level: 0,
-          is_bot: false
+          is_bot: false,
+          created_at: g.created_at
         })),
         ...(bots || []).map(b => ({
           id: b.id,
@@ -227,15 +243,17 @@ export const useLadder = () => {
           level: b.level || 1,
           experience: b.experience || 0,
           prestige_level: 0,
-          is_bot: true
+          is_bot: true,
+          created_at: b.created_at
         }))
       ];
 
-      // Trier par niveau puis expérience décroissants et limiter à 100
+      // Trier par niveau puis expérience décroissants, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
         .sort((a, b) => {
           if (b.level !== a.level) return b.level - a.level;
-          return (b.experience || 0) - (a.experience || 0);
+          if ((b.experience || 0) !== (a.experience || 0)) return (b.experience || 0) - (a.experience || 0);
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         })
         .slice(0, 100);
     },
