@@ -54,7 +54,7 @@ export const ProfilePage = () => {
               
               <Button onClick={() => setShowLadder(true)} variant="outline" size="lg" className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0">
                 <Trophy className="h-4 w-4 mr-2" />
-                Voir les Classements
+                Voir le Classement
               </Button>
             </div>
           </div>
