@@ -68,7 +68,7 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
             ? 'transform scale-105' 
             : 'hover:scale-105'
       }`}>
-        {isReady ? `✨${plantType.emoji || '🌱'}✨` : (plantType.emoji || '🌱')}
+        {isReady ? `${plantType.emoji || '🌱'}` : (plantType.emoji || '🌱')}
       </div>
       
       <p className={`mobile-text-xs mb-2 font-medium transition-colors duration-500 ${
