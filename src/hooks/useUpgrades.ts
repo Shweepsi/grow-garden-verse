@@ -156,6 +156,72 @@ export const useUpgrades = () => {
     );
   };
 
+  // Grouper les améliorations par catégorie et ne montrer que la suivante
+  const getSequentialUpgrades = () => {
+    const categories: { [key: string]: LevelUpgrade[] } = {};
+    
+    // Grouper par effect_type
+    availableUpgrades.forEach(upgrade => {
+      if (!categories[upgrade.effect_type]) {
+        categories[upgrade.effect_type] = [];
+      }
+      categories[upgrade.effect_type].push(upgrade);
+    });
+
+    // Pour chaque catégorie, trier par niveau requis et coût, puis prendre seulement la suivante non-achetée
+    const sequentialUpgrades: LevelUpgrade[] = [];
+    
+    Object.entries(categories).forEach(([effectType, upgrades]) => {
+      const sorted = upgrades.sort((a, b) => {
+        if (a.level_required !== b.level_required) {
+          return a.level_required - b.level_required;
+        }
+        return a.cost_coins - b.cost_coins;
+      });
+
+      // Trouver la prochaine amélioration non-achetée
+      const nextUpgrade = sorted.find(upgrade => !isUpgradePurchased(upgrade.id));
+      if (nextUpgrade) {
+        sequentialUpgrades.push(nextUpgrade);
+      }
+    });
+
+    return sequentialUpgrades;
+  };
+
+  // Calculer la progression par catégorie
+  const getCategoryProgress = () => {
+    const categories: { [key: string]: { total: number; purchased: number; name: string } } = {};
+    
+    availableUpgrades.forEach(upgrade => {
+      if (!categories[upgrade.effect_type]) {
+        categories[upgrade.effect_type] = {
+          total: 0,
+          purchased: 0,
+          name: getCategoryDisplayName(upgrade.effect_type)
+        };
+      }
+      categories[upgrade.effect_type].total++;
+      if (isUpgradePurchased(upgrade.id)) {
+        categories[upgrade.effect_type].purchased++;
+      }
+    });
+
+    return categories;
+  };
+
+  const getCategoryDisplayName = (effectType: string) => {
+    switch (effectType) {
+      case 'harvest_multiplier': return 'Récolte';
+      case 'growth_speed': return 'Croissance';
+      case 'exp_multiplier': return 'Expérience';
+      case 'gem_chance': return 'Gemmes';
+      case 'plant_cost_reduction': return 'Économie';
+      case 'auto_harvest': return 'Automatisation';
+      default: return effectType.replace('_', ' ');
+    }
+  };
+
   return {
     availableUpgrades,
     playerUpgrades,
@@ -164,6 +230,9 @@ export const useUpgrades = () => {
     isUpgradePurchased,
     getActiveMultipliers,
     getAutoUnlockUpgrades,
+    getSequentialUpgrades,
+    getCategoryProgress,
+    getCategoryDisplayName,
     isPurchasing: purchaseUpgradeMutation.isPending
   };
 };

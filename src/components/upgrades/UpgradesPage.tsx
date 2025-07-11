@@ -13,18 +13,21 @@ export const UpgradesPage = () => {
     data: gameData
   } = useGameData();
   const {
-    availableUpgrades,
     upgradesLoading,
     purchaseUpgrade,
     isUpgradePurchased,
+    getSequentialUpgrades,
+    getCategoryProgress,
+    getCategoryDisplayName,
     isPurchasing
   } = useUpgrades();
   const playerLevel = gameData?.garden?.level || 1;
   const coins = gameData?.garden?.coins || 0;
   const gems = gameData?.garden?.gems || 0;
 
-  // Trier les améliorations par prix (du moins cher au plus cher)
-  const sortedUpgrades = [...availableUpgrades].sort((a, b) => a.cost_coins - b.cost_coins);
+  // Obtenir les améliorations séquentielles et les infos de progression
+  const sequentialUpgrades = getSequentialUpgrades();
+  const categoryProgress = getCategoryProgress();
   
   const getEffectTypeColor = (effectType: string) => {
     if (effectType.includes('harvest')) return 'bg-yellow-500/20 text-yellow-700 border-yellow-300';
@@ -89,10 +92,38 @@ export const UpgradesPage = () => {
       </div>
       
       {/* Content with padding to avoid overlap */}
-      <div className="px-4 pb-6 space-y-4">
-        {/* Grille des améliorations triées par prix */}
+      <div className="px-4 pb-6 space-y-6">
+        {/* Titre et explication */}
+        <div className="glassmorphism rounded-xl p-4 text-center">
+          <h2 className="text-xl font-bold text-green-800 mb-2">🚀 Améliorations Disponibles</h2>
+          <p className="text-green-600 text-sm">
+            Achetez une amélioration pour débloquer la suivante dans chaque catégorie
+          </p>
+        </div>
+
+        {/* Progression par catégorie */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Object.entries(categoryProgress).map(([effectType, progress]) => (
+            <div key={effectType} className="glassmorphism rounded-lg p-3 text-center">
+              <div className="text-sm font-medium text-green-800 mb-1">
+                {progress.name}
+              </div>
+              <div className="text-xs text-green-600">
+                {progress.purchased}/{progress.total}
+              </div>
+              <div className="w-full bg-green-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full transition-all"
+                  style={{ width: `${(progress.purchased / progress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Grille des prochaines améliorations */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedUpgrades.map(upgrade => {
+          {sequentialUpgrades.map(upgrade => {
             const isPurchased = isUpgradePurchased(upgrade.id);
             const isLocked = playerLevel < upgrade.level_required;
             const canBuy = canPurchase(upgrade);
@@ -114,9 +145,14 @@ export const UpgradesPage = () => {
                       <span className="text-3xl">{upgrade.emoji}</span>
                       <div>
                         <CardTitle className="text-lg text-green-800">{upgrade.display_name}</CardTitle>
-                        <Badge variant="outline" className={`mt-1 ${getEffectTypeColor(upgrade.effect_type)}`}>
-                          Niveau {upgrade.level_required}
-                        </Badge>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className={`${getEffectTypeColor(upgrade.effect_type)}`}>
+                            Niveau {upgrade.level_required}
+                          </Badge>
+                          <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                            {getCategoryDisplayName(upgrade.effect_type)}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                     
@@ -174,7 +210,7 @@ export const UpgradesPage = () => {
           })}
         </div>
 
-        {availableUpgrades.length === 0 && (
+        {sequentialUpgrades.length === 0 && (
           <div className="glassmorphism rounded-2xl p-8 text-center">
             <p className="text-green-700 text-lg">
               🎉 Toutes les améliorations disponibles ont été débloquées !
