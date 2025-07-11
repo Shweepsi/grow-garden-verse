@@ -56,9 +56,7 @@ export const PlayerStats = ({
 
         
 
-        <Card>
-          
-        </Card>
+        
       </div>
 
       {/* Informations du compte */}
