@@ -102,7 +102,7 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
 
       {isReady ? (
         <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-1 rounded-full mobile-text-xs font-medium">
-          🎉 Prête !
+          Prête !
         </div>
       ) : (
         <div className={`transition-colors duration-300 ${
