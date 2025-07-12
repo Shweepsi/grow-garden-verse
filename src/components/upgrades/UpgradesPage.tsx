@@ -27,7 +27,7 @@ export const UpgradesPage = () => {
   // Obtenir les améliorations par catégorie et les infos de progression
   const sequentialUpgrades = getSequentialUpgrades();
   const categoryProgress = getCategoryProgress();
-  
+
   // Grouper les améliorations par type d'effet pour afficher les paliers
   const upgradesByCategory = sequentialUpgrades.reduce((acc, upgrade) => {
     if (!acc[upgrade.effect_type]) {
@@ -98,26 +98,21 @@ export const UpgradesPage = () => {
 
         {/* Progression par catégorie */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => (
-            <Card key={effectType} className="glassmorphism p-3 text-center">
+          {Object.entries(categoryProgress).map(([effectType, progress]) => <Card key={effectType} className="glassmorphism p-3 text-center">
               <div className="text-xs text-green-600 mb-1">{progress.name}</div>
               <div className="text-sm font-bold text-green-800">
                 {progress.purchased}/{progress.total}
               </div>
-            </Card>
-          ))}
+            </Card>)}
         </div>
 
         {/* Améliorations avec paliers par catégorie */}
         <div className="space-y-6">
           {Object.entries(upgradesByCategory).map(([effectType, upgrades]) => {
-            // Trouver le palier actuellement débloqué (le plus récent acheté)
-            const purchasedUpgrades = upgrades.filter(u => isUpgradePurchased(u.id));
-            const currentTier = purchasedUpgrades.length > 0 ? 
-              purchasedUpgrades.sort((a, b) => b.level_required - a.level_required)[0] : null;
-            
-            return (
-              <Card key={effectType} className="glassmorphism">
+          // Trouver le palier actuellement débloqué (le plus récent acheté)
+          const purchasedUpgrades = upgrades.filter(u => isUpgradePurchased(u.id));
+          const currentTier = purchasedUpgrades.length > 0 ? purchasedUpgrades.sort((a, b) => b.level_required - a.level_required)[0] : null;
+          return <Card key={effectType} className="glassmorphism">
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{upgrades[0].emoji}</span>
@@ -136,27 +131,12 @@ export const UpgradesPage = () => {
                   {/* Liste des paliers */}
                   <div className="space-y-3">
                     {upgrades.map((upgrade, index) => {
-                      const isPurchased = isUpgradePurchased(upgrade.id);
-                      const isLocked = playerLevel < upgrade.level_required;
-                      const canBuy = canPurchase(upgrade);
-                      const buttonState = getButtonState(upgrade);
-                      const isCurrentTier = currentTier?.id === upgrade.id;
-                      
-                      return (
-                        <div 
-                          key={upgrade.id} 
-                          className={`p-4 rounded-lg border transition-all ${
-                            isCurrentTier 
-                              ? 'bg-green-50 border-green-300 ring-2 ring-green-200' 
-                              : isPurchased 
-                                ? 'bg-gray-50 border-gray-300' 
-                                : isLocked 
-                                  ? 'bg-gray-50 border-gray-200 opacity-60' 
-                                  : canBuy 
-                                    ? 'bg-blue-50 border-blue-300 hover:bg-blue-100' 
-                                    : 'bg-red-50 border-red-200'
-                          }`}
-                        >
+                  const isPurchased = isUpgradePurchased(upgrade.id);
+                  const isLocked = playerLevel < upgrade.level_required;
+                  const canBuy = canPurchase(upgrade);
+                  const buttonState = getButtonState(upgrade);
+                  const isCurrentTier = currentTier?.id === upgrade.id;
+                  return <div key={upgrade.id} className={`p-4 rounded-lg border transition-all ${isCurrentTier ? 'bg-green-50 border-green-300 ring-2 ring-green-200' : isPurchased ? 'bg-gray-50 border-gray-300' : isLocked ? 'bg-gray-50 border-gray-200 opacity-60' : canBuy ? 'bg-blue-50 border-blue-300 hover:bg-blue-100' : 'bg-red-50 border-red-200'}`}>
                           <div className="flex items-center justify-between">
                             {/* Info du palier */}
                             <div className="flex-1">
@@ -167,80 +147,55 @@ export const UpgradesPage = () => {
                                 <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
                                   Niveau {upgrade.level_required}+
                                 </Badge>
-                                {isCurrentTier && (
-                                  <Badge className="bg-green-600 text-white">
+                                {isCurrentTier && <Badge className="bg-green-600 text-white">
                                     Actuel
-                                  </Badge>
-                                )}
-                                {isPurchased && !isCurrentTier && (
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
-                                )}
-                                {isLocked && (
-                                  <Lock className="h-4 w-4 text-gray-400" />
-                                )}
+                                  </Badge>}
+                                {isPurchased && !isCurrentTier && <CheckCircle className="h-4 w-4 text-green-600" />}
+                                {isLocked && <Lock className="h-4 w-4 text-gray-400" />}
                               </div>
                               
                               <div className="text-sm text-gray-700 mb-2">
                                 <strong>{upgrade.display_name}</strong>
                               </div>
                               
-                              <div className="text-xs text-gray-600">
-                                Effet: +{upgrade.effect_value}x
-                              </div>
+                              
                             </div>
 
                             {/* Coût et bouton */}
                             <div className="flex items-center gap-4">
                               {/* Coût */}
                               <div className="text-right space-y-1">
-                                {upgrade.cost_coins > 0 && (
-                                  <div className="flex items-center gap-1">
+                                {upgrade.cost_coins > 0 && <div className="flex items-center gap-1">
                                     <Coins className="h-3 w-3 text-yellow-600" />
-                                    <span className={`text-sm font-medium ${
-                                      coins >= upgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'
-                                    }`}>
+                                    <span className={`text-sm font-medium ${coins >= upgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'}`}>
                                       {upgrade.cost_coins.toLocaleString()}
                                     </span>
-                                  </div>
-                                )}
-                                {upgrade.cost_gems > 0 && (
-                                  <div className="flex items-center gap-1">
+                                  </div>}
+                                {upgrade.cost_gems > 0 && <div className="flex items-center gap-1">
                                     <Gem className="h-3 w-3 text-purple-600" />
-                                    <span className={`text-sm font-medium ${
-                                      gems >= upgrade.cost_gems ? 'text-green-600' : 'text-red-500'
-                                    }`}>
+                                    <span className={`text-sm font-medium ${gems >= upgrade.cost_gems ? 'text-green-600' : 'text-red-500'}`}>
                                       {upgrade.cost_gems.toLocaleString()}
                                     </span>
-                                  </div>
-                                )}
+                                  </div>}
                               </div>
 
                               {/* Bouton */}
-                              <Button 
-                                size="sm" 
-                                disabled={!canBuy || isPurchased || isPurchasing} 
-                                onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)} 
-                                className={`${buttonState.style} transition-all min-w-[100px]`}
-                              >
+                              <Button size="sm" disabled={!canBuy || isPurchased || isPurchasing} onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)} className={`${buttonState.style} transition-all min-w-[100px]`}>
                                 {buttonState.text}
                               </Button>
                             </div>
                           </div>
                           
                           {/* Message d'aide */}
-                          {!isPurchased && coins < upgrade.cost_coins + 100 && coins >= upgrade.cost_coins && (
-                            <p className="text-xs text-orange-600 mt-2">
+                          {!isPurchased && coins < upgrade.cost_coins + 100 && coins >= upgrade.cost_coins && <p className="text-xs text-orange-600 mt-2">
                               💡 Gardez 100 pièces de réserve pour continuer à planter
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+                            </p>}
+                        </div>;
+                })}
                   </div>
                 </CardContent>
-              </Card>
-            );
-          })}
+              </Card>;
+        })}
         </div>
 
         {sequentialUpgrades.length === 0 && <div className="glassmorphism rounded-2xl p-8 text-center">
