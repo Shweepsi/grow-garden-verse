@@ -156,7 +156,7 @@ export const useUpgrades = () => {
     );
   };
 
-  // Grouper les améliorations par catégorie et ne montrer que la suivante
+  // Grouper les améliorations par catégorie et afficher tous les paliers
   const getSequentialUpgrades = () => {
     const categories: { [key: string]: LevelUpgrade[] } = {};
     
@@ -168,7 +168,7 @@ export const useUpgrades = () => {
       categories[upgrade.effect_type].push(upgrade);
     });
 
-    // Pour chaque catégorie, trier par niveau requis et coût, puis prendre seulement la suivante non-achetée
+    // Pour chaque catégorie, trier par niveau requis et coût
     const sequentialUpgrades: LevelUpgrade[] = [];
     
     Object.entries(categories).forEach(([effectType, upgrades]) => {
@@ -179,14 +179,22 @@ export const useUpgrades = () => {
         return a.cost_coins - b.cost_coins;
       });
 
-      // Trouver la prochaine amélioration non-achetée
-      const nextUpgrade = sorted.find(upgrade => !isUpgradePurchased(upgrade.id));
-      if (nextUpgrade) {
-        sequentialUpgrades.push(nextUpgrade);
-      }
+      // Ajouter tous les paliers pour cette catégorie
+      sequentialUpgrades.push(...sorted);
     });
 
     return sequentialUpgrades;
+  };
+
+  // Nouvelle fonction pour obtenir les paliers d'une catégorie
+  const getCategoryTiers = (effectType: string) => {
+    const categoryUpgrades = availableUpgrades.filter(upgrade => upgrade.effect_type === effectType);
+    return categoryUpgrades.sort((a, b) => {
+      if (a.level_required !== b.level_required) {
+        return a.level_required - b.level_required;
+      }
+      return a.cost_coins - b.cost_coins;
+    });
   };
 
   // Calculer la progression par catégorie
@@ -233,6 +241,7 @@ export const useUpgrades = () => {
     getSequentialUpgrades,
     getCategoryProgress,
     getCategoryDisplayName,
+    getCategoryTiers,
     isPurchasing: purchaseUpgradeMutation.isPending
   };
 };
