@@ -92,103 +92,108 @@ export const UpgradesPage = () => {
 
       {/* Liste des améliorations style Adventure Capitalist */}
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {sequentialUpgrades.map(upgrade => {
             const isPurchased = isUpgradePurchased(upgrade.id);
             const isLocked = playerLevel < upgrade.level_required;
             const canBuy = canPurchase(upgrade);
-            const buttonState = getButtonState(upgrade);
             
             return (
               <div 
                 key={upgrade.id} 
                 className={`
-                  bg-white rounded-lg border-2 shadow-md transition-all duration-200
-                  ${isPurchased ? 'border-green-500 bg-green-50' : 
-                    isLocked ? 'border-gray-300 bg-gray-50 opacity-60' : 
-                    canBuy ? 'border-blue-500 shadow-lg hover:shadow-xl' : 
-                    'border-red-300 bg-red-50'}
+                  relative bg-gradient-to-r rounded-lg shadow-lg border-2 overflow-hidden transition-all duration-200
+                  ${isPurchased ? 
+                    'from-green-400 to-green-600 border-green-300 shadow-green-200' : 
+                    isLocked ? 
+                    'from-gray-300 to-gray-400 border-gray-200 opacity-70' : 
+                    canBuy ? 
+                    'from-blue-400 to-blue-600 border-blue-300 shadow-blue-200 hover:shadow-xl hover:scale-[1.02]' : 
+                    'from-red-400 to-red-600 border-red-300 shadow-red-200'}
+                  h-20
                 `}
               >
-                <div className="flex items-center p-4">
-                  {/* Icône et info */}
-                  <div className="flex items-center flex-1 gap-4">
-                    <div className="text-4xl">{upgrade.emoji}</div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-xl font-bold text-gray-800">{upgrade.display_name}</h3>
-                        {isPurchased && <CheckCircle className="h-5 w-5 text-green-600" />}
-                        {isLocked && <Lock className="h-5 w-5 text-gray-400" />}
+                {/* Carte style Adventure Capitalist */}
+                <div className="flex items-center h-full px-4">
+                  {/* Icône gauche */}
+                  <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center mr-4 border border-white/30">
+                    <span className="text-3xl">{upgrade.emoji}</span>
+                  </div>
+                  
+                  {/* Nom et description */}
+                  <div className="flex-1 text-white">
+                    <h3 className="text-lg font-bold leading-tight mb-1">{upgrade.display_name}</h3>
+                    <p className="text-sm text-white/90 leading-tight">{upgrade.description}</p>
+                  </div>
+                  
+                  {/* Coût */}
+                  <div className="text-right mr-4">
+                    {upgrade.cost_coins > 0 && (
+                      <div className="flex items-center gap-2 justify-end mb-1">
+                        <span 
+                          className={`text-xl font-bold ${
+                            coins >= upgrade.cost_coins + 100 ? 'text-white' : 'text-red-200'
+                          }`}
+                        >
+                          {upgrade.cost_coins.toLocaleString()}
+                        </span>
+                        <Coins className="h-5 w-5 text-yellow-300" />
                       </div>
-                      
-                      <p className="text-gray-600 text-sm mb-2">{upgrade.description}</p>
-                      
-                      <div className="flex items-center gap-4">
-                        <Badge className={`${getEffectTypeColor(upgrade.effect_type)} font-medium`}>
-                          Niveau {upgrade.level_required}
-                        </Badge>
-                        <Badge variant="outline" className="border-blue-300 text-blue-700">
-                          {getCategoryDisplayName(upgrade.effect_type)}
-                        </Badge>
+                    )}
+                    {upgrade.cost_gems > 0 && (
+                      <div className="flex items-center gap-2 justify-end">
+                        <span 
+                          className={`text-xl font-bold ${
+                            gems >= upgrade.cost_gems ? 'text-white' : 'text-red-200'
+                          }`}
+                        >
+                          {upgrade.cost_gems.toLocaleString()}
+                        </span>
+                        <Gem className="h-5 w-5 text-purple-300" />
                       </div>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Coût et bouton */}
-                  <div className="flex items-center gap-6">
-                    {/* Affichage du coût */}
-                    <div className="text-right">
-                      {upgrade.cost_coins > 0 && (
-                        <div className="flex items-center gap-2 mb-1">
-                          <Coins className="h-5 w-5 text-yellow-600" />
-                          <span 
-                            className={`text-lg font-bold ${
-                              coins >= upgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'
-                            }`}
-                          >
-                            {upgrade.cost_coins.toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                      {upgrade.cost_gems > 0 && (
-                        <div className="flex items-center gap-2">
-                          <Gem className="h-5 w-5 text-purple-600" />
-                          <span 
-                            className={`text-lg font-bold ${
-                              gems >= upgrade.cost_gems ? 'text-green-600' : 'text-red-500'
-                            }`}
-                          >
-                            {upgrade.cost_gems.toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Bouton d'achat Adventure Capitalist style */}
-                    <Button
-                      size="lg"
-                      disabled={!canBuy || isPurchased || isPurchasing}
-                      onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)}
-                      className={`
-                        min-w-[120px] h-12 text-white font-bold border-2 border-white/20 shadow-lg
-                        ${isPurchased ? 'bg-green-600 hover:bg-green-700' :
-                          isLocked ? 'bg-gray-400' :
-                          canBuy ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105' :
-                          'bg-red-500 hover:bg-red-600'}
-                        transition-all duration-200
-                      `}
-                    >
-                      {buttonState.text}
-                    </Button>
+                  {/* Bouton/Status */}
+                  <div className="w-24">
+                    {isPurchased ? (
+                      <div className="bg-white/20 rounded-lg px-3 py-2 text-center border border-white/30">
+                        <CheckCircle className="h-6 w-6 text-white mx-auto" />
+                        <span className="text-xs text-white font-bold">ACHETÉ</span>
+                      </div>
+                    ) : isLocked ? (
+                      <div className="bg-black/20 rounded-lg px-3 py-2 text-center border border-white/20">
+                        <Lock className="h-6 w-6 text-white/60 mx-auto" />
+                        <span className="text-xs text-white/60 font-bold">LVL {upgrade.level_required}</span>
+                      </div>
+                    ) : (
+                      <Button
+                        disabled={!canBuy || isPurchasing}
+                        onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)}
+                        className="w-full h-12 bg-white/20 hover:bg-white/30 text-white font-bold border border-white/30 rounded-lg transition-all duration-200"
+                      >
+                        {isPurchasing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : canBuy ? (
+                          'ACHETER'
+                        ) : (
+                          'MANQUE'
+                        )}
+                      </Button>
+                    )}
                   </div>
+                </div>
+
+                {/* Niveau requis badge */}
+                <div className="absolute top-2 left-2 bg-black/30 px-2 py-1 rounded text-xs text-white font-bold">
+                  LVL {upgrade.level_required}
                 </div>
 
                 {/* Message d'aide si nécessaire */}
                 {!isPurchased && coins < upgrade.cost_coins + 100 && coins >= upgrade.cost_coins && (
-                  <div className="bg-orange-100 border-t-2 border-orange-300 px-4 py-2">
-                    <p className="text-sm text-orange-700 text-center font-medium">
-                      💡 Gardez 100 pièces de réserve pour continuer à planter
+                  <div className="absolute bottom-0 left-0 right-0 bg-orange-500/90 px-2 py-1">
+                    <p className="text-xs text-white text-center font-medium">
+                      💡 Gardez 100 pièces de réserve
                     </p>
                   </div>
                 )}
