@@ -87,17 +87,7 @@ export const UpgradesPage = () => {
         
 
         {/* Progression par catégorie */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => <div key={effectType} className="glassmorphism rounded-lg p-3 text-center">
-              <div className="text-sm font-medium text-green-800 mb-1">
-                {progress.name}
-              </div>
-              <div className="text-xs text-green-600">
-                {progress.purchased}/{progress.total}
-              </div>
-              
-            </div>)}
-        </div>
+        
 
         {/* Grille des prochaines améliorations */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
