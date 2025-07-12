@@ -88,7 +88,22 @@ export const UpgradesPage = () => {
 
         {/* Progression par catégorie */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => {})}
+          {Object.entries(categoryProgress).map(([effectType, progress]) => (
+            <div key={effectType} className="glassmorphism rounded-xl p-3">
+              <div className="text-sm font-medium text-primary mb-2">
+                {effectType.replace('_', ' ').toUpperCase()}
+              </div>
+              <div className="w-full bg-secondary/20 rounded-full h-2 mb-1">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(progress.purchased / progress.total) * 100}%` }}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {progress.purchased}/{progress.total}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Grille des prochaines améliorations */}
