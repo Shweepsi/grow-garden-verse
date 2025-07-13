@@ -92,14 +92,11 @@ export const UpgradesPage = () => {
       </div>
       
       {/* Content with padding to avoid overlap */}
-      <div className="px-4 pb-6 space-y-6">
-        {/* Titre et explication */}
-        
-
+      <div className="px-3 pb-4 space-y-4">
         {/* Progression par catégorie */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => <Card key={effectType} className="glassmorphism p-3 text-center">
-              <div className="text-xs text-green-600 mb-1">{progress.name}</div>
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          {Object.entries(categoryProgress).map(([effectType, progress]) => <Card key={effectType} className="glassmorphism p-2 text-center">
+              <div className="text-xs text-green-600 mb-0.5">{progress.name}</div>
               <div className="text-sm font-bold text-green-800">
                 {progress.purchased}/{progress.total}
               </div>
@@ -107,29 +104,29 @@ export const UpgradesPage = () => {
         </div>
 
         {/* Améliorations avec paliers par catégorie */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(upgradesByCategory).map(([effectType, upgrades]) => {
           // Trouver le palier actuellement débloqué (le plus récent acheté)
           const purchasedUpgrades = upgrades.filter(u => isUpgradePurchased(u.id));
           const currentTier = purchasedUpgrades.length > 0 ? purchasedUpgrades.sort((a, b) => b.level_required - a.level_required)[0] : null;
           return <Card key={effectType} className="glassmorphism">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{upgrades[0].emoji}</span>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{upgrades[0].emoji}</span>
                     <div>
-                      <CardTitle className="text-xl text-green-800">
+                      <CardTitle className="text-lg text-green-800">
                         {getCategoryDisplayName(effectType)}
                       </CardTitle>
-                      <p className="text-sm text-green-600 mt-1">
+                      <p className="text-xs text-green-600">
                         {upgrades[0].description}
                       </p>
                     </div>
                   </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="pt-0">
                   {/* Liste des paliers dans la même carte - horizontalement */}
-                  <div className="flex gap-3 overflow-x-auto pb-2">
+                  <div className="flex gap-2 overflow-x-auto pb-1">
                     {upgrades.map((upgrade, index) => {
                       const isPurchased = isUpgradePurchased(upgrade.id);
                       const isLocked = playerLevel < upgrade.level_required;
@@ -138,7 +135,7 @@ export const UpgradesPage = () => {
                       const isCurrentTier = currentTier?.id === upgrade.id;
                       
                       return (
-                        <div key={upgrade.id} className={`flex-shrink-0 w-64 p-3 rounded-lg border transition-all ${
+                        <div key={upgrade.id} className={`flex-shrink-0 w-48 p-2 rounded-lg border transition-all ${
                           isCurrentTier 
                             ? 'bg-green-50 border-green-300 ring-1 ring-green-200' 
                             : isPurchased 
@@ -149,18 +146,18 @@ export const UpgradesPage = () => {
                                   ? 'bg-blue-50 border-blue-300 hover:bg-blue-100' 
                                   : 'bg-red-50 border-red-200'
                         }`}>
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             {/* Badges du palier */}
                             <div className="flex flex-wrap items-center gap-1">
-                              <Badge variant="outline" className="text-xs px-2 py-0.5">
-                                Palier {index + 1}
+                              <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                                T{index + 1}
                               </Badge>
-                              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 border-purple-300">
-                                Niv. {upgrade.level_required}+
+                              <Badge variant="outline" className="text-xs px-1 py-0 h-4 bg-purple-100 text-purple-700 border-purple-300">
+                                N.{upgrade.level_required}
                               </Badge>
                               {isCurrentTier && (
-                                <Badge className="text-xs px-2 py-0.5 bg-green-600 text-white">
-                                  Actuel
+                                <Badge className="text-xs px-1 py-0 h-4 bg-green-600 text-white">
+                                  ✓
                                 </Badge>
                               )}
                               {isPurchased && !isCurrentTier && (
@@ -170,12 +167,12 @@ export const UpgradesPage = () => {
                             </div>
                             
                             {/* Nom du palier */}
-                            <div className="text-sm text-gray-700">
+                            <div className="text-xs text-gray-700">
                               <strong>{upgrade.display_name}</strong>
                             </div>
 
                             {/* Coût */}
-                            <div className="space-y-1">
+                            <div className="space-y-0.5">
                               {upgrade.cost_coins > 0 && (
                                 <div className="flex items-center gap-1">
                                   <Coins className="h-3 w-3 text-yellow-600" />
@@ -203,7 +200,7 @@ export const UpgradesPage = () => {
                               size="sm" 
                               disabled={!canBuy || isPurchased || isPurchasing} 
                               onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)} 
-                              className={`${buttonState.style} transition-all text-xs px-3 py-1 h-7 w-full`}
+                              className={`${buttonState.style} transition-all text-xs px-2 py-0.5 h-6 w-full`}
                             >
                               {buttonState.text}
                             </Button>
@@ -211,7 +208,7 @@ export const UpgradesPage = () => {
                             {/* Message d'aide */}
                             {!isPurchased && coins < upgrade.cost_coins + 100 && coins >= upgrade.cost_coins && (
                               <p className="text-xs text-orange-600">
-                                💡 Gardez 100 pièces de réserve
+                                💡 Réserve
                               </p>
                             )}
                           </div>
