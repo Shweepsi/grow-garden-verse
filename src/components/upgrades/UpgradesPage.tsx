@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Coins, Gem, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { LevelUpgrade } from '@/types/upgrades';
+
 export const UpgradesPage = () => {
   const {
     data: gameData
@@ -36,15 +37,26 @@ export const UpgradesPage = () => {
     acc[upgrade.effect_type].push(upgrade);
     return acc;
   }, {} as Record<string, LevelUpgrade[]>);
-  const getEffectTypeColor = (effectType: string) => {
-    if (effectType.includes('harvest')) return 'bg-yellow-500/20 text-yellow-700 border-yellow-300';
-    if (effectType.includes('growth')) return 'bg-blue-500/20 text-blue-700 border-blue-300';
-    if (effectType.includes('exp')) return 'bg-purple-500/20 text-purple-700 border-purple-300';
-    if (effectType.includes('auto')) return 'bg-green-500/20 text-green-700 border-green-300';
-    if (effectType.includes('cost_reduction')) return 'bg-orange-500/20 text-orange-700 border-orange-300';
-    if (effectType.includes('gem')) return 'bg-pink-500/20 text-pink-700 border-pink-300';
-    return 'bg-gray-500/20 text-gray-700 border-gray-300';
+
+  // Fonction pour obtenir le niveau actuel d'une catégorie (prochaine amélioration à acheter)
+  const getCurrentUpgrade = (upgrades: LevelUpgrade[]) => {
+    const sortedUpgrades = upgrades.sort((a, b) => a.level_required - b.level_required);
+    // Trouver la première amélioration non achetée
+    const nextUpgrade = sortedUpgrades.find(upgrade => !isUpgradePurchased(upgrade.id));
+    return nextUpgrade || sortedUpgrades[sortedUpgrades.length - 1]; // Si tout est acheté, retourner la dernière
   };
+
+  // Fonction pour obtenir le niveau actuel (combien d'améliorations achetées + 1)
+  const getCurrentLevel = (upgrades: LevelUpgrade[]) => {
+    const purchasedCount = upgrades.filter(upgrade => isUpgradePurchased(upgrade.id)).length;
+    return purchasedCount + 1;
+  };
+
+  // Fonction pour vérifier si toutes les améliorations d'une catégorie sont achetées
+  const isMaxLevel = (upgrades: LevelUpgrade[]) => {
+    return upgrades.every(upgrade => isUpgradePurchased(upgrade.id));
+  };
+
   const canPurchase = (upgrade: LevelUpgrade) => {
     const hasLevel = playerLevel >= upgrade.level_required;
     const hasCoins = coins >= upgrade.cost_coins + 100; // Protection 100 pièces
@@ -52,6 +64,7 @@ export const UpgradesPage = () => {
     const notPurchased = !isUpgradePurchased(upgrade.id);
     return hasLevel && hasCoins && hasGems && notPurchased;
   };
+
   const getButtonState = (upgrade: LevelUpgrade) => {
     if (isUpgradePurchased(upgrade.id)) return {
       text: 'Acheté ✓',
@@ -78,14 +91,19 @@ export const UpgradesPage = () => {
       style: 'bg-blue-600 hover:bg-blue-700'
     };
   };
+
   if (upgradesLoading) {
-    return <div className="min-h-screen garden-background flex items-center justify-center">
+    return (
+      <div className="min-h-screen garden-background flex items-center justify-center">
         <div className="glassmorphism rounded-xl p-6">
           <Loader2 className="h-6 w-6 animate-spin text-green-600" />
         </div>
-      </div>;
+      </div>
+    );
   }
-  return <div className="min-h-screen garden-background">
+
+  return (
+    <div className="min-h-screen garden-background">
       {/* Sticky header */}
       <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
         <GameHeader garden={gameData?.garden} />
@@ -95,140 +113,182 @@ export const UpgradesPage = () => {
       <div className="px-3 pb-4 space-y-4">
         {/* Progression par catégorie */}
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => <Card key={effectType} className="glassmorphism p-2 text-center">
+          {Object.entries(categoryProgress).map(([effectType, progress]) => (
+            <Card key={effectType} className="glassmorphism p-2 text-center">
               <div className="text-xs text-green-600 mb-0.5">{progress.name}</div>
               <div className="text-sm font-bold text-green-800">
                 {progress.purchased}/{progress.total}
               </div>
-            </Card>)}
+            </Card>
+          ))}
         </div>
 
-        {/* Améliorations avec paliers par catégorie */}
-        <div className="space-y-4">
+        {/* Cartes évolutives par catégorie */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(upgradesByCategory).map(([effectType, upgrades]) => {
-          // Trouver le palier actuellement débloqué (le plus récent acheté)
-          const purchasedUpgrades = upgrades.filter(u => isUpgradePurchased(u.id));
-          const currentTier = purchasedUpgrades.length > 0 ? purchasedUpgrades.sort((a, b) => b.level_required - a.level_required)[0] : null;
-          return <Card key={effectType} className="glassmorphism">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{upgrades[0].emoji}</span>
-                    <div>
-                      <CardTitle className="text-lg text-green-800">
-                        {getCategoryDisplayName(effectType)}
-                      </CardTitle>
-                      <p className="text-xs text-green-600">
-                        {upgrades[0].description}
-                      </p>
+            const currentUpgrade = getCurrentUpgrade(upgrades);
+            const currentLevel = getCurrentLevel(upgrades);
+            const maxLevel = isMaxLevel(upgrades);
+            const totalLevels = upgrades.length;
+            const isPurchased = isUpgradePurchased(currentUpgrade.id);
+            const isLocked = playerLevel < currentUpgrade.level_required;
+            const canBuy = canPurchase(currentUpgrade);
+            const buttonState = getButtonState(currentUpgrade);
+
+            return (
+              <Card 
+                key={effectType} 
+                className={`glassmorphism relative overflow-hidden transition-all duration-500 hover:scale-105 ${
+                  maxLevel 
+                    ? 'bg-gradient-to-br from-green-50/80 to-emerald-50/80 border-green-200 shadow-green-100' 
+                    : canBuy 
+                      ? 'bg-gradient-to-br from-blue-50/80 to-cyan-50/80 border-blue-200 shadow-blue-100 hover:shadow-blue-200' 
+                      : isLocked 
+                        ? 'bg-gradient-to-br from-gray-50/80 to-slate-50/80 border-gray-200 opacity-75' 
+                        : 'bg-gradient-to-br from-orange-50/80 to-red-50/80 border-orange-200'
+                }`}
+              >
+                {/* Indicateur de niveau en arrière-plan */}
+                <div className="absolute top-2 right-2 z-0">
+                  <div className={`text-6xl font-bold opacity-10 ${
+                    maxLevel ? 'text-green-600' : 'text-blue-600'
+                  }`}>
+                    {maxLevel ? 'MAX' : currentLevel}
+                  </div>
+                </div>
+
+                <CardHeader className="relative z-10">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl drop-shadow-lg">{currentUpgrade.emoji}</span>
+                      <div>
+                        <CardTitle className="text-lg text-green-800 font-bold">
+                          {getCategoryDisplayName(effectType)}
+                        </CardTitle>
+                        <p className="text-xs text-green-600 opacity-80">
+                          {currentUpgrade.description}
+                        </p>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Barre de progression des niveaux */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex-1 bg-white/50 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-700 ${
+                          maxLevel 
+                            ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
+                            : 'bg-gradient-to-r from-blue-400 to-cyan-500'
+                        }`}
+                        style={{ width: `${((currentLevel - 1) / totalLevels) * 100}%` }}
+                      />
+                    </div>
+                    <Badge variant="outline" className={`text-xs font-bold ${
+                      maxLevel 
+                        ? 'bg-green-100 text-green-700 border-green-300' 
+                        : 'bg-blue-100 text-blue-700 border-blue-300'
+                    }`}>
+                      {maxLevel ? 'MAX' : `${currentLevel}/${totalLevels}`}
+                    </Badge>
                   </div>
                 </CardHeader>
 
-                <CardContent className="pt-0">
-                  {/* Liste des paliers dans la même carte - horizontalement */}
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {upgrades.map((upgrade, index) => {
-                      const isPurchased = isUpgradePurchased(upgrade.id);
-                      const isLocked = playerLevel < upgrade.level_required;
-                      const canBuy = canPurchase(upgrade);
-                      const buttonState = getButtonState(upgrade);
-                      const isCurrentTier = currentTier?.id === upgrade.id;
-                      
-                      return (
-                        <div key={upgrade.id} className={`flex-shrink-0 w-48 p-2 rounded-lg border transition-all ${
-                          isCurrentTier 
-                            ? 'bg-green-50 border-green-300 ring-1 ring-green-200' 
-                            : isPurchased 
-                              ? 'bg-gray-50 border-gray-300' 
-                              : isLocked 
-                                ? 'bg-gray-50 border-gray-200 opacity-60' 
-                                : canBuy 
-                                  ? 'bg-blue-50 border-blue-300 hover:bg-blue-100' 
-                                  : 'bg-red-50 border-red-200'
-                        }`}>
-                          <div className="space-y-2">
-                            {/* Badges du palier */}
-                            <div className="flex flex-wrap items-center gap-1">
-                              <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                                T{index + 1}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs px-1 py-0 h-4 bg-purple-100 text-purple-700 border-purple-300">
-                                N.{upgrade.level_required}
-                              </Badge>
-                              {isCurrentTier && (
-                                <Badge className="text-xs px-1 py-0 h-4 bg-green-600 text-white">
-                                  ✓
-                                </Badge>
-                              )}
-                              {isPurchased && !isCurrentTier && (
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                              )}
-                              {isLocked && <Lock className="h-3 w-3 text-gray-400" />}
-                            </div>
-                            
-                            {/* Nom du palier */}
-                            <div className="text-xs text-gray-700">
-                              <strong>{upgrade.display_name}</strong>
-                            </div>
+                <CardContent className="relative z-10 pt-0">
+                  {!maxLevel ? (
+                    <>
+                      {/* Titre du niveau actuel */}
+                      <div className="text-center mb-4">
+                        <h3 className="font-bold text-gray-800 mb-1">
+                          Niveau {currentLevel}: {currentUpgrade.display_name}
+                        </h3>
+                        <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
+                          Requis: Niveau {currentUpgrade.level_required}
+                        </Badge>
+                      </div>
 
-                            {/* Coût */}
-                            <div className="space-y-0.5">
-                              {upgrade.cost_coins > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Coins className="h-3 w-3 text-yellow-600" />
-                                  <span className={`font-medium text-xs ${
-                                    coins >= upgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'
-                                  }`}>
-                                    {upgrade.cost_coins.toLocaleString()}
-                                  </span>
-                                </div>
-                              )}
-                              {upgrade.cost_gems > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Gem className="h-3 w-3 text-purple-600" />
-                                  <span className={`font-medium text-xs ${
-                                    gems >= upgrade.cost_gems ? 'text-green-600' : 'text-red-500'
-                                  }`}>
-                                    {upgrade.cost_gems.toLocaleString()}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Bouton */}
-                            <Button 
-                              size="sm" 
-                              disabled={!canBuy || isPurchased || isPurchasing} 
-                              onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)} 
-                              className={`${buttonState.style} transition-all text-xs px-2 py-0.5 h-6 w-full`}
-                            >
-                              {buttonState.text}
-                            </Button>
-                            
-                            {/* Message d'aide */}
-                            {!isPurchased && coins < upgrade.cost_coins + 100 && coins >= upgrade.cost_coins && (
-                              <p className="text-xs text-orange-600">
-                                💡 Réserve
-                              </p>
-                            )}
+                      {/* Coûts */}
+                      <div className="flex justify-center gap-4 mb-4">
+                        {currentUpgrade.cost_coins > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Coins className="h-4 w-4 text-yellow-600" />
+                            <span className={`font-bold text-sm ${
+                              coins >= currentUpgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'
+                            }`}>
+                              {currentUpgrade.cost_coins.toLocaleString()}
+                            </span>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        )}
+                        {currentUpgrade.cost_gems > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Gem className="h-4 w-4 text-purple-600" />
+                            <span className={`font-bold text-sm ${
+                              gems >= currentUpgrade.cost_gems ? 'text-green-600' : 'text-red-500'
+                            }`}>
+                              {currentUpgrade.cost_gems.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bouton d'achat */}
+                      <Button 
+                        size="lg" 
+                        disabled={!canBuy || isPurchased || isPurchasing} 
+                        onClick={() => purchaseUpgrade(currentUpgrade.id, currentUpgrade.cost_coins, currentUpgrade.cost_gems)} 
+                        className={`w-full font-bold text-sm py-2 transition-all duration-300 ${buttonState.style} ${
+                          canBuy ? 'hover:scale-105 hover:shadow-lg' : ''
+                        }`}
+                      >
+                        {isPurchasing ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : isLocked ? (
+                          <Lock className="h-4 w-4 mr-2" />
+                        ) : null}
+                        {buttonState.text}
+                      </Button>
+
+                      {/* Message d'aide pour réserve */}
+                      {!isPurchased && coins < currentUpgrade.cost_coins + 100 && coins >= currentUpgrade.cost_coins && (
+                        <p className="text-xs text-orange-600 mt-2 text-center animate-pulse">
+                          💡 Gardez 100 pièces de réserve
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    /* Carte niveau maximum */
+                    <div className="text-center py-4">
+                      <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2 animate-bounce" />
+                      <h3 className="font-bold text-green-800 text-lg mb-1">
+                        Niveau Maximum Atteint!
+                      </h3>
+                      <p className="text-green-600 text-sm">
+                        Toutes les améliorations de cette catégorie sont débloquées
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
-              </Card>;
-        })}
+
+                {/* Effet de brillance pour les cartes disponibles */}
+                {canBuy && !maxLevel && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 animate-pulse" />
+                )}
+              </Card>
+            );
+          })}
         </div>
 
-        {sequentialUpgrades.length === 0 && <div className="glassmorphism rounded-2xl p-8 text-center">
+        {sequentialUpgrades.length === 0 && (
+          <div className="glassmorphism rounded-2xl p-8 text-center">
             <p className="text-green-700 text-lg">
               🎉 Toutes les améliorations disponibles ont été débloquées !
             </p>
             <p className="text-green-600 text-sm mt-2">
               Continuez à progresser pour débloquer de nouvelles améliorations.
             </p>
-          </div>}
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
