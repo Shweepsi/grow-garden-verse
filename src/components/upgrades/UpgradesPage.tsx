@@ -4,8 +4,9 @@ import { GameHeader } from '@/components/game/GameHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Gem, Lock, CheckCircle, Loader2 } from 'lucide-react';
+import { Coins, Gem, Lock, CheckCircle, Loader2, Sparkles } from 'lucide-react';
 import { LevelUpgrade } from '@/types/upgrades';
+
 export const UpgradesPage = () => {
   const {
     data: gameData
@@ -36,147 +37,185 @@ export const UpgradesPage = () => {
     acc[upgrade.effect_type].push(upgrade);
     return acc;
   }, {} as Record<string, LevelUpgrade[]>);
-  const getEffectTypeColor = (effectType: string) => {
-    if (effectType.includes('harvest')) return 'bg-yellow-500/20 text-yellow-700 border-yellow-300';
-    if (effectType.includes('growth')) return 'bg-blue-500/20 text-blue-700 border-blue-300';
-    if (effectType.includes('exp')) return 'bg-purple-500/20 text-purple-700 border-purple-300';
-    if (effectType.includes('auto')) return 'bg-green-500/20 text-green-700 border-green-300';
-    if (effectType.includes('cost_reduction')) return 'bg-orange-500/20 text-orange-700 border-orange-300';
-    if (effectType.includes('gem')) return 'bg-pink-500/20 text-pink-700 border-pink-300';
-    return 'bg-gray-500/20 text-gray-700 border-gray-300';
+
+  const getEffectTypeGradient = (effectType: string) => {
+    if (effectType.includes('harvest')) return 'from-yellow-400/20 to-amber-500/20 border-yellow-400/30';
+    if (effectType.includes('growth')) return 'from-blue-400/20 to-cyan-500/20 border-blue-400/30';
+    if (effectType.includes('exp')) return 'from-purple-400/20 to-violet-500/20 border-purple-400/30';
+    if (effectType.includes('auto')) return 'from-green-400/20 to-emerald-500/20 border-green-400/30';
+    if (effectType.includes('cost_reduction')) return 'from-orange-400/20 to-red-500/20 border-orange-400/30';
+    if (effectType.includes('gem')) return 'from-pink-400/20 to-rose-500/20 border-pink-400/30';
+    return 'from-gray-400/20 to-slate-500/20 border-gray-400/30';
   };
+
   const canPurchase = (upgrade: LevelUpgrade) => {
     const hasLevel = playerLevel >= upgrade.level_required;
-    const hasCoins = coins >= upgrade.cost_coins + 100; // Protection 100 pièces
+    const hasCoins = coins >= upgrade.cost_coins + 100;
     const hasGems = gems >= upgrade.cost_gems;
     const notPurchased = !isUpgradePurchased(upgrade.id);
     return hasLevel && hasCoins && hasGems && notPurchased;
   };
+
   const getButtonState = (upgrade: LevelUpgrade) => {
     if (isUpgradePurchased(upgrade.id)) return {
-      text: 'Acheté ✓',
-      style: 'bg-green-600'
+      text: 'Acheté',
+      style: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg',
+      icon: <CheckCircle className="h-3 w-3" />
     };
     if (playerLevel < upgrade.level_required) return {
       text: 'Verrouillé',
-      style: 'bg-gray-400'
+      style: 'bg-gradient-to-r from-gray-400 to-gray-500 text-gray-200',
+      icon: <Lock className="h-3 w-3" />
     };
     if (coins < upgrade.cost_coins + 100) return {
-      text: 'Pas assez de pièces',
-      style: 'bg-red-400'
+      text: 'Insuffisant',
+      style: 'bg-gradient-to-r from-red-400 to-red-500 text-white',
+      icon: <Coins className="h-3 w-3" />
     };
     if (gems < upgrade.cost_gems) return {
-      text: 'Pas assez de gemmes',
-      style: 'bg-red-400'
+      text: 'Insuffisant',
+      style: 'bg-gradient-to-r from-red-400 to-red-500 text-white',
+      icon: <Gem className="h-3 w-3" />
     };
     if (isPurchasing) return {
       text: 'Achat...',
-      style: 'bg-blue-400'
+      style: 'bg-gradient-to-r from-blue-400 to-blue-500 text-white',
+      icon: <Loader2 className="h-3 w-3 animate-spin" />
     };
     return {
       text: 'Acheter',
-      style: 'bg-blue-600 hover:bg-blue-700'
+      style: 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105',
+      icon: <Sparkles className="h-3 w-3" />
     };
   };
+
   if (upgradesLoading) {
-    return <div className="min-h-screen garden-background flex items-center justify-center">
-        <div className="glassmorphism rounded-xl p-6">
-          <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+    return (
+      <div className="min-h-screen garden-background flex items-center justify-center">
+        <div className="glassmorphism rounded-2xl p-8 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="text-lg font-medium text-primary">Chargement des améliorations...</span>
+          </div>
         </div>
-      </div>;
+      </div>
+    );
   }
-  return <div className="min-h-screen garden-background">
+
+  return (
+    <div className="min-h-screen garden-background">
       {/* Sticky header */}
-      <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
+      <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/10 border-b border-white/20">
         <GameHeader garden={gameData?.garden} />
       </div>
       
-      {/* Content with padding to avoid overlap */}
-      <div className="px-3 pb-4 space-y-4">
-        {/* Progression par catégorie */}
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => <Card key={effectType} className="glassmorphism p-2 text-center">
-              <div className="text-xs text-green-600 mb-0.5">{progress.name}</div>
-              <div className="text-sm font-bold text-green-800">
+      {/* Content */}
+      <div className="px-4 py-6 space-y-6">
+        {/* Progression compacte */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Object.entries(categoryProgress).map(([effectType, progress]) => (
+            <div 
+              key={effectType} 
+              className={`glassmorphism rounded-xl p-3 text-center animate-fade-in bg-gradient-to-br ${getEffectTypeGradient(effectType)} hover:scale-105 transition-all duration-300`}
+            >
+              <div className="text-xs font-medium text-foreground/80 mb-1">{progress.name}</div>
+              <div className="text-lg font-bold text-foreground">
                 {progress.purchased}/{progress.total}
               </div>
-            </Card>)}
+              <div className="w-full bg-black/20 rounded-full h-1.5 mt-2">
+                <div 
+                  className="bg-gradient-to-r from-primary to-primary/80 h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${(progress.purchased / progress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Améliorations avec paliers par catégorie */}
-        <div className="space-y-4">
+        {/* Améliorations par catégorie */}
+        <div className="space-y-6">
           {Object.entries(upgradesByCategory).map(([effectType, upgrades]) => {
-          // Trouver le palier actuellement débloqué (le plus récent acheté)
-          const purchasedUpgrades = upgrades.filter(u => isUpgradePurchased(u.id));
-          const currentTier = purchasedUpgrades.length > 0 ? purchasedUpgrades.sort((a, b) => b.level_required - a.level_required)[0] : null;
-          return <Card key={effectType} className="glassmorphism">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{upgrades[0].emoji}</span>
-                    <div>
-                      <CardTitle className="text-lg text-green-800">
+            const purchasedUpgrades = upgrades.filter(u => isUpgradePurchased(u.id));
+            const currentTier = purchasedUpgrades.length > 0 
+              ? purchasedUpgrades.sort((a, b) => b.level_required - a.level_required)[0] 
+              : null;
+
+            return (
+              <Card key={effectType} className={`glassmorphism border-0 bg-gradient-to-br ${getEffectTypeGradient(effectType)} animate-fade-in hover:shadow-2xl transition-all duration-500`}>
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl animate-bounce">{upgrades[0].emoji}</div>
+                    <div className="flex-1">
+                      <CardTitle className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                         {getCategoryDisplayName(effectType)}
                       </CardTitle>
-                      <p className="text-xs text-green-600">
+                      <p className="text-sm text-foreground/70 mt-1">
                         {upgrades[0].description}
                       </p>
                     </div>
+                    {currentTier && (
+                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white animate-pulse">
+                        Niveau {upgrades.findIndex(u => u.id === currentTier.id) + 2}
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
 
                 <CardContent className="pt-0">
-                  {/* Liste des paliers dans la même carte - horizontalement */}
-                  <div className="flex gap-2 overflow-x-auto pb-1">
+                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                     {upgrades.map((upgrade, index) => {
                       const isPurchased = isUpgradePurchased(upgrade.id);
                       const isLocked = playerLevel < upgrade.level_required;
                       const canBuy = canPurchase(upgrade);
                       const buttonState = getButtonState(upgrade);
                       const isCurrentTier = currentTier?.id === upgrade.id;
+                      const tierLevel = index + 2; // Niveau 2, 3, 4...
                       
                       return (
-                        <div key={upgrade.id} className={`flex-shrink-0 w-48 p-2 rounded-lg border transition-all ${
-                          isCurrentTier 
-                            ? 'bg-green-50 border-green-300 ring-1 ring-green-200' 
-                            : isPurchased 
-                              ? 'bg-gray-50 border-gray-300' 
-                              : isLocked 
-                                ? 'bg-gray-50 border-gray-200 opacity-60' 
-                                : canBuy 
-                                  ? 'bg-blue-50 border-blue-300 hover:bg-blue-100' 
-                                  : 'bg-red-50 border-red-200'
-                        }`}>
-                          <div className="space-y-2">
-                            {/* Badges du palier */}
-                            <div className="flex flex-wrap items-center gap-1">
-                              <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                                T{index + 1}
+                        <div 
+                          key={upgrade.id} 
+                          className={`flex-shrink-0 w-52 glassmorphism rounded-xl p-4 transition-all duration-300 hover:scale-105 ${
+                            isCurrentTier 
+                              ? 'ring-2 ring-primary/50 shadow-xl animate-pulse' 
+                              : isPurchased 
+                                ? 'opacity-75 bg-green-50/50' 
+                                : isLocked 
+                                  ? 'opacity-50 grayscale' 
+                                  : canBuy 
+                                    ? 'hover:shadow-xl border-primary/30' 
+                                    : 'border-red-300/30'
+                          }`}
+                        >
+                          <div className="space-y-3">
+                            {/* Header du palier */}
+                            <div className="flex items-center justify-between">
+                              <Badge 
+                                variant="outline" 
+                                className={`px-2 py-1 text-xs font-bold ${
+                                  isCurrentTier ? 'bg-primary text-primary-foreground' : ''
+                                }`}
+                              >
+                                Niveau {tierLevel}
                               </Badge>
-                              <Badge variant="outline" className="text-xs px-1 py-0 h-4 bg-purple-100 text-purple-700 border-purple-300">
-                                N.{upgrade.level_required}
+                              <Badge variant="secondary" className="text-xs">
+                                Req. N.{upgrade.level_required}
                               </Badge>
-                              {isCurrentTier && (
-                                <Badge className="text-xs px-1 py-0 h-4 bg-green-600 text-white">
-                                  ✓
-                                </Badge>
-                              )}
-                              {isPurchased && !isCurrentTier && (
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                              )}
-                              {isLocked && <Lock className="h-3 w-3 text-gray-400" />}
                             </div>
                             
                             {/* Nom du palier */}
-                            <div className="text-xs text-gray-700">
-                              <strong>{upgrade.display_name}</strong>
-                            </div>
+                            <h4 className="font-bold text-sm text-foreground leading-tight">
+                              {upgrade.display_name}
+                            </h4>
 
-                            {/* Coût */}
-                            <div className="space-y-0.5">
+                            {/* Coûts */}
+                            <div className="space-y-2">
                               {upgrade.cost_coins > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Coins className="h-3 w-3 text-yellow-600" />
-                                  <span className={`font-medium text-xs ${
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1">
+                                    <Coins className="h-3 w-3 text-yellow-600" />
+                                    <span className="text-xs text-foreground/70">Pièces</span>
+                                  </div>
+                                  <span className={`text-xs font-bold ${
                                     coins >= upgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'
                                   }`}>
                                     {upgrade.cost_coins.toLocaleString()}
@@ -184,9 +223,12 @@ export const UpgradesPage = () => {
                                 </div>
                               )}
                               {upgrade.cost_gems > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Gem className="h-3 w-3 text-purple-600" />
-                                  <span className={`font-medium text-xs ${
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1">
+                                    <Gem className="h-3 w-3 text-purple-600" />
+                                    <span className="text-xs text-foreground/70">Gemmes</span>
+                                  </div>
+                                  <span className={`text-xs font-bold ${
                                     gems >= upgrade.cost_gems ? 'text-green-600' : 'text-red-500'
                                   }`}>
                                     {upgrade.cost_gems.toLocaleString()}
@@ -195,21 +237,24 @@ export const UpgradesPage = () => {
                               )}
                             </div>
 
-                            {/* Bouton */}
+                            {/* Bouton d'achat */}
                             <Button 
                               size="sm" 
                               disabled={!canBuy || isPurchased || isPurchasing} 
                               onClick={() => purchaseUpgrade(upgrade.id, upgrade.cost_coins, upgrade.cost_gems)} 
-                              className={`${buttonState.style} transition-all text-xs px-2 py-0.5 h-6 w-full`}
+                              className={`w-full text-xs py-2 ${buttonState.style}`}
                             >
-                              {buttonState.text}
+                              <div className="flex items-center gap-2">
+                                {buttonState.icon}
+                                {buttonState.text}
+                              </div>
                             </Button>
                             
-                            {/* Message d'aide */}
+                            {/* Message d'aide pour la réserve */}
                             {!isPurchased && coins < upgrade.cost_coins + 100 && coins >= upgrade.cost_coins && (
-                              <p className="text-xs text-orange-600">
-                                💡 Réserve
-                              </p>
+                              <div className="text-xs text-amber-600 bg-amber-50/50 rounded-lg p-2 animate-pulse">
+                                💡 Réserve de sécurité requise
+                              </div>
                             )}
                           </div>
                         </div>
@@ -217,18 +262,26 @@ export const UpgradesPage = () => {
                     })}
                   </div>
                 </CardContent>
-              </Card>;
-        })}
+              </Card>
+            );
+          })}
         </div>
 
-        {sequentialUpgrades.length === 0 && <div className="glassmorphism rounded-2xl p-8 text-center">
-            <p className="text-green-700 text-lg">
-              🎉 Toutes les améliorations disponibles ont été débloquées !
-            </p>
-            <p className="text-green-600 text-sm mt-2">
+        {/* Message de fin */}
+        {sequentialUpgrades.length === 0 && (
+          <div className="glassmorphism rounded-2xl p-8 text-center animate-fade-in bg-gradient-to-br from-green-400/20 to-emerald-500/20 border border-green-400/30">
+            <div className="text-4xl mb-4 animate-bounce">🎉</div>
+            <h3 className="text-xl font-bold text-foreground mb-2">
+              Félicitations !
+            </h3>
+            <p className="text-foreground/70">
+              Toutes les améliorations disponibles ont été débloquées !
+              <br />
               Continuez à progresser pour débloquer de nouvelles améliorations.
             </p>
-          </div>}
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
