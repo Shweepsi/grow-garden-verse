@@ -239,6 +239,9 @@ export type Database = {
           permanent_multiplier: number | null
           prestige_level: number | null
           prestige_points: number | null
+          robot_accumulated_coins: number | null
+          robot_last_collected: string | null
+          robot_plant_type: string | null
           total_harvests: number
           user_id: string
         }
@@ -254,6 +257,9 @@ export type Database = {
           permanent_multiplier?: number | null
           prestige_level?: number | null
           prestige_points?: number | null
+          robot_accumulated_coins?: number | null
+          robot_last_collected?: string | null
+          robot_plant_type?: string | null
           total_harvests?: number
           user_id: string
         }
@@ -269,10 +275,21 @@ export type Database = {
           permanent_multiplier?: number | null
           prestige_level?: number | null
           prestige_points?: number | null
+          robot_accumulated_coins?: number | null
+          robot_last_collected?: string | null
+          robot_plant_type?: string | null
           total_harvests?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "player_gardens_robot_plant_type_fkey"
+            columns: ["robot_plant_type"]
+            isOneToOne: false
+            referencedRelation: "plant_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       player_upgrades: {
         Row: {

@@ -3,9 +3,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { GardenPlot, PlantType } from '@/types/game';
 import { PlotCard } from './PlotCard';
 import { PlantSelector } from './PlantSelector';
-import { AutoHarvestRobot } from './AutoHarvestRobot';
+import { PassiveIncomeRobot } from './PassiveIncomeRobot';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
-import { useAutoHarvest } from '@/hooks/useAutoHarvest';
+import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { toast } from 'sonner';
 
 interface PlotGridProps {
@@ -28,13 +28,13 @@ export const PlotGrid = ({
   const [showAutoHarvestConfig, setShowAutoHarvestConfig] = useState(false);
   const { plantDirect, isPlanting } = useDirectPlanting();
   const { 
-    hasAutoHarvest, 
-    autoHarvestState, 
-    setAutoHarvestPlant, 
+    hasPassiveRobot, 
+    robotState, 
+    setRobotPlant, 
     claimOfflineRewards,
     calculateOfflineRewards,
     isSettingPlant 
-  } = useAutoHarvest();
+  } = usePassiveIncomeRobot();
 
   // Mémoriser les données des plantes pour éviter les recalculs
   const plantTypeMap = useMemo(() => {
@@ -45,12 +45,12 @@ export const PlotGrid = ({
 
   // Vérifier et réclamer les récompenses hors-ligne au chargement
   useEffect(() => {
-    if (hasAutoHarvest && autoHarvestState?.plant_type) {
+    if (hasPassiveRobot && robotState?.plantType) {
       calculateOfflineRewards().then(rewards => {
-        if (rewards && rewards.cycles > 0) {
+        if (rewards && rewards.offlineCoins > 0) {
           // Afficher un toast informatif puis réclamer automatiquement
           toast.info(`Robot actif pendant votre absence !`, {
-            description: `${rewards.cycles} récoltes disponibles`,
+            description: `${rewards.offlineCoins.toLocaleString()} pièces disponibles`,
             action: {
               label: "Réclamer",
               onClick: () => claimOfflineRewards()
@@ -59,13 +59,13 @@ export const PlotGrid = ({
         }
       });
     }
-  }, [hasAutoHarvest, autoHarvestState?.plant_type]);
+  }, [hasPassiveRobot, robotState?.plantType]);
 
   const handlePlotClick = (plot: GardenPlot) => {
     if (!plot.unlocked) return;
     
-    // Parcelle 1 avec auto-récolte active
-    if (plot.plot_number === 1 && hasAutoHarvest) {
+    // Parcelle 1 avec robot passif actif
+    if (plot.plot_number === 1 && hasPassiveRobot) {
       setShowAutoHarvestConfig(true);
       return;
     }
@@ -97,7 +97,7 @@ export const PlotGrid = ({
   };
 
   const handleSetAutoHarvestPlant = (plantTypeId: string) => {
-    setAutoHarvestPlant(plantTypeId);
+    setRobotPlant(plantTypeId);
   };
 
   return (
@@ -105,7 +105,7 @@ export const PlotGrid = ({
       <div className="grid grid-cols-3 gap-3 p-4">
         {plots.map((plot) => {
           const plantType = plantTypeMap.get(plot.plant_type || '');
-          const isAutoHarvestPlot = plot.plot_number === 1 && hasAutoHarvest;
+          const isAutoHarvestPlot = plot.plot_number === 1 && hasPassiveRobot;
           
           return (
             <PlotCard
@@ -134,12 +134,12 @@ export const PlotGrid = ({
       />
 
       {/* Configuration du robot auto-récolte */}
-      <AutoHarvestRobot
+      <PassiveIncomeRobot
         isOpen={showAutoHarvestConfig}
         onClose={handleCloseAutoHarvestConfig}
         plantTypes={plantTypes}
         coins={coins}
-        currentPlantType={autoHarvestState?.plant_type ? plantTypeMap.get(autoHarvestState.plant_type) : undefined}
+        currentPlantType={robotState?.plantType}
         onSetPlant={handleSetAutoHarvestPlant}
       />
     </>
