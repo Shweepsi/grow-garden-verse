@@ -13,6 +13,7 @@ interface PlotCardProps {
   coins: number;
   isPlanting: boolean;
   hasAutoHarvest?: boolean;
+  robotAtCapacity?: boolean;
   onPlotClick: (plot: GardenPlot) => void;
   onUnlockPlot: (plotNumber: number) => void;
 }
@@ -23,6 +24,7 @@ export const PlotCard = memo(({
   coins,
   isPlanting,
   hasAutoHarvest = false,
+  robotAtCapacity = false,
   onPlotClick,
   onUnlockPlot
 }: PlotCardProps) => {
@@ -46,7 +48,7 @@ export const PlotCard = memo(({
     onUnlockPlot(plot.plot_number);
   };
   return <div className={`aspect-square cursor-pointer transition-all duration-300 relative group touch-target ${isPlanting ? 'pointer-events-none opacity-50' : ''} ${plot.unlocked && (state === 'ready' || isAutoHarvestPlot) ? 'hover:scale-[1.02]' : ''}`} onClick={handleClick}>
-      <div className={`bg-white/80 backdrop-blur-sm rounded-lg p-3 h-full flex flex-col items-center justify-center relative border border-gray-200/50 transition-all duration-300 ${plot.unlocked ? isAutoHarvestPlot ? 'border-blue-300/60 bg-blue-50/40' : state === 'ready' ? 'border-yellow-300/60 bg-yellow-50/40' : 'hover:border-gray-300/60 hover:bg-white/90' : 'opacity-60'}`}>
+      <div className={`bg-white/80 backdrop-blur-sm rounded-lg p-3 h-full flex flex-col items-center justify-center relative border border-gray-200/50 transition-all duration-300 ${plot.unlocked ? isAutoHarvestPlot ? robotAtCapacity ? 'border-yellow-300/60 bg-yellow-50/40' : 'border-blue-300/60 bg-blue-50/40' : state === 'ready' ? 'border-yellow-300/60 bg-yellow-50/40' : 'hover:border-gray-300/60 hover:bg-white/90' : 'opacity-60'}`}>
         
         {!plot.unlocked ? <div className="text-center">
             <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg flex items-center justify-center mb-2 mx-auto">
@@ -61,16 +63,16 @@ export const PlotCard = memo(({
             {isAutoHarvestPlot ?
         // Affichage spécial pour la parcelle d'auto-récolte
         <>
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300">
+                <div className={`w-10 h-10 bg-gradient-to-br ${robotAtCapacity ? 'from-yellow-400 to-orange-500' : 'from-blue-400 to-blue-500'} rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300`}>
                   <span className="text-lg">🤖</span>
                 </div>
-                <p className="mobile-text-sm text-blue-700 font-semibold mb-1">Robot Auto</p>
+                <p className={`mobile-text-sm ${robotAtCapacity ? 'text-yellow-700' : 'text-blue-700'} font-semibold mb-1`}>Robot Auto</p>
                 {plantType ? <div className="flex items-center justify-center gap-1">
                     <span className="text-xs">{plantType.emoji}</span>
-                    <p className="mobile-text-xs text-blue-600 truncate">
+                    <p className={`mobile-text-xs ${robotAtCapacity ? 'text-yellow-600' : 'text-blue-600'} truncate`}>
                       {plantType.display_name}
                     </p>
-                  </div> : <p className="mobile-text-xs text-blue-600">
+                  </div> : <p className={`mobile-text-xs ${robotAtCapacity ? 'text-yellow-600' : 'text-blue-600'}`}>
                     Configurer
                   </p>}
               </> : state === 'empty' ? <>
@@ -94,7 +96,7 @@ export const PlotCard = memo(({
 
         {/* Indicateur spécial pour l'auto-récolte */}
         {isAutoHarvestPlot && <div className="absolute top-1.5 right-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
+            <div className={`w-1.5 h-1.5 rounded-full ${robotAtCapacity ? 'bg-yellow-400' : 'bg-blue-400'} animate-pulse`}></div>
           </div>}
       </div>
     </div>;

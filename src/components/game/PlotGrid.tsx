@@ -33,7 +33,9 @@ export const PlotGrid = ({
     setRobotPlant, 
     claimOfflineRewards,
     calculateOfflineRewards,
-    isSettingPlant 
+    isSettingPlant,
+    coinsPerMinute,
+    currentAccumulation
   } = usePassiveIncomeRobot();
 
   // Mémoriser les données des plantes pour éviter les recalculs
@@ -48,14 +50,7 @@ export const PlotGrid = ({
     if (hasPassiveRobot && robotState?.plantType) {
       calculateOfflineRewards().then(rewards => {
         if (rewards && rewards.offlineCoins > 0) {
-          // Afficher un toast informatif puis réclamer automatiquement
-          toast.info(`Robot actif pendant votre absence !`, {
-            description: `${rewards.offlineCoins.toLocaleString()} pièces disponibles`,
-            action: {
-              label: "Réclamer",
-              onClick: () => claimOfflineRewards()
-            }
-          });
+          claimOfflineRewards();
         }
       });
     }
@@ -107,6 +102,10 @@ export const PlotGrid = ({
           const plantType = plantTypeMap.get(plot.plant_type || '');
           const isAutoHarvestPlot = plot.plot_number === 1 && hasPassiveRobot;
           
+          // Vérifier si le robot a atteint la limite de capacité (24h)
+          const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
+            currentAccumulation >= (coinsPerMinute * 24 * 60);
+          
           return (
             <PlotCard
               key={plot.id}
@@ -116,6 +115,7 @@ export const PlotGrid = ({
               coins={coins}
               isPlanting={isPlanting || isSettingPlant}
               hasAutoHarvest={isAutoHarvestPlot}
+              robotAtCapacity={robotAtCapacity}
               onPlotClick={handlePlotClick}
               onUnlockPlot={onUnlockPlot}
             />
