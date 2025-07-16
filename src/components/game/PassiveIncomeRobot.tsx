@@ -30,16 +30,20 @@ export const PassiveIncomeRobot = ({
 }: PassiveIncomeRobotProps) => {
   const { data: gameData } = useGameData();
   const { getActiveMultipliers } = useUpgrades();
-  const { coinsPerMinute, currentAccumulation, collectAccumulatedCoins, isCollecting } = usePassiveIncomeRobot();
+  const { coinsPerMinute, currentAccumulation, collectAccumulatedCoins, isCollecting, robotLevel } = usePassiveIncomeRobot();
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
   const [realTimeAccumulation, setRealTimeAccumulation] = useState(0);
 
-  const playerLevel = gameData?.garden?.level || 1;
   const multipliers = getActiveMultipliers();
 
-  // Filtrer les plantes disponibles selon le niveau
+  // Filtrer les plantes disponibles selon le niveau du robot
   const availablePlants = plantTypes
-    .filter(plant => EconomyService.canAccessPlant(plant.level_required || 1, playerLevel))
+    .filter(plant => (plant.level_required || 1) <= robotLevel)
+    .sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
+
+  // Plantes verrouillées pour le prochain niveau
+  const lockedPlants = plantTypes
+    .filter(plant => (plant.level_required || 1) > robotLevel)
     .sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
 
   // Mettre à jour l'accumulation en temps réel
@@ -55,23 +59,9 @@ export const PassiveIncomeRobot = ({
     }
   }, [currentAccumulation, coinsPerMinute]);
 
-  const getPlantCost = (plantType: PlantType): number => {
-    const baseCost = EconomyService.getPlantDirectCost(plantType.level_required || 1);
-    return EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction);
-  };
-
   const getPlantCoinsPerMinute = (plantType: PlantType): number => {
-    const harvestReward = EconomyService.getHarvestReward(
-      plantType.level_required || 1,
-      plantType.base_growth_seconds,
-      playerLevel,
-      multipliers.harvest,
-      multipliers.plantCostReduction,
-      1
-    );
-    
-    const growthTimeMinutes = plantType.base_growth_seconds / 60;
-    return Math.round(harvestReward / growthTimeMinutes);
+    const plantLevel = plantType.level_required || 1;
+    return EconomyService.getRobotPassiveIncome(plantLevel, multipliers.harvest);
   };
 
   const formatTime = (minutes: number): string => {
@@ -103,9 +93,14 @@ export const PassiveIncomeRobot = ({
             </div>
             Robot de Revenus Passifs
           </DialogTitle>
-          <p className="text-green-600 text-sm">
-            Génère des pièces automatiquement en continu
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-green-600 text-sm">
+              Génère des pièces automatiquement en continu
+            </p>
+            <Badge variant="outline" className="bg-green-100 text-green-700">
+              Niveau {robotLevel}/10
+            </Badge>
+          </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1">
@@ -155,16 +150,14 @@ export const PassiveIncomeRobot = ({
               </div>
             )}
 
-            {/* Sélection de plante */}
+            {/* Plantes disponibles */}
             <div>
               <h3 className="font-bold text-green-800 mb-3">
                 {currentPlantType ? 'Changer de plante' : 'Sélectionner une plante'}
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {availablePlants.map(plantType => {
-                  const cost = getPlantCost(plantType);
                   const plantCoinsPerMin = getPlantCoinsPerMinute(plantType);
-                  const canAfford = EconomyService.canAffordPlant(coins, cost);
                   const isSelected = selectedPlant === plantType.id;
                   const isCurrent = currentPlantType?.id === plantType.id;
 
@@ -176,11 +169,9 @@ export const PassiveIncomeRobot = ({
                           ? 'ring-2 ring-green-400 bg-green-50 border-green-300' 
                           : isSelected 
                             ? 'ring-2 ring-blue-400 bg-blue-50 border-blue-300' 
-                            : canAfford 
-                              ? 'hover:shadow-lg hover:scale-105 border-gray-200' 
-                              : 'opacity-60 border-gray-200'
+                            : 'hover:shadow-lg hover:scale-105 border-gray-200'
                       }`}
-                      onClick={() => canAfford && setSelectedPlant(plantType.id)}
+                      onClick={() => setSelectedPlant(plantType.id)}
                     >
                       <CardContent className="p-3 text-center space-y-2">
                         <div className="text-2xl">{plantType.emoji}</div>
@@ -197,16 +188,8 @@ export const PassiveIncomeRobot = ({
                           <div className="flex items-center justify-center gap-1 text-green-700">
                             <Zap className="h-2.5 w-2.5" />
                             <span className="text-xs font-medium">
-                              {plantCoinsPerMin}/min
+                              {plantCoinsPerMin.toLocaleString()}/min
                             </span>
-                          </div>
-                        </div>
-
-                        {/* Coût initial */}
-                        <div className="bg-red-50 rounded p-1 border border-red-200">
-                          <div className="flex items-center justify-center gap-1 text-red-700">
-                            <Coins className="h-2 w-2" />
-                            <span className="text-xs">-{cost.toLocaleString()}</span>
                           </div>
                         </div>
 
@@ -221,6 +204,53 @@ export const PassiveIncomeRobot = ({
                 })}
               </div>
             </div>
+
+            {/* Plantes verrouillées */}
+            {lockedPlants.length > 0 && (
+              <div>
+                <h3 className="font-bold text-gray-600 mb-3">
+                  Plantes verrouillées (améliorer le robot)
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {lockedPlants.slice(0, 4).map(plantType => {
+                    const plantCoinsPerMin = getPlantCoinsPerMinute(plantType);
+                    const requiredLevel = plantType.level_required || 1;
+
+                    return (
+                      <Card 
+                        key={plantType.id} 
+                        className="opacity-60 border-gray-300 cursor-not-allowed"
+                      >
+                        <CardContent className="p-3 text-center space-y-2">
+                          <div className="text-2xl grayscale">{plantType.emoji}</div>
+                          <h4 className="font-bold text-sm text-gray-600">
+                            {plantType.display_name}
+                          </h4>
+                          
+                          <Badge variant="outline" className="text-xs bg-red-50 text-red-600">
+                            Niv.{requiredLevel} requis
+                          </Badge>
+
+                          {/* Revenus potentiels */}
+                          <div className="bg-gray-50 rounded p-1.5 border border-gray-200">
+                            <div className="flex items-center justify-center gap-1 text-gray-600">
+                              <Zap className="h-2.5 w-2.5" />
+                              <span className="text-xs font-medium">
+                                {plantCoinsPerMin.toLocaleString()}/min
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-red-600 font-medium">
+                            🔒 Verrouillé
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
 

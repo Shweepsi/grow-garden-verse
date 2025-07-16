@@ -241,6 +241,7 @@ export type Database = {
           prestige_points: number | null
           robot_accumulated_coins: number | null
           robot_last_collected: string | null
+          robot_level: number
           robot_plant_type: string | null
           total_harvests: number
           user_id: string
@@ -259,6 +260,7 @@ export type Database = {
           prestige_points?: number | null
           robot_accumulated_coins?: number | null
           robot_last_collected?: string | null
+          robot_level?: number
           robot_plant_type?: string | null
           total_harvests?: number
           user_id: string
@@ -277,6 +279,7 @@ export type Database = {
           prestige_points?: number | null
           robot_accumulated_coins?: number | null
           robot_last_collected?: string | null
+          robot_level?: number
           robot_plant_type?: string | null
           total_harvests?: number
           user_id?: string
