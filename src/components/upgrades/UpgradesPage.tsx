@@ -104,18 +104,7 @@ export const UpgradesPage = () => {
       {/* Content with padding to avoid overlap */}
       <div className="px-3 pb-4 space-y-4">
         {/* Progression par catégorie */}
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => (
-            <div key={effectType} className="text-center p-2 bg-white rounded-lg border">
-              <div className="text-xs font-medium text-gray-600 capitalize">
-                {effectType.replace('_', ' ')}
-              </div>
-              <div className="text-sm font-bold text-blue-600">
-                {progress.purchased}/{progress.total}
-              </div>
-            </div>
-          ))}
-        </div>
+        
 
         {/* Cartes évolutives par catégorie */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
