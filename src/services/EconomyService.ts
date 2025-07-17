@@ -81,14 +81,14 @@ export class EconomyService {
 
 
   // Calculer le revenu passif du robot basé sur le niveau de la plante
-  static getRobotPassiveIncome(plantLevel: number, harvestMultiplier: number = 1): number {
+  static getRobotPassiveIncome(plantLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
     
     // Progression exponentielle douce : plus le niveau est élevé, plus c'est rentable
     const baseIncome = 50; // Revenu de base par minute
     const levelMultiplier = Math.pow(plantLevel, 1.5); // Progression exponentielle douce
     
-    return Math.floor(baseIncome * levelMultiplier * harvestMultiplier);
+    return Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
   }
 
   // Calculer le niveau de robot maximum basé sur les améliorations

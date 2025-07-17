@@ -61,7 +61,8 @@ export const PassiveIncomeRobot = ({
 
   const getPlantCoinsPerMinute = (plantType: PlantType): number => {
     const plantLevel = plantType.level_required || 1;
-    return EconomyService.getRobotPassiveIncome(plantLevel, multipliers.harvest);
+    const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
+    return EconomyService.getRobotPassiveIncome(plantLevel, multipliers.harvest, permanentMultiplier);
   };
 
   const formatTime = (minutes: number): string => {

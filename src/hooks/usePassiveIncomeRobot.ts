@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useAnimations } from '@/contexts/AnimationContext';
+import { useGameData } from '@/hooks/useGameData';
 import { EconomyService } from '@/services/EconomyService';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
@@ -10,6 +11,7 @@ import { useEffect, useRef } from 'react';
 export const usePassiveIncomeRobot = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: gameData } = useGameData();
   const { playerUpgrades, getActiveMultipliers } = useUpgrades();
   const { triggerCoinAnimation } = useAnimations();
   const accumulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -60,8 +62,9 @@ export const usePassiveIncomeRobot = () => {
     
     const multipliers = getActiveMultipliers();
     const plantLevel = robotState.plantType.level_required || 1;
+    const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
     
-    return EconomyService.getRobotPassiveIncome(plantLevel, multipliers.harvest);
+    return EconomyService.getRobotPassiveIncome(plantLevel, multipliers.harvest, permanentMultiplier);
   };
 
   // Gestion de l'accumulation en temps réel

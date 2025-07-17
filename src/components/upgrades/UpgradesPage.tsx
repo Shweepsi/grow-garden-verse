@@ -105,7 +105,11 @@ export const UpgradesPage = () => {
       <div className="px-3 pb-4 space-y-4">
         {/* Progression par catégorie */}
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => {})}
+          {Object.entries(categoryProgress).map(([effectType, progress]) => (
+            <div key={effectType} className="text-center">
+              {/* Add progression display here if needed */}
+            </div>
+          ))}
         </div>
 
         {/* Cartes évolutives par catégorie */}
