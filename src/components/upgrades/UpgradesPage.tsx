@@ -29,12 +29,24 @@ export const UpgradesPage = () => {
   const sequentialUpgrades = getSequentialUpgrades();
   const categoryProgress = getCategoryProgress();
 
-  // Grouper les améliorations par type d'effet pour afficher les paliers
-  const upgradesByCategory = sequentialUpgrades.reduce((acc, upgrade) => {
-    if (!acc[upgrade.effect_type]) {
-      acc[upgrade.effect_type] = [];
+  // Fonction pour mapper les effect_types vers des catégories communes
+  const getCategoryKey = (effectType: string) => {
+    switch (effectType) {
+      case 'auto_harvest':
+      case 'robot_level':
+        return 'automatisation';
+      default:
+        return effectType;
     }
-    acc[upgrade.effect_type].push(upgrade);
+  };
+
+  // Grouper les améliorations par catégorie commune
+  const upgradesByCategory = sequentialUpgrades.reduce((acc, upgrade) => {
+    const categoryKey = getCategoryKey(upgrade.effect_type);
+    if (!acc[categoryKey]) {
+      acc[categoryKey] = [];
+    }
+    acc[categoryKey].push(upgrade);
     return acc;
   }, {} as Record<string, LevelUpgrade[]>);
 
@@ -115,7 +127,7 @@ export const UpgradesPage = () => {
 
         {/* Cartes évolutives par catégorie */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.entries(upgradesByCategory).map(([effectType, upgrades]) => {
+          {Object.entries(upgradesByCategory).map(([categoryKey, upgrades]) => {
           const currentUpgrade = getCurrentUpgrade(upgrades);
           const currentLevel = getCurrentLevel(upgrades);
           const maxLevel = isMaxLevel(upgrades);
@@ -124,7 +136,11 @@ export const UpgradesPage = () => {
           const isLocked = playerLevel < currentUpgrade.level_required;
           const canBuy = canPurchase(currentUpgrade);
           const buttonState = getButtonState(currentUpgrade);
-          return <Card key={effectType} className={`glassmorphism relative overflow-hidden transition-all duration-500 hover:scale-105 ${maxLevel ? 'bg-gradient-to-br from-green-50/80 to-emerald-50/80 border-green-200 shadow-green-100' : canBuy ? 'bg-gradient-to-br from-blue-50/80 to-cyan-50/80 border-blue-200 shadow-blue-100 hover:shadow-blue-200' : isLocked ? 'bg-gradient-to-br from-gray-50/80 to-slate-50/80 border-gray-200 opacity-75' : 'bg-gradient-to-br from-orange-50/80 to-red-50/80 border-orange-200'}`}>
+          
+          // Utiliser le display name basé sur l'effect_type du premier upgrade
+          const displayName = getCategoryDisplayName(upgrades[0].effect_type);
+          
+          return <Card key={categoryKey} className={`glassmorphism relative overflow-hidden transition-all duration-500 hover:scale-105 ${maxLevel ? 'bg-gradient-to-br from-green-50/80 to-emerald-50/80 border-green-200 shadow-green-100' : canBuy ? 'bg-gradient-to-br from-blue-50/80 to-cyan-50/80 border-blue-200 shadow-blue-100 hover:shadow-blue-200' : isLocked ? 'bg-gradient-to-br from-gray-50/80 to-slate-50/80 border-gray-200 opacity-75' : 'bg-gradient-to-br from-orange-50/80 to-red-50/80 border-orange-200'}`}>
                 {/* Indicateur de niveau en arrière-plan */}
                 <div className="absolute top-2 right-2 z-0">
                   <div className={`text-6xl font-bold opacity-10 ${maxLevel ? 'text-green-600' : 'text-blue-600'}`}>
@@ -138,7 +154,7 @@ export const UpgradesPage = () => {
                       <span className="text-2xl drop-shadow-lg">{currentUpgrade.emoji}</span>
                       <div>
                         <CardTitle className="text-lg text-green-800 font-bold">
-                          {getCategoryDisplayName(effectType)}
+                          {displayName}
                         </CardTitle>
                         
                       </div>
