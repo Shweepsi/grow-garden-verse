@@ -13,8 +13,6 @@ export const useRefactoredGame = () => {
       garden: gameData?.garden || null,
       plots: gameData?.plots || [],
       plantTypes: gameData?.plantTypes || [],
-      activeEffects: gameData?.activeEffects || [],
-      loading: false
     },
     loading: isLoading,
     ...plantActions,

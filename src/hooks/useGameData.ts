@@ -49,7 +49,7 @@ export const useGameData = () => {
         garden: gardenResult.data,
         plots: plotsResult.data || [],
         plantTypes: plantTypesResult.data || [],
-        activeEffects: [] // Tableau vide pour compatibilité
+        
       };
     },
     enabled: !!user?.id,

@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
-import { GameHeader } from '@/components/game/GameHeader';
-import { PlotGrid } from '@/components/game/PlotGrid';
+import { GameHeader } from '@/components/garden/GameHeader';
+import { PlotGrid } from '@/components/garden/PlotGrid';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { Loader2 } from 'lucide-react';
 

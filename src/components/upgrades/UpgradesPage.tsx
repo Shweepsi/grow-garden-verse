@@ -1,6 +1,6 @@
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useGameData } from '@/hooks/useGameData';
-import { GameHeader } from '@/components/game/GameHeader';
+import { GameHeader } from '@/components/garden/GameHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

@@ -1,7 +1,7 @@
-import { GameHeader } from '@/components/game/GameHeader';
-import { PlayerStats } from '@/components/game/PlayerStats';
-import { PrestigeSystem } from '@/components/game/PrestigeSystem';
-import { LadderModal } from '@/components/game/LadderModal';
+import { GameHeader } from '@/components/garden/GameHeader';
+import { PlayerStats } from '@/components/garden/PlayerStats';
+import { PrestigeSystem } from '@/components/garden/PrestigeSystem';
+import { LadderModal } from '@/components/garden/LadderModal';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';

@@ -54,19 +54,8 @@ export interface PlayerAchievement {
   created_at: string;
 }
 
-export interface ActiveEffect {
-  id: string;
-  user_id: string;
-  effect_type: string;
-  effect_value: number;
-  expires_at: string | null;
-  created_at: string;
-}
-
 export interface GameState {
   garden: PlayerGarden | null;
   plots: GardenPlot[];
   plantTypes: PlantType[];
-  activeEffects: ActiveEffect[];
-  loading: boolean;
 }

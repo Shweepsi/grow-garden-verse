@@ -4,7 +4,7 @@ import { GardenPlot, PlantType } from '@/types/game';
 import { Lock, Sprout, Gift } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
-import { GameBalanceService } from '@/services/GameBalanceService';
+
 import { EconomyService } from '@/services/EconomyService';
 interface PlotCardProps {
   plot: GardenPlot;
@@ -35,7 +35,12 @@ export const PlotCard = memo(({
     return isReady ? 'ready' : 'growing';
   };
   const state = getPlantState();
-  const unlockCost = GameBalanceService.getUnlockCost(plot.plot_number);
+  // Coûts de déblocage selon la fonction Supabase
+  const getUnlockCost = (plotNumber: number): number => {
+    const costs = [0, 300, 800, 2200, 6000, 18000, 50000, 140000, 400000];
+    return costs[plotNumber - 1] || 1200000;
+  };
+  const unlockCost = getUnlockCost(plot.plot_number);
   const canAffordUnlock = EconomyService.canAffordUpgrade(coins, unlockCost);
   const isAutoHarvestPlot = plot.plot_number === 1 && hasAutoHarvest;
   const handleClick = () => {

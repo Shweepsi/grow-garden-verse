@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { GameBalanceService } from '@/services/GameBalanceService';
 import { EconomyService } from '@/services/EconomyService';
 
 export const useGameEconomy = () => {
@@ -14,7 +13,9 @@ export const useGameEconomy = () => {
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      const cost = GameBalanceService.getUnlockCost(plotNumber);
+      // Utilise la fonction Supabase pour obtenir le coût
+      const { data: costData } = await supabase.rpc('get_plot_unlock_cost', { plot_number: plotNumber });
+      const cost = costData || 0;
 
       const { data: garden } = await supabase
         .from('player_gardens')
