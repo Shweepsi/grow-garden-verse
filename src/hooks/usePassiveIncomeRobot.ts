@@ -21,7 +21,7 @@ export const usePassiveIncomeRobot = () => {
     upgrade.level_upgrades?.effect_type === 'auto_harvest'
   );
 
-  // Récupérer l'état du robot passif
+  // Récupérer l'état du robot passif (automatique selon le niveau)
   const { data: robotState } = useQuery({
     queryKey: ['passiveRobotState', user?.id],
     queryFn: async () => {
@@ -29,28 +29,20 @@ export const usePassiveIncomeRobot = () => {
 
       const { data: garden } = await supabase
         .from('player_gardens')
-        .select('robot_plant_type, robot_last_collected, robot_accumulated_coins, robot_level')
+        .select('robot_last_collected, robot_accumulated_coins, robot_level')
         .eq('user_id', user.id)
         .single();
 
-      if (!garden?.robot_plant_type) return {
-        plantType: null,
-        lastCollected: garden?.robot_last_collected || new Date().toISOString(),
-        accumulatedCoins: garden?.robot_accumulated_coins || 0,
-        robotLevel: garden?.robot_level || 1
-      };
-
-      const { data: plantType } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', garden.robot_plant_type)
-        .single();
+      const robotLevel = garden?.robot_level || 1;
+      
+      // Récupérer automatiquement la plante correspondant au niveau du robot
+      const plantType = await EconomyService.getRobotPlantByLevel(robotLevel);
 
       return {
         plantType,
-        lastCollected: garden.robot_last_collected,
-        accumulatedCoins: garden.robot_accumulated_coins || 0,
-        robotLevel: garden.robot_level || 1
+        lastCollected: garden?.robot_last_collected || new Date().toISOString(),
+        accumulatedCoins: garden?.robot_accumulated_coins || 0,
+        robotLevel
       };
     },
     enabled: !!user?.id && hasPassiveRobot
@@ -172,55 +164,6 @@ export const usePassiveIncomeRobot = () => {
     };
   };
 
-  // Mutation pour définir la plante du robot passif
-  const setRobotPlantMutation = useMutation({
-    mutationFn: async (plantTypeId: string) => {
-      if (!user?.id || !hasPassiveRobot) throw new Error('Passive robot not available');
-
-      // Valider côté serveur via la fonction de validation
-      const { data: isValid } = await supabase
-        .rpc('validate_robot_plant_level', {
-          p_robot_level: EconomyService.getRobotLevel(playerUpgrades),
-          p_plant_type_id: plantTypeId
-        });
-
-      if (!isValid) {
-        throw new Error('Ce niveau de robot ne peut pas cultiver cette plante');
-      }
-
-      const { data: plantType } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', plantTypeId)
-        .single();
-
-      if (!plantType) throw new Error('Type de plante introuvable');
-
-      const now = new Date().toISOString();
-
-      // Mettre à jour le robot passif sans coût
-      const { error: gardenError } = await supabase
-        .from('player_gardens')
-        .update({
-          robot_plant_type: plantTypeId,
-          robot_last_collected: now,
-          robot_accumulated_coins: 0,
-          last_played: now
-        })
-        .eq('user_id', user.id);
-
-      if (gardenError) throw gardenError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
-      toast.success('Robot passif configuré !');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la configuration');
-    }
-  });
-
   // Mutation pour collecter les revenus accumulés
   const collectAccumulatedCoinsMutation = useMutation({
     mutationFn: async () => {
@@ -328,11 +271,9 @@ export const usePassiveIncomeRobot = () => {
     coinsPerMinute: getCoinsPerMinute(),
     currentAccumulation: calculateCurrentAccumulation(),
     robotLevel: EconomyService.getRobotLevel(playerUpgrades),
-    setRobotPlant: (plantTypeId: string) => setRobotPlantMutation.mutate(plantTypeId),
     collectAccumulatedCoins: () => collectAccumulatedCoinsMutation.mutate(),
     claimOfflineRewards: () => claimOfflineRewardsMutation.mutate(),
     calculateOfflineRewards,
-    isSettingPlant: setRobotPlantMutation.isPending,
     isCollecting: collectAccumulatedCoinsMutation.isPending,
     isClaimingRewards: claimOfflineRewardsMutation.isPending
   };
