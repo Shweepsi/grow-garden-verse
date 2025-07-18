@@ -14,7 +14,7 @@ export const usePassiveIncomeRobot = () => {
   const { data: gameData } = useGameData();
   const { playerUpgrades, getActiveMultipliers } = useUpgrades();
   const { triggerCoinAnimation } = useAnimations();
-  const accumulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const accumulationIntervalRef = useRef<number | null>(null);
 
   // Vérifier si l'amélioration robot passif est débloquée
   const hasPassiveRobot = playerUpgrades.some(upgrade => 
@@ -108,7 +108,7 @@ export const usePassiveIncomeRobot = () => {
     };
 
     // Mettre à jour l'accumulation toutes les minutes
-    accumulationIntervalRef.current = setInterval(updateAccumulation, 60000);
+    accumulationIntervalRef.current = window.setInterval(updateAccumulation, 60000);
 
     return () => {
       if (accumulationIntervalRef.current) {

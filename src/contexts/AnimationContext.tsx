@@ -27,15 +27,15 @@ export const useAnimations = () => {
 
 export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [animations, setAnimations] = useState<FloatingAnimation[]>([]);
-  const [coinAccumulator, setCoinAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
+  const [coinAccumulator, setCoinAccumulator] = useState<{ amount: number; timer: number | null }>({
     amount: 0,
     timer: null
   });
-  const [xpAccumulator, setXpAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
+  const [xpAccumulator, setXpAccumulator] = useState<{ amount: number; timer: number | null }>({
     amount: 0,
     timer: null
   });
-  const [gemAccumulator, setGemAccumulator] = useState<{ amount: number; timer: NodeJS.Timeout | null }>({
+  const [gemAccumulator, setGemAccumulator] = useState<{ amount: number; timer: number | null }>({
     amount: 0,
     timer: null
   });
@@ -48,7 +48,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const newAmount = prev.amount + amount;
       
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         const id = `coin-${Date.now()}-${Math.random()}`;
         setAnimations(current => [...current, {
           id,
@@ -72,7 +72,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const newAmount = prev.amount + amount;
       
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         const id = `xp-${Date.now()}-${Math.random()}`;
         setAnimations(current => [...current, {
           id,
@@ -96,7 +96,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const newAmount = prev.amount + amount;
       
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         const id = `gem-${Date.now()}-${Math.random()}`;
         setAnimations(current => [...current, {
           id,

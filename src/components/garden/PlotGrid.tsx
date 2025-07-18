@@ -54,7 +54,7 @@ export const PlotGrid = ({
         }
       });
     }
-  }, [hasPassiveRobot, robotState?.plantType]);
+  }, [hasPassiveRobot, robotState?.plantType, calculateOfflineRewards, claimOfflineRewards]);
 
   const handlePlotClick = (plot: GardenPlot) => {
     if (!plot.unlocked) return;
