@@ -80,10 +80,14 @@ export class EconomyService {
     return Math.floor(baseCost * costReduction);
   }
 
+  // Correspondance niveau robot -> plante (basé sur level_required)
+  static getRobotPlantLevel(robotLevel: number): number {
+    return Math.max(1, Math.min(robotLevel, 10)); // Clamp entre 1 et 10
+  }
 
-  // Calculer le revenu passif du robot basé sur le niveau de la plante
-  static getRobotPassiveIncome(plantLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
-    if (!plantLevel || plantLevel < 1) plantLevel = 1;
+  // Calculer le revenu passif du robot basé sur son niveau
+  static getRobotPassiveIncome(robotLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
+    const plantLevel = this.getRobotPlantLevel(robotLevel);
     
     // Progression exponentielle douce : plus le niveau est élevé, plus c'est rentable
     const baseIncome = 50; // Revenu de base par minute
@@ -99,7 +103,7 @@ export class EconomyService {
     playerUpgrades.forEach(upgrade => {
       const levelUpgrade = upgrade.level_upgrades;
       if (levelUpgrade?.effect_type === 'robot_level') {
-        maxLevel = Math.max(maxLevel, levelUpgrade.effect_value);
+        maxLevel = Math.max(maxLevel, Math.floor(levelUpgrade.effect_value));
       }
     });
     

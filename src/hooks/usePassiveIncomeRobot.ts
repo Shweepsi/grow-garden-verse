@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +22,25 @@ export const usePassiveIncomeRobot = () => {
     upgrade.level_upgrades?.effect_type === 'auto_harvest'
   );
 
+  // Calculer le niveau du robot et la plante correspondante
+  const robotLevel = EconomyService.getRobotLevel(playerUpgrades);
+  const robotPlantLevel = EconomyService.getRobotPlantLevel(robotLevel);
+
+  // Récupérer la plante correspondant au niveau du robot
+  const { data: robotPlantType } = useQuery({
+    queryKey: ['robotPlantType', robotPlantLevel],
+    queryFn: async () => {
+      const { data: plantType } = await supabase
+        .from('plant_types')
+        .select('*')
+        .eq('level_required', robotPlantLevel)
+        .maybeSingle();
+
+      return plantType;
+    },
+    enabled: hasPassiveRobot && robotPlantLevel > 0
+  });
+
   // Récupérer l'état du robot passif
   const { data: robotState } = useQuery({
     queryKey: ['passiveRobotState', user?.id],
@@ -29,28 +49,14 @@ export const usePassiveIncomeRobot = () => {
 
       const { data: garden } = await supabase
         .from('player_gardens')
-        .select('robot_plant_type, robot_last_collected, robot_accumulated_coins, robot_level')
+        .select('robot_last_collected, robot_accumulated_coins')
         .eq('user_id', user.id)
         .single();
 
-      if (!garden?.robot_plant_type) return {
-        plantType: null,
+      return {
         lastCollected: garden?.robot_last_collected || new Date().toISOString(),
         accumulatedCoins: garden?.robot_accumulated_coins || 0,
-        robotLevel: garden?.robot_level || 1
-      };
-
-      const { data: plantType } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', garden.robot_plant_type)
-        .single();
-
-      return {
-        plantType,
-        lastCollected: garden.robot_last_collected,
-        accumulatedCoins: garden.robot_accumulated_coins || 0,
-        robotLevel: garden.robot_level || 1
+        robotLevel
       };
     },
     enabled: !!user?.id && hasPassiveRobot
@@ -58,18 +64,17 @@ export const usePassiveIncomeRobot = () => {
 
   // Calcul du revenu passif en temps réel
   const getCoinsPerMinute = () => {
-    if (!robotState?.plantType) return 0;
+    if (!hasPassiveRobot || !robotPlantType) return 0;
     
     const multipliers = getActiveMultipliers();
-    const plantLevel = robotState.plantType.level_required || 1;
     const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
     
-    return EconomyService.getRobotPassiveIncome(plantLevel, multipliers.harvest, permanentMultiplier);
+    return EconomyService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier);
   };
 
   // Gestion de l'accumulation en temps réel
   useEffect(() => {
-    if (!hasPassiveRobot || !robotState?.plantType) {
+    if (!hasPassiveRobot || !robotPlantType || !robotState) {
       if (accumulationIntervalRef.current) {
         clearInterval(accumulationIntervalRef.current);
         accumulationIntervalRef.current = null;
@@ -115,11 +120,11 @@ export const usePassiveIncomeRobot = () => {
         clearInterval(accumulationIntervalRef.current);
       }
     };
-  }, [hasPassiveRobot, robotState?.plantType, robotState?.lastCollected, user?.id]);
+  }, [hasPassiveRobot, robotPlantType, robotState?.lastCollected, user?.id]);
 
   // Calcul de l'accumulation totale disponible
   const calculateCurrentAccumulation = () => {
-    if (!robotState?.plantType) return 0;
+    if (!robotState || !robotPlantType) return 0;
     
     const coinsPerMinute = getCoinsPerMinute();
     const now = new Date();
@@ -136,7 +141,7 @@ export const usePassiveIncomeRobot = () => {
 
   // Calculer les récompenses hors-ligne basées sur l'accumulation
   const calculateOfflineRewards = async () => {
-    if (!user?.id || !hasPassiveRobot || !robotState?.plantType) return null;
+    if (!user?.id || !hasPassiveRobot || !robotPlantType) return null;
 
     const { data: garden } = await supabase
       .from('player_gardens')
@@ -167,59 +172,10 @@ export const usePassiveIncomeRobot = () => {
     return {
       offlineCoins,
       minutesOffline: Math.min(minutesOffline, maxMinutes),
-      plantName: robotState.plantType.display_name,
+      plantName: robotPlantType.display_name,
       coinsPerMinute
     };
   };
-
-  // Mutation pour définir la plante du robot passif
-  const setRobotPlantMutation = useMutation({
-    mutationFn: async (plantTypeId: string) => {
-      if (!user?.id || !hasPassiveRobot) throw new Error('Passive robot not available');
-
-      // Valider côté serveur via la fonction de validation
-      const { data: isValid } = await supabase
-        .rpc('validate_robot_plant_level', {
-          p_robot_level: EconomyService.getRobotLevel(playerUpgrades),
-          p_plant_type_id: plantTypeId
-        });
-
-      if (!isValid) {
-        throw new Error('Ce niveau de robot ne peut pas cultiver cette plante');
-      }
-
-      const { data: plantType } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', plantTypeId)
-        .single();
-
-      if (!plantType) throw new Error('Type de plante introuvable');
-
-      const now = new Date().toISOString();
-
-      // Mettre à jour le robot passif sans coût
-      const { error: gardenError } = await supabase
-        .from('player_gardens')
-        .update({
-          robot_plant_type: plantTypeId,
-          robot_last_collected: now,
-          robot_accumulated_coins: 0,
-          last_played: now
-        })
-        .eq('user_id', user.id);
-
-      if (gardenError) throw gardenError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
-      toast.success('Robot passif configuré !');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la configuration');
-    }
-  });
 
   // Mutation pour collecter les revenus accumulés
   const collectAccumulatedCoinsMutation = useMutation({
@@ -259,10 +215,10 @@ export const usePassiveIncomeRobot = () => {
           user_id: user.id,
           amount: totalAccumulated,
           transaction_type: 'robot_collection',
-          description: `Collecte robot passif: ${robotState.plantType?.display_name}`
+          description: `Collecte robot passif: ${robotPlantType?.display_name}`
         });
 
-      return { totalAccumulated, plantName: robotState.plantType?.display_name };
+      return { totalAccumulated, plantName: robotPlantType?.display_name };
     },
     onSuccess: (result) => {
       if (result) {
@@ -287,7 +243,7 @@ export const usePassiveIncomeRobot = () => {
 
       const { data: garden } = await supabase
         .from('player_gardens')
-        .select('coins, robot_accumulated_coins')
+        .select('robot_accumulated_coins')
         .eq('user_id', user.id)
         .single();
 
@@ -325,14 +281,13 @@ export const usePassiveIncomeRobot = () => {
   return {
     hasPassiveRobot,
     robotState,
+    robotPlantType,
     coinsPerMinute: getCoinsPerMinute(),
     currentAccumulation: calculateCurrentAccumulation(),
-    robotLevel: EconomyService.getRobotLevel(playerUpgrades),
-    setRobotPlant: (plantTypeId: string) => setRobotPlantMutation.mutate(plantTypeId),
+    robotLevel,
     collectAccumulatedCoins: () => collectAccumulatedCoinsMutation.mutate(),
     claimOfflineRewards: () => claimOfflineRewardsMutation.mutate(),
     calculateOfflineRewards,
-    isSettingPlant: setRobotPlantMutation.isPending,
     isCollecting: collectAccumulatedCoinsMutation.isPending,
     isClaimingRewards: claimOfflineRewardsMutation.isPending
   };
