@@ -6,6 +6,7 @@ import { Crown, Star, Zap, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
+import { PRESTIGE_RESET_COINS, PRESTIGE_RESET_LEVEL, PRESTIGE_RESET_XP } from '@/constants';
 
 interface PrestigeSystemProps {
   garden: PlayerGarden;
@@ -52,10 +53,10 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
       }
 
       const { error } = await supabase.from('player_gardens').update({
-        coins: 100,
+        coins: PRESTIGE_RESET_COINS,
         gems: (garden.gems || 0) - costGems,
-        experience: 0,
-        level: 1,
+        experience: PRESTIGE_RESET_XP,
+        level: PRESTIGE_RESET_LEVEL,
         prestige_level: prestigeLevel + 1,
         permanent_multiplier: nextMultiplier,
         prestige_points: (garden.prestige_points || 0) + 1

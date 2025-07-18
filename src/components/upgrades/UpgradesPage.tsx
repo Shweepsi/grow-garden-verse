@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Coins, Gem, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { LevelUpgrade } from '@/types/upgrades';
+import { MINIMUM_COINS_RESERVE } from '@/constants';
 export const UpgradesPage = () => {
   const {
     data: gameData
@@ -57,7 +58,7 @@ export const UpgradesPage = () => {
   };
   const canPurchase = (upgrade: LevelUpgrade) => {
     const hasLevel = playerLevel >= upgrade.level_required;
-    const hasCoins = coins >= upgrade.cost_coins + 100; // Protection 100 pièces
+    const hasCoins = coins >= upgrade.cost_coins + MINIMUM_COINS_RESERVE;
     const hasGems = gems >= upgrade.cost_gems;
     const notPurchased = !isUpgradePurchased(upgrade.id);
     return hasLevel && hasCoins && hasGems && notPurchased;
@@ -71,7 +72,7 @@ export const UpgradesPage = () => {
       text: 'Verrouillé',
       style: 'bg-gray-400'
     };
-    if (coins < upgrade.cost_coins + 100) return {
+    if (coins < upgrade.cost_coins + MINIMUM_COINS_RESERVE) return {
       text: 'Pas assez de pièces',
       style: 'bg-red-400'
     };
@@ -173,7 +174,7 @@ export const UpgradesPage = () => {
                       <div className="flex justify-center gap-4 mb-4">
                         {currentUpgrade.cost_coins > 0 && <div className="flex items-center gap-1">
                             <Coins className="h-4 w-4 text-yellow-600" />
-                            <span className={`font-bold text-sm ${coins >= currentUpgrade.cost_coins + 100 ? 'text-green-600' : 'text-red-500'}`}>
+                            <span className={`font-bold text-sm ${coins >= currentUpgrade.cost_coins + MINIMUM_COINS_RESERVE ? 'text-green-600' : 'text-red-500'}`}>
                               {currentUpgrade.cost_coins.toLocaleString()}
                             </span>
                           </div>}
@@ -192,8 +193,8 @@ export const UpgradesPage = () => {
                       </Button>
 
                       {/* Message d'aide pour réserve */}
-                      {!isPurchased && coins < currentUpgrade.cost_coins + 100 && coins >= currentUpgrade.cost_coins && <p className="text-xs text-orange-600 mt-2 text-center animate-pulse">
-                          💡 Gardez 100 pièces de réserve
+                      {!isPurchased && coins < currentUpgrade.cost_coins + MINIMUM_COINS_RESERVE && coins >= currentUpgrade.cost_coins && <p className="text-xs text-orange-600 mt-2 text-center animate-pulse">
+                          💡 Gardez {MINIMUM_COINS_RESERVE} pièces de réserve
                         </p>}
                     </> : (/* Carte niveau maximum */
               <div className="text-center py-4">

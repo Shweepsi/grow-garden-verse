@@ -6,6 +6,7 @@ import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useAnimations } from '@/contexts/AnimationContext';
+import { MAX_PLOTS } from '@/constants';
 
 export const useDirectPlanting = () => {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ export const useDirectPlanting = () => {
       if (!user?.id) throw new Error('Not authenticated');
 
       // Validation stricte des paramètres
-      if (!plotNumber || plotNumber < 1 || plotNumber > 9) {
+      if (!plotNumber || plotNumber < 1 || plotNumber > MAX_PLOTS) {
         throw new Error('Numéro de parcelle invalide');
       }
       

@@ -1,13 +1,14 @@
 
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
+import { MINIMUM_COINS_RESERVE, INITIAL_COINS } from '@/constants';
 
 export class EconomyService {
   // Pièces minimum à conserver pour pouvoir continuer à jouer
-  static readonly MINIMUM_COINS = 100;
+  static readonly MINIMUM_COINS = MINIMUM_COINS_RESERVE;
 
   // Système de coût progressif équilibré
   static getPlantDirectCost(plantLevel: number): number {
-    if (!plantLevel || plantLevel < 1) return 100;
+    if (!plantLevel || plantLevel < 1) return INITIAL_COINS;
     // Progression douce : 100 * 1.5^(niveau-1)
     return Math.floor(100 * Math.pow(1.5, plantLevel - 1));
   }
