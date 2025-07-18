@@ -61,8 +61,10 @@ export const PlantSelector = ({
     return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
   };
   const handlePlantClick = (plantTypeId: string, cost: number) => {
-    onPlantDirect(plotNumber, plantTypeId, cost);
+    // Fermer immédiatement pour une meilleure réactivité
     onClose();
+    // Lancer la plantation après fermeture
+    onPlantDirect(plotNumber, plantTypeId, cost);
   };
 
   // Filtrer les plantes selon le niveau du joueur

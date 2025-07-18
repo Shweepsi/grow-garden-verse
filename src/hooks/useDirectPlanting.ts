@@ -185,10 +185,51 @@ export const useDirectPlanting = () => {
 
       console.log('✅ Plantation terminée avec succès');
     },
+    onMutate: async ({ plotNumber, plantTypeId, cost }) => {
+      // Mise à jour optimiste pour une réactivité immédiate
+      await queryClient.cancelQueries({ queryKey: ['gameData'] });
+      
+      const previousData = queryClient.getQueryData(['gameData']);
+      
+      // Mise à jour optimiste du cache
+      queryClient.setQueryData(['gameData'], (old: any) => {
+        if (!old || !old.garden || !old.plots) return old;
+        
+        const now = new Date().toISOString();
+        const newCoins = Math.max(0, (old.garden.coins || 0) - cost);
+        
+        return {
+          ...old,
+          garden: {
+            ...old.garden,
+            coins: newCoins,
+            last_played: now
+          },
+          plots: old.plots.map((plot: any) => 
+            plot.plot_number === plotNumber 
+              ? {
+                  ...plot,
+                  plant_type: plantTypeId,
+                  planted_at: now,
+                  growth_time_seconds: 3600, // Valeur temporaire
+                  updated_at: now
+                }
+              : plot
+          )
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
+      // Revalider les données pour s'assurer de la cohérence
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context: any) => {
+      // Restaurer les données précédentes en cas d'erreur
+      if (context?.previousData) {
+        queryClient.setQueryData(['gameData'], context.previousData);
+      }
       console.error('💥 Erreur lors de la plantation:', error);
       toast.error(error.message || 'Erreur lors de la plantation');
     }
