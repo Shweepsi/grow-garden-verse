@@ -373,6 +373,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      validate_robot_plant_level: {
+        Args: { p_robot_level: number; p_plant_type_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

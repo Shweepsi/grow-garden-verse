@@ -177,20 +177,24 @@ export const usePassiveIncomeRobot = () => {
     mutationFn: async (plantTypeId: string) => {
       if (!user?.id || !hasPassiveRobot) throw new Error('Passive robot not available');
 
+      // Valider côté serveur via la fonction de validation
+      const { data: isValid } = await supabase
+        .rpc('validate_robot_plant_level', {
+          p_robot_level: EconomyService.getRobotLevel(playerUpgrades),
+          p_plant_type_id: plantTypeId
+        });
+
+      if (!isValid) {
+        throw new Error('Ce niveau de robot ne peut pas cultiver cette plante');
+      }
+
       const { data: plantType } = await supabase
         .from('plant_types')
         .select('*')
         .eq('id', plantTypeId)
         .single();
 
-      if (!plantType) throw new Error('Plant type not found');
-
-      const robotLevel = EconomyService.getRobotLevel(playerUpgrades);
-      const plantLevel = plantType.level_required || 1;
-
-      if (plantLevel > robotLevel) {
-        throw new Error('Robot level too low for this plant');
-      }
+      if (!plantType) throw new Error('Type de plante introuvable');
 
       const now = new Date().toISOString();
 
