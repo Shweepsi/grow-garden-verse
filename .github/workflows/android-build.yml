@@ -42,12 +42,12 @@ jobs:
       - name: Move APK to /builds
         run: |
           mkdir -p builds
-          mv android/app/build/outputs/apk/debug/app-debug.apk builds/GrowGardenVerse.apk
+          mv android/app/build/outputs/apk/debug/app-debug.apk builds/IdleGrow.apk
 
       - name: Commit APK to repo
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f builds/GrowGardenVerse.apk
+          git add -f builds/IdleGrow.apk
           git commit -m "🔄 Update APK build [skip ci]" || echo "No changes to commit"
           git push
