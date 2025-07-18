@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { GardenPlot, PlantType } from '@/types/game';
 import { PlotCard } from './PlotCard';
 import { PlantSelector } from './PlantSelector';
@@ -26,6 +26,7 @@ export const PlotGrid = ({
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
   const [showRobotInterface, setShowRobotInterface] = useState(false);
+  
   const { plantDirect, isPlanting } = useDirectPlanting();
   const { 
     hasPassiveRobot, 
@@ -54,7 +55,8 @@ export const PlotGrid = ({
     }
   }, [hasPassiveRobot, robotPlantType, calculateOfflineRewards, claimOfflineRewards]);
 
-  const handlePlotClick = (plot: GardenPlot) => {
+  // Optimiser le handler de clic avec useCallback
+  const handlePlotClick = useCallback((plot: GardenPlot) => {
     if (!plot.unlocked) return;
     
     // Parcelle 1 avec robot passif actif
@@ -72,51 +74,63 @@ export const PlotGrid = ({
       setSelectedPlot(plot.plot_number);
       setShowPlantSelector(true);
     } else if (isReady) {
+      // Feedback immédiat optimiste
       onHarvestPlant(plot.plot_number);
     }
-  };
+  }, [hasPassiveRobot, onHarvestPlant]);
 
-  const handlePlantSelection = (plotNumber: number, plantTypeId: string, cost: number) => {
+  // Optimiser les handlers de sélection
+  const handlePlantSelection = useCallback((plotNumber: number, plantTypeId: string, cost: number) => {
     plantDirect(plotNumber, plantTypeId, cost);
-  };
+  }, [plantDirect]);
 
-  const handleClosePlantSelector = () => {
+  const handleClosePlantSelector = useCallback(() => {
     setShowPlantSelector(false);
     setSelectedPlot(null);
-  };
+  }, []);
 
-  const handleCloseRobotInterface = () => {
+  const handleCloseRobotInterface = useCallback(() => {
     setShowRobotInterface(false);
-  };
+  }, []);
+
+  // Mémoriser les données calculées pour chaque parcelle
+  const plotsData = useMemo(() => {
+    return plots.map((plot) => {
+      const isAutoHarvestPlot = plot.plot_number === 1 && hasPassiveRobot;
+      const plantType = isAutoHarvestPlot 
+        ? robotPlantType 
+        : plantTypeMap.get(plot.plant_type || '');
+      
+      // Vérifier si le robot a atteint la limite de capacité (24h)
+      const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
+        currentAccumulation >= (coinsPerMinute * 24 * 60);
+      
+      return {
+        plot,
+        plantType,
+        isAutoHarvestPlot,
+        robotAtCapacity
+      };
+    });
+  }, [plots, hasPassiveRobot, robotPlantType, plantTypeMap, coinsPerMinute, currentAccumulation]);
 
   return (
     <>
       <div className="grid grid-cols-3 gap-3 p-4">
-        {plots.map((plot) => {
-          const isAutoHarvestPlot = plot.plot_number === 1 && hasPassiveRobot;
-          const plantType = isAutoHarvestPlot 
-            ? robotPlantType 
-            : plantTypeMap.get(plot.plant_type || '');
-          
-          // Vérifier si le robot a atteint la limite de capacité (24h)
-          const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
-            currentAccumulation >= (coinsPerMinute * 24 * 60);
-          
-          return (
-            <PlotCard
-              key={plot.id}
-              plot={plot}
-              plantType={plantType}
-              plantTypesCount={plantTypes.length}
-              coins={coins}
-              isPlanting={isPlanting}
-              hasAutoHarvest={isAutoHarvestPlot}
-              robotAtCapacity={robotAtCapacity}
-              onPlotClick={handlePlotClick}
-              onUnlockPlot={onUnlockPlot}
-            />
-          );
-        })}
+        {plotsData.map(({ plot, plantType, isAutoHarvestPlot, robotAtCapacity }) => (
+          <PlotCard
+            key={plot.id}
+            plot={plot}
+            plantType={plantType}
+            plantTypesCount={plantTypes.length}
+            coins={coins}
+            isPlanting={isPlanting}
+            hasAutoHarvest={isAutoHarvestPlot}
+            robotAtCapacity={robotAtCapacity}
+            onPlotClick={handlePlotClick}
+            onUnlockPlot={onUnlockPlot}
+          />
+        ))}
       </div>
 
       {/* Sélecteur de plante classique */}

@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { Clock } from 'lucide-react';
 
@@ -12,6 +12,13 @@ interface PlantTimerProps {
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: PlantTimerProps) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isReady, setIsReady] = useState(false);
+
+  // Calculer l'intervalle optimal avec useMemo pour éviter les recalculs
+  const updateInterval = useMemo(() => {
+    if (!plantedAt) return 1000;
+    const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds);
+    return PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds, remaining);
+  }, [plantedAt, growthTimeSeconds]);
 
   useEffect(() => {
     if (!plantedAt) return;
@@ -26,19 +33,23 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
 
     updateTimer();
     
-    // Utiliser la fréquence de mise à jour optimale selon le temps de croissance
-    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
+    // Utiliser l'intervalle de mise à jour optimisé
     const interval = setInterval(updateTimer, updateInterval);
 
     return () => clearInterval(interval);
-  }, [plantedAt, growthTimeSeconds]);
+  }, [plantedAt, growthTimeSeconds, updateInterval]);
 
   if (!plantedAt || isReady) return null;
 
+  // Classes pour indiquer l'urgence du timer
+  const urgencyClass = timeRemaining < 30 ? 'text-orange-600 animate-pulse' : 
+                     timeRemaining < 120 ? 'text-yellow-600' : 
+                     'text-gray-600';
+
   return (
-    <div className={`flex items-center gap-1 text-xs ${className}`}>
+    <div className={`flex items-center gap-1 text-xs transition-colors duration-300 ${urgencyClass} ${className}`}>
       <Clock className="h-3 w-3" />
-      <span>{PlantGrowthService.formatTimeRemaining(timeRemaining)}</span>
+      <span className="font-medium">{PlantGrowthService.formatTimeRemaining(timeRemaining)}</span>
     </div>
   );
 };

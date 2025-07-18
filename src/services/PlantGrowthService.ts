@@ -55,15 +55,39 @@ export class PlantGrowthService {
     return `${hours}h ${remainingMinutes}min`;
   }
 
-  // Méthode pour déterminer la fréquence de mise à jour optimale
-  static getOptimalUpdateInterval(growthTimeSeconds: number): number {
+  // Méthode optimisée pour déterminer la fréquence de mise à jour selon le temps restant
+  static getOptimalUpdateInterval(growthTimeSeconds: number, timeRemaining?: number): number {
     if (!growthTimeSeconds || growthTimeSeconds <= 0) return 5000;
     
-    // Pour les plantes avec moins de 2 minutes (120s) de croissance, mise à jour plus fréquente
-    if (growthTimeSeconds < 120) {
-      return 250; // 250ms pour une fluidité maximale sur les temps courts
+    // Si on a le temps restant, l'utiliser pour une précision maximale
+    const remainingTime = timeRemaining !== undefined ? timeRemaining : growthTimeSeconds;
+    
+    // Pour les plantes presque prêtes (< 30s), mise à jour très fréquente
+    if (remainingTime < 30) {
+      return 100; // 100ms pour la fluidité maximale en fin de croissance
     }
+    
+    // Pour les plantes avec moins de 2 minutes restantes, mise à jour fréquente
+    if (remainingTime < 120) {
+      return 250; // 250ms pour une fluidité élevée
+    }
+    
+    // Pour les plantes avec moins de 10 minutes de croissance totale, mise à jour rapide
+    if (growthTimeSeconds < 600) {
+      return 500; // 500ms pour les plantes rapides
+    }
+    
     // Pour les plantes normales, 1 seconde suffit
     return 1000;
+  }
+
+  // Nouvelle méthode pour déterminer si une plante nécessite une mise à jour fréquente
+  static needsFrequentUpdate(plantedAt: string | null, growthTimeSeconds: number): boolean {
+    if (!plantedAt || !growthTimeSeconds) return false;
+    
+    const timeRemaining = this.getTimeRemaining(plantedAt, growthTimeSeconds);
+    
+    // Mise à jour fréquente si moins de 2 minutes restantes ou plante rapide
+    return timeRemaining < 120 || growthTimeSeconds < 300;
   }
 }

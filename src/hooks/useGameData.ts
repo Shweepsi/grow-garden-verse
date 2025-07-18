@@ -49,17 +49,16 @@ export const useGameData = () => {
         garden: gardenResult.data,
         plots: plotsResult.data || [],
         plantTypes: plantTypesResult.data || [],
-        
       };
     },
     enabled: !!user?.id,
-    // Optimisation : intervalles de rafraîchissement plus intelligents
+    // Optimisation : intervalles de rafraîchissement plus intelligents et rapides
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data?.plots) return 60000; // 1 minute par défaut
+      if (!data?.plots) return 30000; // 30 secondes par défaut si pas de données
       
       // Vérifier s'il y a des plantes qui poussent
-      const hasGrowingPlants = data.plots.some(plot => 
+      const growingPlants = data.plots.filter(plot => 
         plot.planted_at && 
         plot.plant_type &&
         plot.growth_time_seconds &&
@@ -75,28 +74,35 @@ export const useGameData = () => {
       );
       
       // Si des plantes sont prêtes, rafraîchir moins souvent (elles restent prêtes)
-      if (hasReadyPlants && !hasGrowingPlants) return 60000; // 1 minute
+      if (hasReadyPlants && growingPlants.length === 0) return 30000; // 30 secondes
       
       // Si des plantes poussent, adapter la fréquence selon la plus courte
-      if (hasGrowingPlants) {
+      if (growingPlants.length > 0) {
         const shortestGrowthTime = Math.min(
-          ...data.plots
-            .filter(plot => plot.planted_at && plot.plant_type && plot.growth_time_seconds)
-            .map(plot => plot.growth_time_seconds!)
+          ...growingPlants.map(plot => plot.growth_time_seconds!)
         );
         
-        // Rafraîchir plus souvent pour les plantes courtes, moins pour les longues
-        if (shortestGrowthTime < 300) return 10000;  // 10s pour < 5min
-        if (shortestGrowthTime < 1800) return 30000; // 30s pour < 30min
-        return 60000; // 1min pour le reste
+        // Calculer le temps restant minimum
+        const shortestTimeRemaining = Math.min(
+          ...growingPlants.map(plot => {
+            const elapsed = (Date.now() - new Date(plot.planted_at!).getTime()) / 1000;
+            return Math.max(0, plot.growth_time_seconds! - elapsed);
+          })
+        );
+        
+        // Rafraîchir très fréquemment pour les plantes courtes ou presque prêtes
+        if (shortestGrowthTime < 120 || shortestTimeRemaining < 30) return 2000;  // 2s pour < 2min ou < 30s restantes
+        if (shortestGrowthTime < 600 || shortestTimeRemaining < 120) return 5000; // 5s pour < 10min ou < 2min restantes
+        if (shortestTimeRemaining < 300) return 10000; // 10s pour < 5min restantes
+        return 15000; // 15s pour le reste
       }
       
       // Pas de plantes actives, rafraîchir rarement
-      return 120000; // 2 minutes
+      return 60000; // 1 minute
     },
     // Optimisation : éviter les re-rendus inutiles
     structuralSharing: true,
-    // Réduire la fréquence de vérification des données obsolètes
-    staleTime: 30000, // 30 secondes
+    // Réduire la fréquence de vérification des données obsolètes pour la réactivité
+    staleTime: 5000, // 5 secondes pour une réactivité accrue
   });
 };
