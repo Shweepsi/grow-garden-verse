@@ -1,10 +1,38 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
 
 export const useGameData = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Configuration du realtime pour garden_plots
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('garden_plots_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'garden_plots',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Invalider et refetch les données quand une parcelle change
+          queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   return useQuery({
     queryKey: ['gameData', user?.id],
