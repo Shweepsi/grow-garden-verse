@@ -99,8 +99,10 @@ export const PlotGrid = ({
     <>
       <div className="grid grid-cols-3 gap-3 p-4">
         {plots.map((plot) => {
-          const plantType = plantTypeMap.get(plot.plant_type || '');
           const isAutoHarvestPlot = plot.plot_number === 1 && hasPassiveRobot;
+          const plantType = isAutoHarvestPlot 
+            ? robotState?.plantType 
+            : plantTypeMap.get(plot.plant_type || '');
           
           // Vérifier si le robot a atteint la limite de capacité (24h)
           const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
