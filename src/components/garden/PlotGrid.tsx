@@ -1,79 +1,81 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useMemo, useEffect } from 'react';
+import { GardenPlot, PlantType } from '@/types/game';
 import { PlotCard } from './PlotCard';
 import { PlantSelector } from './PlantSelector';
-import { useDirectPlanting } from '@/hooks/useDirectPlanting';
-import { useGameData } from '@/hooks/useGameData';
 import { PassiveIncomeRobot } from './PassiveIncomeRobot';
-import { PlantType } from '@/types/game';
+import { useDirectPlanting } from '@/hooks/useDirectPlanting';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { toast } from 'sonner';
 
 interface PlotGridProps {
-  plots: any[];
+  plots: GardenPlot[];
   plantTypes: PlantType[];
   coins: number;
   onHarvestPlant: (plotNumber: number) => void;
   onUnlockPlot: (plotNumber: number) => void;
-  onPlantSuccess: () => void;
 }
 
 export const PlotGrid = ({ 
-  plots,
+  plots, 
   plantTypes, 
-  coins, 
-  onHarvestPlant,
-  onUnlockPlot,
-  onPlantSuccess
+  coins,
+  onHarvestPlant, 
+  onUnlockPlot 
 }: PlotGridProps) => {
-  const { data: gameData } = useGameData();
-  const { plantDirect } = useDirectPlanting();
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
-  const [showRobotModal, setShowRobotModal] = useState(false);
-  
-  const {
+  const [showAutoHarvestConfig, setShowAutoHarvestConfig] = useState(false);
+  const { plantDirect, isPlanting } = useDirectPlanting();
+  const { 
     hasPassiveRobot, 
     robotState, 
-    coinsPerMinute, 
-    currentAccumulation, 
-    collectAccumulatedCoins, 
-    claimOfflineRewards, 
-    calculateOfflineRewards, 
-    isCollecting,
-    isClaimingRewards
+    setRobotPlant, 
+    claimOfflineRewards,
+    calculateOfflineRewards,
+    isSettingPlant,
+    coinsPerMinute,
+    currentAccumulation
   } = usePassiveIncomeRobot();
 
-  // Gestion des récompenses hors ligne
+  // Mémoriser les données des plantes pour éviter les recalculs
+  const plantTypeMap = useMemo(() => {
+    const map = new Map<string, PlantType>();
+    plantTypes.forEach(pt => map.set(pt.id, pt));
+    return map;
+  }, [plantTypes]);
+
+  // Vérifier et réclamer les récompenses hors-ligne au chargement
   useEffect(() => {
     if (hasPassiveRobot && robotState?.plantType) {
-      const handleOfflineRewards = async () => {
-        try {
-          const offlineRewards = await calculateOfflineRewards();
-          if (offlineRewards.offlineCoins > 0) {
-            toast.success(`Récompenses hors ligne: ${offlineRewards.offlineCoins.toLocaleString()} 🪙`);
-            claimOfflineRewards();
-          }
-        } catch (error) {
-          console.error('Erreur lors du calcul des récompenses hors ligne:', error);
+      calculateOfflineRewards().then(rewards => {
+        if (rewards && rewards.offlineCoins > 0) {
+          claimOfflineRewards();
         }
-      };
-      
-      handleOfflineRewards();
+      });
     }
   }, [hasPassiveRobot, robotState?.plantType, calculateOfflineRewards, claimOfflineRewards]);
 
-  const handlePlotClick = (plotNumber: number, isUnlocked: boolean) => {
-    if (!isUnlocked) return;
+  const handlePlotClick = (plot: GardenPlot) => {
+    if (!plot.unlocked) return;
     
     // Parcelle 1 avec robot passif actif
-    if (plotNumber === 1 && hasPassiveRobot) {
-      setShowRobotModal(true);
+    if (plot.plot_number === 1 && hasPassiveRobot) {
+      setShowAutoHarvestConfig(true);
       return;
     }
     
-    // Parcelles normales
-    setSelectedPlot(plotNumber);
-    setShowPlantSelector(true);
+    const hasPlant = !!plot.plant_type;
+    const isReady = hasPlant && plot.planted_at && plot.growth_time_seconds
+      ? Date.now() - new Date(plot.planted_at).getTime() >= (plot.growth_time_seconds * 1000)
+      : false;
+    
+    if (!hasPlant) {
+      setSelectedPlot(plot.plot_number);
+      setShowPlantSelector(true);
+    } else if (isReady) {
+      onHarvestPlant(plot.plot_number);
+    }
   };
 
   const handlePlantSelection = (plotNumber: number, plantTypeId: string, cost: number) => {
@@ -85,36 +87,45 @@ export const PlotGrid = ({
     setSelectedPlot(null);
   };
 
+  const handleCloseAutoHarvestConfig = () => {
+    setShowAutoHarvestConfig(false);
+  };
+
+  const handleSetAutoHarvestPlant = (plantTypeId: string) => {
+    setRobotPlant(plantTypeId);
+  };
+
   return (
     <>
       <div className="grid grid-cols-3 gap-3 p-4">
-        {plots.map((plot, index) => {
+        {plots.map((plot) => {
           const isAutoHarvestPlot = plot.plot_number === 1 && hasPassiveRobot;
-          const currentPlantType = isAutoHarvestPlot 
+          const plantType = isAutoHarvestPlot 
             ? robotState?.plantType 
-            : plantTypes.find(p => p.id === plot.plant_type);
+            : plantTypeMap.get(plot.plant_type || '');
           
           // Vérifier si le robot a atteint la limite de capacité (24h)
           const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
-            currentAccumulation >= (coinsPerMinute * 60 * 24);
-
+            currentAccumulation >= (coinsPerMinute * 24 * 60);
+          
           return (
             <PlotCard
               key={plot.id}
               plot={plot}
-              plantType={currentPlantType}
+              plantType={plantType}
               plantTypesCount={plantTypes.length}
               coins={coins}
-              isPlanting={false}
+              isPlanting={isPlanting || isSettingPlant}
               hasAutoHarvest={isAutoHarvestPlot}
               robotAtCapacity={robotAtCapacity}
-              onPlotClick={() => handlePlotClick(plot.plot_number, plot.unlocked)}
+              onPlotClick={handlePlotClick}
               onUnlockPlot={onUnlockPlot}
             />
           );
         })}
       </div>
-      
+
+      {/* Sélecteur de plante classique */}
       <PlantSelector
         isOpen={showPlantSelector}
         onClose={handleClosePlantSelector}
@@ -124,15 +135,14 @@ export const PlotGrid = ({
         onPlantDirect={handlePlantSelection}
       />
 
-      {/* Interface simplifiée pour le robot auto-récolte */}
+      {/* Configuration du robot auto-récolte */}
       <PassiveIncomeRobot
-        isOpen={showRobotModal}
-        onClose={() => setShowRobotModal(false)}
-        coinsPerMinute={coinsPerMinute}
-        currentAccumulation={currentAccumulation}
-        collectAccumulatedCoins={collectAccumulatedCoins}
-        isCollecting={isCollecting}
+        isOpen={showAutoHarvestConfig}
+        onClose={handleCloseAutoHarvestConfig}
+        plantTypes={plantTypes}
+        coins={coins}
         currentPlantType={robotState?.plantType}
+        onSetPlant={handleSetAutoHarvestPlant}
       />
     </>
   );

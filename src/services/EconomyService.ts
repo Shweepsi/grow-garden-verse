@@ -1,7 +1,6 @@
 
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 import { MINIMUM_COINS_RESERVE, INITIAL_COINS } from '@/constants';
-import { supabase } from '@/integrations/supabase/client';
 
 export class EconomyService {
   // Pièces minimum à conserver pour pouvoir continuer à jouer
@@ -100,22 +99,11 @@ export class EconomyService {
     playerUpgrades.forEach(upgrade => {
       const levelUpgrade = upgrade.level_upgrades;
       if (levelUpgrade?.effect_type === 'robot_level') {
-        maxLevel = Math.max(maxLevel, Math.floor(levelUpgrade.effect_value));
+        maxLevel = Math.max(maxLevel, levelUpgrade.effect_value);
       }
     });
     
     return maxLevel;
-  }
-
-  // Récupérer la plante correspondant au niveau du robot
-  static async getRobotPlantByLevel(robotLevel: number) {
-    const { data: plant } = await supabase
-      .from('plant_types')
-      .select('*')
-      .eq('level_required', robotLevel)
-      .maybeSingle();
-    
-    return plant;
   }
 
   // Calculer les multiplicateurs actifs des améliorations

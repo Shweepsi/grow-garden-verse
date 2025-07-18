@@ -51,7 +51,6 @@ export const GardenPage = () => {
           coins={gameState.garden?.coins || 0}
           onHarvestPlant={harvestPlant}
           onUnlockPlot={unlockPlot}
-          onPlantSuccess={() => {}}
         />
       </div>
     </div>
