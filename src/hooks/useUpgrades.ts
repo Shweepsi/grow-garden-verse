@@ -226,6 +226,7 @@ export const useUpgrades = () => {
       case 'gem_chance': return 'Gemmes';
       case 'plant_cost_reduction': return 'Économie';
       case 'auto_harvest': return 'Automatisation';
+      case 'robot_level': return 'Automatisation';
       default: return effectType.replace('_', ' ');
     }
   };
