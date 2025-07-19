@@ -94,7 +94,7 @@ export const PlotCard = memo(({
     }
     
     if (plantState === 'ready') {
-      return `${baseClasses} border-yellow-300/60 bg-yellow-50/40 shadow-yellow-100/50 shadow-lg animate-pulse`;
+      return `${baseClasses} border-yellow-300/60 bg-yellow-50/40 shadow-yellow-100/50 shadow-lg`;
     }
     
     return `${baseClasses} border-gray-200/50 hover:border-gray-300/60 hover:bg-white/90 hover:shadow-md`;
@@ -179,10 +179,6 @@ export const PlotCard = memo(({
           </div>
         )}
 
-        {/* Effet de brillance pour les plantes prêtes */}
-        {plot.unlocked && !isAutoHarvestPlot && plantState === 'ready' && (
-          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-yellow-200/20 to-transparent animate-pulse pointer-events-none"></div>
-        )}
       </div>
     </div>
   );
