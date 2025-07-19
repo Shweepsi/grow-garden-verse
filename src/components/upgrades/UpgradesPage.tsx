@@ -179,7 +179,7 @@ export const UpgradesPage = () => {
                       {/* Titre du niveau actuel */}
                       <div className="text-center mb-4">
                         <h3 className="font-bold text-gray-800 mb-1">
-                          Niveau {currentLevel}: {currentUpgrade.display_name}
+                          {currentUpgrade.display_name}
                         </h3>
                         <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
                           Requis: Niveau {currentUpgrade.level_required}
