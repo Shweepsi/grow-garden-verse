@@ -41,7 +41,7 @@ jobs:
 
       - name: Inject signing config into build.gradle
         run: |
-          SIGNING_CONFIG=$(cat <<EOF
+          SIGNING_CONFIG=$(cat <<'EOF'
 signingConfigs {
     release {
         storeFile file("app/my-release-key.keystore")
@@ -53,7 +53,7 @@ signingConfigs {
 EOF
           )
 
-          BUILD_TYPES=$(cat <<EOF
+          BUILD_TYPES=$(cat <<'EOF'
 buildTypes {
     release {
         signingConfig signingConfigs.release
