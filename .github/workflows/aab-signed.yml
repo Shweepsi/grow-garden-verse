@@ -3,7 +3,7 @@ name: Build Signed Android AAB
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build:
@@ -12,9 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Check android/app contents
-        run: ls -la android/app
+        with:
+          token: ${{ secrets.PERSONAL_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -33,7 +32,7 @@ jobs:
       - name: Capacitor sync
         run: npx cap sync
 
-      - name: Decode keystore from secret
+      - name: Decode keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
@@ -57,7 +56,7 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git tag v${{ github.run_number }}
-          git push origin v${{ github.run_number }}
+          git push https://${{ secrets.PERSONAL_TOKEN }}@github.com/${{ github.repository }} v${{ github.run_number }}
 
       - name: Upload AAB to GitHub Release
         uses: softprops/action-gh-release@v1
