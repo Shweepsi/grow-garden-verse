@@ -1,1 +1,90 @@
+name: Build Signed Android AAB
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PERSONAL_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Install Capacitor & Android
+        run: npm install @capacitor/cli@5.7.8 @capacitor/android@5.7.8 --legacy-peer-deps
+
+      - name: Capacitor sync & add android
+        run: |
+          npx cap sync
+          npx cap add android
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
+
+      - name: Inject signing config into build.gradle
+        run: |
+          SIGNING_CONFIG=$(cat <<EOF
+signingConfigs {
+    release {
+        storeFile file("my-release-key.keystore")
+        storePassword System.getenv("KEYSTORE_PASSWORD")
+        keyAlias System.getenv("KEY_ALIAS")
+        keyPassword System.getenv("KEY_PASSWORD")
+    }
+}
+EOF
+          )
+
+          BUILD_TYPES=$(cat <<EOF
+buildTypes {
+    release {
+        signingConfig signingConfigs.release
+        minifyEnabled false
+        shrinkResources false
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+}
+EOF
+          )
+
+          sed -i "/android {/a \\\n$SIGNING_CONFIG\\\n$BUILD_TYPES\\\n" android/app/build.gradle
+
+      - name: Build signed AAB
+        run: |
+          cd android
+          ./gradlew bundleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Move AAB to /builds
+        run: |
+          mkdir -p builds
+          mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
+
+      - name: Upload AAB to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "Build ${{ github.run_number }}"
+          files: builds/IdleGrow.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
