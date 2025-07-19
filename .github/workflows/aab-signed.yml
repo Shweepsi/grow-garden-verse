@@ -1,4 +1,4 @@
-name: Build Signed Android AAB
+name: Build Signed Android AAB & APK
 
 on:
   workflow_dispatch:
@@ -46,10 +46,20 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Move AAB to /builds
+      - name: Build signed APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Move AAB and APK to /builds
         run: |
           mkdir -p builds
           mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
+          mv android/app/build/outputs/apk/release/app-release.apk builds/IdleGrow.apk
 
       - name: Tag commit
         run: |
@@ -58,11 +68,13 @@ jobs:
           git tag v${{ github.run_number }}
           git push https://${{ secrets.PERSONAL_TOKEN }}@github.com/${{ github.repository }} v${{ github.run_number }}
 
-      - name: Upload AAB to GitHub Release
+      - name: Upload AAB and APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
           name: "Build ${{ github.run_number }}"
-          files: builds/IdleGrow.aab
+          files: |
+            builds/IdleGrow.aab
+            builds/IdleGrow.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
