@@ -37,7 +37,8 @@ jobs:
 
       - name: Create signing.gradle
         run: |
-          echo 'android {
+          cat > android/app/signing.gradle <<'EOF'
+android {
   signingConfigs {
     release {
       storeFile file("app/my-release-key.keystore")
@@ -46,7 +47,8 @@ jobs:
       keyPassword System.getenv("KEY_PASSWORD")
     }
   }
-}' > android/app/signing.gradle
+}
+EOF
 
       - name: Add apply from signing.gradle in build.gradle
         run: |
