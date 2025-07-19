@@ -1,4 +1,4 @@
-name: Build Signed Android AAB
+name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -34,29 +34,21 @@ jobs:
           npx cap sync
           npx cap add android
 
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
-
-      - name: Build signed AAB
+      - name: Build APK
         run: |
           cd android
-          ./gradlew bundleRelease
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ./gradlew assembleDebug
 
-      - name: Move AAB to /builds
+      - name: Move APK to /builds
         run: |
           mkdir -p builds
-          mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
+          mv android/app/build/outputs/apk/debug/app-debug.apk builds/IdleGrow.apk
 
-      - name: Upload AAB to GitHub Release
+      - name: Upload APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
           name: "Build ${{ github.run_number }}"
-          files: builds/IdleGrow.aab
+          files: builds/IdleGrow.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
