@@ -91,11 +91,16 @@ export const usePassiveIncomeRobot = () => {
         const lastCollected = new Date(robotState.lastCollected);
         const minutesElapsed = Math.floor((now.getTime() - lastCollected.getTime()) / (1000 * 60));
         
-        if (minutesElapsed >= 1) {
-          const newAccumulation = Math.min(
-            robotState.accumulatedCoins + coinsPerMinute,
-            coinsPerMinute * 24 * 60 // Maximum 24h d'accumulation
-          );
+        // Vérification de sécurité : pas plus de 24h d'accumulation
+        const maxMinutes = 24 * 60;
+        const safeMinutesElapsed = Math.min(minutesElapsed, maxMinutes);
+        
+        if (safeMinutesElapsed >= 1) {
+          const freshAccumulation = safeMinutesElapsed * coinsPerMinute;
+          const maxAccumulation = coinsPerMinute * maxMinutes;
+          const newAccumulation = Math.min(freshAccumulation, maxAccumulation);
+
+          console.log(`🤖 Robot accumulation update: ${safeMinutesElapsed}min × ${coinsPerMinute} = ${newAccumulation} coins`);
 
           await supabase
             .from('player_gardens')
@@ -122,7 +127,7 @@ export const usePassiveIncomeRobot = () => {
     };
   }, [hasPassiveRobot, robotPlantType, robotState?.lastCollected, user?.id]);
 
-  // Calcul de l'accumulation totale disponible
+  // Calcul de l'accumulation totale disponible (corrigé pour éviter le double calcul)
   const calculateCurrentAccumulation = () => {
     if (!robotState || !robotPlantType) return 0;
     
@@ -131,12 +136,24 @@ export const usePassiveIncomeRobot = () => {
     const lastCollected = new Date(robotState.lastCollected);
     const minutesElapsed = Math.floor((now.getTime() - lastCollected.getTime()) / (1000 * 60));
     
-    const freshAccumulation = Math.min(
-      minutesElapsed * coinsPerMinute,
-      coinsPerMinute * 24 * 60 // Maximum 24h
-    );
+    // Vérification de sécurité : pas plus de 24h d'écart temporel
+    const maxMinutes = 24 * 60;
+    const safeMinutesElapsed = Math.min(minutesElapsed, maxMinutes);
     
-    return robotState.accumulatedCoins + freshAccumulation;
+    // Garde-fou : si l'écart est anormalement grand, utiliser seulement l'accumulation stockée
+    if (safeMinutesElapsed > maxMinutes || minutesElapsed < 0) {
+      console.warn(`🤖 Écart temporel anormal détecté: ${minutesElapsed}min, utilisation de l'accumulation stockée uniquement`);
+      return robotState.accumulatedCoins;
+    }
+    
+    // Calcul simple : accumulation stockée + temps écoulé depuis la dernière collecte
+    const freshAccumulation = safeMinutesElapsed * coinsPerMinute;
+    const totalAccumulation = robotState.accumulatedCoins + freshAccumulation;
+    const maxAccumulation = coinsPerMinute * maxMinutes;
+    
+    console.log(`🤖 Calcul accumulation: stockée(${robotState.accumulatedCoins}) + fraîche(${freshAccumulation}) = ${totalAccumulation} (max: ${maxAccumulation})`);
+    
+    return Math.min(totalAccumulation, maxAccumulation);
   };
 
   // Calculer les récompenses hors-ligne basées sur l'accumulation
@@ -164,14 +181,17 @@ export const usePassiveIncomeRobot = () => {
     const coinsPerMinute = getCoinsPerMinute();
     const minutesOffline = Math.floor(timeOffline / (1000 * 60));
     const maxMinutes = 24 * 60; // Maximum 24h d'accumulation
+    const safeMinutesOffline = Math.min(minutesOffline, maxMinutes);
     
-    const offlineCoins = Math.min(minutesOffline * coinsPerMinute, maxMinutes * coinsPerMinute);
+    const offlineCoins = safeMinutesOffline * coinsPerMinute;
 
     if (offlineCoins <= 0) return null;
 
+    console.log(`🤖 Récompenses hors-ligne: ${safeMinutesOffline}min × ${coinsPerMinute} = ${offlineCoins} coins`);
+
     return {
       offlineCoins,
-      minutesOffline: Math.min(minutesOffline, maxMinutes),
+      minutesOffline: safeMinutesOffline,
       plantName: robotPlantType.display_name,
       coinsPerMinute
     };
@@ -218,6 +238,8 @@ export const usePassiveIncomeRobot = () => {
           description: `Collecte robot passif: ${robotPlantType?.display_name}`
         });
 
+      console.log(`🤖 Collecte réussie: ${totalAccumulated} coins`);
+
       return { totalAccumulated, plantName: robotPlantType?.display_name };
     },
     onSuccess: (result) => {
@@ -251,11 +273,17 @@ export const usePassiveIncomeRobot = () => {
 
       const now = new Date().toISOString();
 
-      // Ajouter les récompenses hors-ligne à l'accumulation
+      // Ajouter les récompenses hors-ligne à l'accumulation (avec limite de sécurité)
+      const maxAccumulation = getCoinsPerMinute() * 24 * 60;
+      const newAccumulation = Math.min(
+        (garden.robot_accumulated_coins || 0) + rewards.offlineCoins,
+        maxAccumulation
+      );
+
       const { error } = await supabase
         .from('player_gardens')
         .update({
-          robot_accumulated_coins: (garden.robot_accumulated_coins || 0) + rewards.offlineCoins,
+          robot_accumulated_coins: newAccumulation,
           robot_last_collected: now,
           last_played: now
         })
@@ -278,6 +306,28 @@ export const usePassiveIncomeRobot = () => {
     }
   });
 
+  // Fonction utilitaire pour synchroniser robot_last_collected (utilisée par d'autres hooks)
+  const syncRobotTimestamp = async () => {
+    if (!user?.id || !hasPassiveRobot) return;
+    
+    const now = new Date().toISOString();
+    console.log(`🤖 Synchronisation timestamp robot: ${now}`);
+    
+    try {
+      await supabase
+        .from('player_gardens')
+        .update({ 
+          robot_last_collected: now,
+          last_played: now
+        })
+        .eq('user_id', user.id);
+      
+      queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
+    } catch (error) {
+      console.error('Erreur synchronisation robot timestamp:', error);
+    }
+  };
+
   return {
     hasPassiveRobot,
     robotState,
@@ -288,6 +338,7 @@ export const usePassiveIncomeRobot = () => {
     collectAccumulatedCoins: () => collectAccumulatedCoinsMutation.mutate(),
     claimOfflineRewards: () => claimOfflineRewardsMutation.mutate(),
     calculateOfflineRewards,
+    syncRobotTimestamp,
     isCollecting: collectAccumulatedCoinsMutation.isPending,
     isClaimingRewards: claimOfflineRewardsMutation.isPending
   };

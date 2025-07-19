@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,6 +7,7 @@ import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useAnimations } from '@/contexts/AnimationContext';
+import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { MAX_PLOTS } from '@/constants';
 
 export const useDirectPlanting = () => {
@@ -13,6 +15,7 @@ export const useDirectPlanting = () => {
   const queryClient = useQueryClient();
   const { getActiveMultipliers } = useUpgrades();
   const { triggerCoinAnimation } = useAnimations();
+  const { syncRobotTimestamp, hasPassiveRobot } = usePassiveIncomeRobot();
 
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, cost }: { plotNumber: number; plantTypeId: string; cost: number }) => {
@@ -149,14 +152,22 @@ export const useDirectPlanting = () => {
 
       console.log('🌱 Plante plantée avec succès');
 
-      // Déduire le coût
+      // Déduire le coût et synchroniser robot_last_collected si robot actif
       const newCoins = Math.max(0, currentCoins - cost);
+      const updateData: any = {
+        coins: newCoins,
+        last_played: now
+      };
+
+      // Si le robot passif est actif, synchroniser son timestamp pour éviter l'accumulation incorrecte
+      if (hasPassiveRobot) {
+        updateData.robot_last_collected = now;
+        console.log('🤖 Synchronisation timestamp robot lors de la plantation manuelle');
+      }
+
       const { error: updateCoinsError } = await supabase
         .from('player_gardens')
-        .update({
-          coins: newCoins,
-          last_played: now
-        })
+        .update(updateData)
         .eq('user_id', user.id);
 
       if (updateCoinsError) {
@@ -192,7 +203,7 @@ export const useDirectPlanting = () => {
       
       const previousData = queryClient.getQueryData(['gameData']);
       
-      // Mise à jour optimiste du cache
+      // Mettre à jour le cache de façon optimiste
       queryClient.setQueryData(['gameData'], (old: any) => {
         if (!old || !old.garden || !old.plots) return old;
         
@@ -204,7 +215,9 @@ export const useDirectPlanting = () => {
           garden: {
             ...old.garden,
             coins: newCoins,
-            last_played: now
+            last_played: now,
+            // Synchroniser robot_last_collected si robot actif
+            robot_last_collected: hasPassiveRobot ? now : old.garden.robot_last_collected
           },
           plots: old.plots.map((plot: any) => 
             plot.plot_number === plotNumber 
@@ -225,6 +238,7 @@ export const useDirectPlanting = () => {
     onSuccess: () => {
       // Revalider les données pour s'assurer de la cohérence
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
     },
     onError: (error: any, variables, context: any) => {
       // Restaurer les données précédentes en cas d'erreur
