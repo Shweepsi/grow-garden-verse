@@ -207,19 +207,30 @@ export const usePassiveIncomeRobot = () => {
 
       const { data: garden } = await supabase
         .from('player_gardens')
-        .select('coins')
+        .select('coins, experience, level')
         .eq('user_id', user.id)
         .single();
 
       if (!garden) throw new Error('Garden not found');
 
+      // Calculer l'expérience basée sur le niveau du robot et le montant collecté
+      const baseExp = Math.floor(totalAccumulated / 100); // 1 EXP par 100 pièces collectées
+      const levelBonus = robotLevel * 2; // 2 EXP bonus par niveau du robot
+      const expReward = Math.max(1, baseExp + levelBonus); // Minimum 1 EXP
+
+      const currentExp = garden.experience || 0;
+      const newExp = currentExp + expReward;
+      const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
+
       const now = new Date().toISOString();
 
-      // Mettre à jour le jardin avec les revenus collectés
+      // Mettre à jour le jardin avec les revenus collectés et l'expérience
       const { error } = await supabase
         .from('player_gardens')
         .update({
           coins: garden.coins + totalAccumulated,
+          experience: newExp,
+          level: newLevel,
           robot_accumulated_coins: 0,
           robot_last_collected: now,
           last_played: now
@@ -235,18 +246,18 @@ export const usePassiveIncomeRobot = () => {
           user_id: user.id,
           amount: totalAccumulated,
           transaction_type: 'robot_collection',
-          description: `Collecte robot passif: ${robotPlantType?.display_name}`
+          description: `Collecte robot passif: ${robotPlantType?.display_name} (+${expReward} EXP)`
         });
 
-      console.log(`🤖 Collecte réussie: ${totalAccumulated} coins`);
+      console.log(`🤖 Collecte réussie: ${totalAccumulated} coins + ${expReward} EXP`);
 
-      return { totalAccumulated, plantName: robotPlantType?.display_name };
+      return { totalAccumulated, expReward, plantName: robotPlantType?.display_name };
     },
     onSuccess: (result) => {
       if (result) {
         triggerCoinAnimation(result.totalAccumulated);
         toast.success(`🤖 Revenus collectés !`, {
-          description: `+${result.totalAccumulated.toLocaleString()} 🪙 de ${result.plantName}`
+          description: `+${result.totalAccumulated.toLocaleString()} 🪙 + ${result.expReward} EXP de ${result.plantName}`
         });
       }
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
