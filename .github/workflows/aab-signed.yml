@@ -3,7 +3,7 @@ name: Build Signed Android AAB
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.PERSONAL_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -34,27 +32,27 @@ jobs:
 
       - name: Decode keystore from secret
         run: |
+          mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
 
-      - name: Inject signing config in build.gradle
+      - name: Create signing.gradle
         run: |
-          sed -i '/defaultConfig {/a \
-              signingConfig signingConfigs.release' android/app/build.gradle
-
-          echo "
-android {
-    signingConfigs {
-        release {
-            storeFile file(\"app/my-release-key.keystore\")
-            storePassword System.getenv(\"KEYSTORE_PASSWORD\")
-            keyAlias System.getenv(\"KEY_ALIAS\")
-            keyPassword System.getenv(\"KEY_PASSWORD\")
-        }
+          echo 'android {
+  signingConfigs {
+    release {
+      storeFile file("app/my-release-key.keystore")
+      storePassword System.getenv("KEYSTORE_PASSWORD")
+      keyAlias System.getenv("KEY_ALIAS")
+      keyPassword System.getenv("KEY_PASSWORD")
     }
-}
-" >> android/app/signing-config.gradle
+  }
+}' > android/app/signing.gradle
 
-          echo "apply from: \"signing-config.gradle\"" >> android/app/build.gradle
+      - name: Add apply from signing.gradle in build.gradle
+        run: |
+          if ! grep -q 'apply from: "signing.gradle"' android/app/build.gradle; then
+            echo '\napply from: "signing.gradle"' >> android/app/build.gradle
+          fi
 
       - name: Build signed AAB
         run: |
