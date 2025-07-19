@@ -32,10 +32,11 @@ jobs:
       - name: Capacitor sync & add android
         run: |
           npx cap sync
-          npx cap add android
+          if [ ! -d android ]; then npx cap add android; fi
 
       - name: Decode keystore
         run: |
+          mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
 
       - name: Inject signing config into build.gradle
@@ -43,7 +44,7 @@ jobs:
           SIGNING_CONFIG=$(cat <<EOF
 signingConfigs {
     release {
-        storeFile file("my-release-key.keystore")
+        storeFile file("app/my-release-key.keystore")
         storePassword System.getenv("KEYSTORE_PASSWORD")
         keyAlias System.getenv("KEY_ALIAS")
         keyPassword System.getenv("KEY_PASSWORD")
@@ -79,6 +80,13 @@ EOF
         run: |
           mkdir -p builds
           mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
+
+      - name: Tag commit
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag v${{ github.run_number }}
+          git push origin v${{ github.run_number }}
 
       - name: Upload AAB to GitHub Release
         uses: softprops/action-gh-release@v1
