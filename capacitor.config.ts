@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.28164eb90f8a43bd9b5cdc8227ba1150',
+  appId: 'app.lovable.idlegrow',
   appName: 'Idle Grow',
   webDir: 'dist',
   bundledWebRuntime: false,
