@@ -35,27 +35,6 @@ jobs:
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
 
-      - name: Create signing.gradle
-        run: |
-          cat > android/app/signing.gradle <<'EOF'
-android {
-  signingConfigs {
-    release {
-      storeFile file("app/my-release-key.keystore")
-      storePassword System.getenv("KEYSTORE_PASSWORD")
-      keyAlias System.getenv("KEY_ALIAS")
-      keyPassword System.getenv("KEY_PASSWORD")
-    }
-  }
-}
-EOF
-
-      - name: Add apply from signing.gradle in build.gradle
-        run: |
-          if ! grep -q 'apply from: "signing.gradle"' android/app/build.gradle; then
-            echo '\napply from: "signing.gradle"' >> android/app/build.gradle
-          fi
-
       - name: Build signed AAB
         run: |
           cd android
