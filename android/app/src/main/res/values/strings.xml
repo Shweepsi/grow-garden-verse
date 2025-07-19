@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Idle Grow</string>
+    <string name="title_activity_main">Idle Grow</string>
+    <string name="package_name">com.shweepsi.idlegrow</string>
+    <string name="custom_url_scheme">com.shweepsi.idlegrow</string>
+</resources>
