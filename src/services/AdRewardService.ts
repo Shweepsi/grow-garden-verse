@@ -221,7 +221,7 @@ export class AdRewardService {
       // Calculer la durée minimum requise basée sur la durée estimée
       const minWatchDuration = this.getMinimumWatchTime(estimatedDuration);
       
-      console.log(`AdMob: Validation - Required: ${minWatchDuration}ms, Actual: ${actualDuration}ms`);
+      console.log(`AdMob: Validation - Required: ${minWatchDuration}ms, Actual: ${actualDuration}ms, Estimated: ${estimatedDuration}ms`);
       
       if (actualDuration < minWatchDuration) {
         // Supprimer la session incomplète
