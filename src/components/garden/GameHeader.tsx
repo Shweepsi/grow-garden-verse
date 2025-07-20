@@ -7,6 +7,7 @@ import { AdRewardCard } from '@/components/ads/AdRewardCard';
 import { AdModal } from '@/components/ads/AdModal';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAdRewards } from '@/hooks/useAdRewards';
 interface GameHeaderProps {
   garden: PlayerGarden | null;
 }
@@ -15,6 +16,7 @@ export const GameHeader = ({
 }: GameHeaderProps) => {
   const { animations } = useAnimations();
   const [showAdModal, setShowAdModal] = useState(false);
+  const { availableRewards, adState } = useAdRewards();
 
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
@@ -103,9 +105,16 @@ export const GameHeader = ({
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
-                className="h-8 px-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 border-0"
+                className={`h-8 px-2 border-0 relative overflow-hidden ${
+                  availableRewards.length > 0 
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 animate-pulse shadow-lg shadow-orange-400/50' 
+                    : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
+                }`}
               >
-                <Gift className="h-3 w-3" />
+                <Gift className={`h-3 w-3 ${availableRewards.length > 0 ? 'animate-bounce' : ''}`} />
+                {availableRewards.length > 0 && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-300/30 to-orange-200/30 animate-pulse" />
+                )}
               </Button>
             </div>
 
