@@ -34,8 +34,12 @@ export const AuthPage = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-green-100 rounded-full">
-              <Sprout className="h-8 w-8 text-green-600" />
+            <div className="relative">
+              <img 
+                src="/lovable-uploads/638e9607-9375-4e7d-ac74-78944ea7cfe7.png" 
+                alt="Idle Grow Logo" 
+                className="h-16 w-16 object-contain"
+              />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-green-800">Idle Grow</CardTitle>

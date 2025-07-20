@@ -37,9 +37,11 @@ export const GameHeader = ({
             {/* Logo et titre - Plus compact */}
             <div className="flex items-center space-x-2">
               <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <Sprout className="h-4 w-4 text-white" />
-                </div>
+                <img 
+                  src="/lovable-uploads/638e9607-9375-4e7d-ac74-78944ea7cfe7.png" 
+                  alt="Idle Grow Logo" 
+                  className="h-8 w-8 object-contain rounded-lg"
+                />
                 
               </div>
               <div>
