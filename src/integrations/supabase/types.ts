@@ -407,6 +407,45 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          product_type: string
+          reward_data: Json | null
+          status: string
+          stripe_session_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          product_type?: string
+          reward_data?: Json | null
+          status?: string
+          stripe_session_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          product_type?: string
+          reward_data?: Json | null
+          status?: string
+          stripe_session_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
