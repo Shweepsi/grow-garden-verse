@@ -21,12 +21,34 @@ export const useAdRewards = () => {
   });
   const [loading, setLoading] = useState(false);
   const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
+  const [adMobState, setAdMobState] = useState(AdMobService.getState());
 
-  // Initialize AdMob on mount
+  // Initialiser AdMob et précharger une publicité
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      AdMobService.initialize().catch(console.error);
-    }
+    const initializeAdMob = async () => {
+      if (Capacitor.isNativePlatform()) {
+        console.log('Initializing AdMob...');
+        await AdMobService.initialize();
+        await AdMobService.preloadAd();
+        setAdMobState(AdMobService.getState());
+      }
+    };
+
+    initializeAdMob();
+
+    // Cleanup lors du démontage
+    return () => {
+      AdMobService.cleanup();
+    };
+  }, []);
+
+  // Actualiser l'état AdMob périodiquement
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAdMobState(AdMobService.getState());
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Actualiser l'état des publicités
@@ -52,7 +74,7 @@ export const useAdRewards = () => {
     setAvailableRewards(rewards);
   }, [gameState.garden]);
 
-  // Regarder une publicité avec AdMob
+  // Regarder une publicité avec AdMob amélioré
   const watchAd = useCallback(async (reward: AdReward): Promise<boolean> => {
     if (!user?.id || loading) return false;
 
@@ -61,6 +83,8 @@ export const useAdRewards = () => {
     const startTime = Date.now();
 
     try {
+      console.log('Starting ad session...', { reward, adMobState });
+
       // Démarrer la session publicitaire
       const startResult = await AdRewardService.startAdSession(user.id, reward);
       
@@ -71,7 +95,15 @@ export const useAdRewards = () => {
 
       sessionId = startResult.sessionId;
 
-      // Montrer la vraie publicité AdMob
+      // Vérifier l'état AdMob
+      const currentAdMobState = AdMobService.getState();
+      console.log('AdMob state before showing ad:', currentAdMobState);
+
+      if (!currentAdMobState.isInitialized) {
+        await AdMobService.initialize();
+      }
+
+      // Montrer la publicité AdMob
       const adResult = await AdMobService.showRewardedAd();
       
       if (!adResult.success) {
@@ -80,6 +112,7 @@ export const useAdRewards = () => {
           await AdRewardService.cancelAdSession(user.id, sessionId);
         }
         toast.error(adResult.error || 'Publicité non disponible');
+        console.error('Ad failed to show:', adResult.error);
         return false;
       }
 
@@ -91,6 +124,12 @@ export const useAdRewards = () => {
       if (completeResult.success) {
         toast.success(`Récompense reçue: ${reward.description} ${reward.emoji}`);
         await refreshAdState();
+        
+        // Précharger la prochaine publicité
+        setTimeout(() => {
+          AdMobService.preloadAd();
+        }, 5000);
+        
         return true;
       } else {
         toast.error(completeResult.error || 'Publicité non validée');
@@ -109,7 +148,7 @@ export const useAdRewards = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, loading, refreshAdState]);
+  }, [user?.id, loading, refreshAdState, adMobState]);
 
   // Timer pour actualiser le cooldown
   useEffect(() => {
@@ -158,6 +197,13 @@ export const useAdRewards = () => {
     loading,
     watchAd,
     refreshAdState,
-    formatTimeUntilNext
+    formatTimeUntilNext,
+    adMobState, // Exposer l'état AdMob pour debug
+    debug: {
+      adMobInitialized: adMobState.isInitialized,
+      adLoaded: adMobState.isAdLoaded,
+      adLoading: adMobState.isAdLoading,
+      lastError: adMobState.lastError
+    }
   };
 };

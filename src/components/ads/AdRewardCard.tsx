@@ -1,9 +1,10 @@
+
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Play, Loader2 } from 'lucide-react';
+import { Clock, Play, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { AdReward } from '@/types/ads';
 import { useAdRewards } from '@/hooks/useAdRewards';
 
@@ -14,7 +15,7 @@ interface AdRewardCardProps {
 }
 
 export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewardCardProps) => {
-  const { adState, availableRewards, loading, watchAd, formatTimeUntilNext } = useAdRewards();
+  const { adState, availableRewards, loading, watchAd, formatTimeUntilNext, debug } = useAdRewards();
   const [isWatching, setIsWatching] = useState(false);
 
   const handleWatchAd = async () => {
@@ -51,6 +52,34 @@ export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewa
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {formatTimeUntilNext(adState.timeUntilNext)}
+                  </div>
+                )}
+                {/* Debug info */}
+                {__DEV__ && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    <div className="flex items-center gap-1">
+                      {debug.adMobInitialized ? (
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-red-500" />
+                      )}
+                      <span>Init: {debug.adMobInitialized ? 'OK' : 'KO'}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {debug.adLoaded ? (
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                      ) : debug.adLoading ? (
+                        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-orange-500" />
+                      )}
+                      <span>Ad: {debug.adLoaded ? 'Ready' : debug.adLoading ? 'Loading' : 'Not loaded'}</span>
+                    </div>
+                    {debug.lastError && (
+                      <div className="text-red-500 text-xs mt-1">
+                        Error: {debug.lastError}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -102,6 +131,36 @@ export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewa
               )}
             </div>
           </div>
+
+          {/* Debug info en mode développement */}
+          {__DEV__ && (
+            <div className="bg-gray-100 rounded-lg p-3 text-xs space-y-1">
+              <div className="font-semibold">Debug AdMob:</div>
+              <div className="flex items-center gap-2">
+                {debug.adMobInitialized ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                )}
+                <span>Initialized: {debug.adMobInitialized ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {debug.adLoaded ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : debug.adLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
+                )}
+                <span>Ad Status: {debug.adLoaded ? 'Loaded' : debug.adLoading ? 'Loading...' : 'Not loaded'}</span>
+              </div>
+              {debug.lastError && (
+                <div className="text-red-600 bg-red-50 p-2 rounded">
+                  <strong>Last Error:</strong> {debug.lastError}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Statut */}
           {!adState.available && (
