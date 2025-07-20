@@ -29,9 +29,11 @@ subprojects {
                     sourceCompatibility JavaVersion.VERSION_17
                     targetCompatibility JavaVersion.VERSION_17
                 }
-                // Ensure Kotlin uses JVM 17
-                kotlinOptions {
-                    jvmTarget = '17'
+                // Only apply kotlinOptions if the kotlin-android plugin is applied
+                if (project.plugins.hasPlugin('kotlin-android')) {
+                    kotlinOptions {
+                        jvmTarget = '17'
+                    }
                 }
                 // Enforce Java 17 with JVM Toolchain
                 java {
