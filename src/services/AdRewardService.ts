@@ -115,7 +115,7 @@ export class AdRewardService {
             .eq('user_id', userId)
             .order('watched_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           let cooldownMinutes = this.BASE_COOLDOWN_MINUTES;
           if (lastSession?.reward_data && (lastSession.reward_data as any).ad_duration) {
