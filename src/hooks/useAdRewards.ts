@@ -74,16 +74,15 @@ export const useAdRewards = () => {
     setAvailableRewards(rewards);
   }, [gameState.garden]);
 
-  // Regarder une publicité avec AdMob amélioré
+  // Regarder une publicité avec mesure de durée précise
   const watchAd = useCallback(async (reward: AdReward): Promise<boolean> => {
     if (!user?.id || loading) return false;
 
     setLoading(true);
     let sessionId: string | undefined;
-    const startTime = Date.now();
 
     try {
-      console.log('Starting ad session...', { reward, adMobState });
+      console.log('Starting ad session with dynamic duration tracking...', { reward, adMobState });
 
       // Démarrer la session publicitaire
       const startResult = await AdRewardService.startAdSession(user.id, reward);
@@ -103,7 +102,7 @@ export const useAdRewards = () => {
         await AdMobService.initialize();
       }
 
-      // Montrer la publicité AdMob
+      // Montrer la publicité AdMob avec mesure de durée
       const adResult = await AdMobService.showRewardedAd();
       
       if (!adResult.success) {
@@ -116,13 +115,22 @@ export const useAdRewards = () => {
         return false;
       }
 
-      const watchDuration = Date.now() - startTime;
+      const actualDuration = adResult.actualDuration || 5000; // Fallback à 5 secondes
+      const estimatedDuration = adResult.estimatedDuration || actualDuration;
 
-      // Finaliser la session avec validation
-      const completeResult = await AdRewardService.completeAdSession(user.id, sessionId, watchDuration);
+      console.log(`AdMob: Completed with durations - Actual: ${actualDuration}ms, Estimated: ${estimatedDuration}ms`);
+
+      // Finaliser la session avec les durées mesurées
+      const completeResult = await AdRewardService.completeAdSession(
+        user.id, 
+        sessionId, 
+        actualDuration,
+        estimatedDuration
+      );
       
       if (completeResult.success) {
-        toast.success(`Récompense reçue: ${reward.description} ${reward.emoji}`);
+        const durationSeconds = Math.round(actualDuration / 1000);
+        toast.success(`Récompense reçue: ${reward.description} ${reward.emoji} (${durationSeconds}s)`);
         await refreshAdState();
         
         // Précharger la prochaine publicité
@@ -174,7 +182,7 @@ export const useAdRewards = () => {
     updateAvailableRewards();
   }, [updateAvailableRewards]);
 
-  // Formater le temps restant
+  // Formater le temps restant avec information sur le cooldown dynamique
   const formatTimeUntilNext = useCallback((seconds: number): string => {
     if (seconds <= 0) return '';
     

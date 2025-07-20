@@ -9,6 +9,14 @@ interface AdMobState {
   lastError: string | null;
 }
 
+interface AdWatchResult {
+  success: boolean;
+  reward?: AdMobRewardItem;
+  error?: string;
+  actualDuration?: number; // Durée réelle en millisecondes
+  estimatedDuration?: number; // Durée estimée en millisecondes
+}
+
 export class AdMobService {
   // ID test officiel Google pour les publicités rewarded
   private static readonly REWARDED_AD_ID = __DEV__ 
@@ -21,6 +29,9 @@ export class AdMobService {
     isAdLoading: false,
     lastError: null
   };
+
+  private static adStartTime: number | null = null;
+  private static adEndTime: number | null = null;
 
   static async initialize(): Promise<boolean> {
     if (this.state.isInitialized || !Capacitor.isNativePlatform()) {
@@ -35,6 +46,9 @@ export class AdMobService {
         testingDevices: __DEV__ ? [] : [],
         initializeForTesting: __DEV__
       });
+
+      // Écouter les événements AdMob
+      this.setupEventListeners();
       
       this.state.isInitialized = true;
       this.state.lastError = null;
@@ -44,6 +58,44 @@ export class AdMobService {
       console.error('AdMob: Failed to initialize:', error);
       this.state.lastError = (error as Error).message;
       return false;
+    }
+  }
+
+  private static setupEventListeners(): void {
+    if (!Capacitor.isNativePlatform()) return;
+
+    try {
+      // Événement quand la publicité commence
+      AdMob.addListener('onRewardedVideoAdLoaded', () => {
+        console.log('AdMob: Rewarded ad loaded');
+        this.state.isAdLoaded = true;
+        this.state.isAdLoading = false;
+      });
+
+      AdMob.addListener('onRewardedVideoAdOpened', () => {
+        console.log('AdMob: Rewarded ad opened');
+        this.adStartTime = Date.now();
+      });
+
+      AdMob.addListener('onRewardedVideoAdClosed', () => {
+        console.log('AdMob: Rewarded ad closed');
+        this.adEndTime = Date.now();
+        this.state.isAdLoaded = false; // Marquer comme non chargée après fermeture
+      });
+
+      AdMob.addListener('onRewardedVideoAdFailedToLoad', (error: any) => {
+        console.error('AdMob: Failed to load rewarded ad:', error);
+        this.state.isAdLoading = false;
+        this.state.isAdLoaded = false;
+        this.state.lastError = error.message || 'Failed to load ad';
+      });
+
+      AdMob.addListener('onRewarded', (reward: AdMobRewardItem) => {
+        console.log('AdMob: User rewarded:', reward);
+      });
+
+    } catch (error) {
+      console.error('AdMob: Error setting up event listeners:', error);
     }
   }
 
@@ -83,12 +135,7 @@ export class AdMobService {
 
       await AdMob.prepareRewardVideoAd(options);
       
-      // Attendre un peu pour le chargement et marquer comme chargé
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log('AdMob: Rewarded ad preparation completed');
-      this.state.isAdLoaded = true;
-      this.state.isAdLoading = false;
+      // Les événements se chargeront de mettre à jour l'état
       return true;
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
@@ -118,13 +165,16 @@ export class AdMobService {
     return retryableErrors.some(retryableError => errorMessage.includes(retryableError));
   }
 
-  static async showRewardedAd(): Promise<{ success: boolean; reward?: AdMobRewardItem; error?: string }> {
+  static async showRewardedAd(): Promise<AdWatchResult> {
     if (!Capacitor.isNativePlatform()) {
       console.log('AdMob: Web platform - simulating ad watch');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const simulatedDuration = Math.floor(Math.random() * 25000) + 5000; // Entre 5 et 30 secondes
+      await new Promise(resolve => setTimeout(resolve, simulatedDuration));
       return { 
         success: true, 
-        reward: { type: 'coins', amount: 100 } 
+        reward: { type: 'coins', amount: 100 },
+        actualDuration: simulatedDuration,
+        estimatedDuration: simulatedDuration
       };
     }
 
@@ -139,15 +189,54 @@ export class AdMobService {
             error: this.state.lastError || 'Failed to load ad' 
           };
         }
+        
+        // Attendre que la pub soit chargée
+        let attempts = 0;
+        while (!this.state.isAdLoaded && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+        }
+        
+        if (!this.state.isAdLoaded) {
+          return { 
+            success: false, 
+            error: 'Ad failed to load in time' 
+          };
+        }
       }
+
+      // Reset des timers
+      this.adStartTime = null;
+      this.adEndTime = null;
 
       console.log('AdMob: Showing rewarded ad...');
       await AdMob.showRewardVideoAd();
       
-      // La récompense sera gérée par l'événement onRewarded
+      // Attendre que la publicité se termine (avec timeout)
+      let waitTime = 0;
+      const maxWaitTime = 60000; // 60 secondes maximum
+      
+      while (this.adEndTime === null && waitTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        waitTime += 500;
+      }
+
+      // Calculer la durée réelle
+      let actualDuration = 0;
+      if (this.adStartTime && this.adEndTime) {
+        actualDuration = this.adEndTime - this.adStartTime;
+        console.log(`AdMob: Ad watched for ${actualDuration}ms`);
+      } else {
+        // Fallback si les événements n'ont pas fonctionné
+        actualDuration = Math.max(waitTime, 5000); // Minimum 5 secondes
+        console.log(`AdMob: Using fallback duration: ${actualDuration}ms`);
+      }
+
       return { 
         success: true, 
-        reward: { type: 'coins', amount: 100 } 
+        reward: { type: 'coins', amount: 100 },
+        actualDuration: actualDuration,
+        estimatedDuration: this.estimateAdDuration(actualDuration)
       };
     } catch (error) {
       console.error('AdMob: Error showing rewarded ad:', error);
@@ -156,6 +245,14 @@ export class AdMobService {
         error: (error as Error).message 
       };
     }
+  }
+
+  private static estimateAdDuration(actualDuration: number): number {
+    // Estimer la durée "normale" de la pub basée sur la durée réelle
+    if (actualDuration < 8000) return 5000;      // ~5 secondes
+    if (actualDuration < 20000) return 15000;    // ~15 secondes
+    if (actualDuration < 35000) return 30000;    // ~30 secondes
+    return Math.max(actualDuration, 30000);      // 30+ secondes
   }
 
   // Méthodes utilitaires pour diagnostiquer l'état
@@ -172,6 +269,12 @@ export class AdMobService {
 
   static cleanup(): void {
     console.log('AdMob: Cleanup method called');
-    // Pas d'event listeners à nettoyer dans cette version simplifiée
+    if (Capacitor.isNativePlatform()) {
+      try {
+        AdMob.removeAllListeners();
+      } catch (error) {
+        console.error('AdMob: Error during cleanup:', error);
+      }
+    }
   }
 }

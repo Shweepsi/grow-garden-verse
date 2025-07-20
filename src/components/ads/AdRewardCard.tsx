@@ -54,9 +54,9 @@ export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewa
                     {formatTimeUntilNext(adState.timeUntilNext)}
                   </div>
                 )}
-                {/* Debug info */}
+                {/* Debug info avec durées */}
                 {__DEV__ && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 mt-1 space-y-1">
                     <div className="flex items-center gap-1">
                       {debug.adMobInitialized ? (
                         <CheckCircle className="h-3 w-3 text-green-500" />
@@ -75,8 +75,11 @@ export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewa
                       )}
                       <span>Ad: {debug.adLoaded ? 'Ready' : debug.adLoading ? 'Loading' : 'Not loaded'}</span>
                     </div>
+                    <div className="text-green-600">
+                      <span>⏱️ Cooldown adaptatif activé</span>
+                    </div>
                     {debug.lastError && (
-                      <div className="text-red-500 text-xs mt-1">
+                      <div className="text-red-500 text-xs">
                         Error: {debug.lastError}
                       </div>
                     )}
@@ -112,7 +115,7 @@ export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewa
               <div className="text-2xl">{currentReward.emoji}</div>
               <div>
                 <h3 className="font-semibold text-foreground">Publicité Récompensée</h3>
-                <p className="text-sm text-muted-foreground">30 secondes</p>
+                <p className="text-sm text-muted-foreground">Durée variable (5-30s)</p>
               </div>
             </div>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
@@ -132,27 +135,35 @@ export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewa
             </div>
           </div>
 
-          {/* Debug info en mode développement */}
+          {/* Debug info en mode développement avec nouvelles informations */}
           {__DEV__ && (
-            <div className="bg-gray-100 rounded-lg p-3 text-xs space-y-1">
-              <div className="font-semibold">Debug AdMob:</div>
-              <div className="flex items-center gap-2">
-                {debug.adMobInitialized ? (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                )}
-                <span>Initialized: {debug.adMobInitialized ? 'Yes' : 'No'}</span>
+            <div className="bg-gray-100 rounded-lg p-3 text-xs space-y-2">
+              <div className="font-semibold">Debug AdMob (Durée Dynamique):</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  {debug.adMobInitialized ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                  )}
+                  <span>Init: {debug.adMobInitialized ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {debug.adLoaded ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : debug.adLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                  )}
+                  <span>Ad: {debug.adLoaded ? 'Loaded' : debug.adLoading ? 'Loading...' : 'Not loaded'}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {debug.adLoaded ? (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                ) : debug.adLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-orange-500" />
-                )}
-                <span>Ad Status: {debug.adLoaded ? 'Loaded' : debug.adLoading ? 'Loading...' : 'Not loaded'}</span>
+              <div className="bg-blue-50 p-2 rounded border-l-4 border-blue-400">
+                <div className="font-medium text-blue-800">Système Adaptatif:</div>
+                <div className="text-blue-700">• Durée mesurée en temps réel</div>
+                <div className="text-blue-700">• Cooldown : 15min + (durée × 4)</div>
+                <div className="text-blue-700">• Validation minimum : 80% durée</div>
               </div>
               {debug.lastError && (
                 <div className="text-red-600 bg-red-50 p-2 rounded">
@@ -171,8 +182,11 @@ export const AdRewardCard = ({ reward, compact = false, className = '' }: AdRewa
                     <Clock className="h-4 w-4" />
                     Prochaine pub dans {formatTimeUntilNext(adState.timeUntilNext)}
                   </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    ⚡ Cooldown adaptatif basé sur la durée
+                  </div>
                   <Progress 
-                    value={((7200 - adState.timeUntilNext) / 7200) * 100} 
+                    value={adState.timeUntilNext > 0 ? ((7200 - adState.timeUntilNext) / 7200) * 100 : 100} 
                     className="mt-2 h-2"
                   />
                 </div>

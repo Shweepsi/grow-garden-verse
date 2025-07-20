@@ -3,7 +3,11 @@ import { EconomyService } from "./EconomyService";
 import { AdReward, AdSession, AdCooldown, AdState } from "@/types/ads";
 
 export class AdRewardService {
-  private static readonly COOLDOWN_HOURS = 2;
+  // Système de cooldown adaptatif basé sur la durée de la publicité
+  private static readonly BASE_COOLDOWN_MINUTES = 15; // 15 minutes de base
+  private static readonly COOLDOWN_MULTIPLIER = 4; // Multiplier par 4 la durée de la pub pour le cooldown
+  private static readonly MIN_COOLDOWN_MINUTES = 10; // Minimum 10 minutes
+  private static readonly MAX_COOLDOWN_MINUTES = 120; // Maximum 2 heures
   private static readonly MAX_DAILY_ADS = 5;
 
   static getAvailableRewards(playerLevel: number, permanentMultiplier: number): AdReward[] {
@@ -46,6 +50,25 @@ export class AdRewardService {
     ];
   }
 
+  private static calculateCooldownMinutes(adDurationMs: number): number {
+    // Calculer le cooldown basé sur la durée de la publicité
+    const adDurationMinutes = adDurationMs / (1000 * 60);
+    const cooldownMinutes = this.BASE_COOLDOWN_MINUTES + (adDurationMinutes * this.COOLDOWN_MULTIPLIER);
+    
+    // Appliquer les limites min/max
+    return Math.max(
+      this.MIN_COOLDOWN_MINUTES,
+      Math.min(this.MAX_COOLDOWN_MINUTES, Math.round(cooldownMinutes))
+    );
+  }
+
+  private static getMinimumWatchTime(estimatedDurationMs: number): number {
+    // Le temps minimum requis est 80% de la durée estimée, avec un minimum absolu de 3 secondes
+    const minimumPercentage = 0.8;
+    const calculatedMinimum = estimatedDurationMs * minimumPercentage;
+    return Math.max(3000, Math.round(calculatedMinimum)); // Minimum 3 secondes
+  }
+
   static async getAdState(userId: string): Promise<AdState> {
     try {
       const { data: cooldown } = await supabase
@@ -81,10 +104,25 @@ export class AdRewardService {
           dailyCount = cooldown.daily_count;
         }
 
-        // Vérifier le cooldown de 2h
+        // Vérifier le cooldown dynamique
         if (cooldown.last_ad_watched) {
           const lastWatch = new Date(cooldown.last_ad_watched);
-          const cooldownEnd = new Date(lastWatch.getTime() + (this.COOLDOWN_HOURS * 60 * 60 * 1000));
+          
+          // Récupérer la durée de la dernière publicité pour calculer le cooldown
+          const { data: lastSession } = await supabase
+            .from('ad_sessions')
+            .select('reward_data')
+            .eq('user_id', userId)
+            .order('watched_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          let cooldownMinutes = this.BASE_COOLDOWN_MINUTES;
+          if (lastSession?.reward_data && (lastSession.reward_data as any).ad_duration) {
+            cooldownMinutes = this.calculateCooldownMinutes((lastSession.reward_data as any).ad_duration);
+          }
+
+          const cooldownEnd = new Date(lastWatch.getTime() + (cooldownMinutes * 60 * 1000));
           
           if (now < cooldownEnd) {
             available = false;
@@ -138,7 +176,9 @@ export class AdRewardService {
           multiplier: reward.multiplier,
           description: reward.description,
           started_at: now.toISOString(),
-          completed: false
+          completed: false,
+          ad_duration: null, // Sera rempli lors de la complétion
+          estimated_duration: null
         },
         watched_at: now.toISOString()
       };
@@ -159,7 +199,12 @@ export class AdRewardService {
     }
   }
 
-  static async completeAdSession(userId: string, sessionId: string, watchDuration: number): Promise<{ success: boolean; error?: string }> {
+  static async completeAdSession(
+    userId: string, 
+    sessionId: string, 
+    actualDuration: number,
+    estimatedDuration: number
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       // Vérifier que la session existe et appartient à l'utilisateur
       const { data: session, error: sessionError } = await supabase
@@ -173,34 +218,28 @@ export class AdRewardService {
         return { success: false, error: 'Session invalide' };
       }
 
-      // Vérifier que la publicité a été regardée suffisamment longtemps (minimum 25 secondes)
-      const MIN_WATCH_DURATION = 25000; // 25 secondes en millisecondes
-      if (watchDuration < MIN_WATCH_DURATION) {
+      // Calculer la durée minimum requise basée sur la durée estimée
+      const minWatchDuration = this.getMinimumWatchTime(estimatedDuration);
+      
+      console.log(`AdMob: Validation - Required: ${minWatchDuration}ms, Actual: ${actualDuration}ms`);
+      
+      if (actualDuration < minWatchDuration) {
         // Supprimer la session incomplète
         await supabase
           .from('ad_sessions')
           .delete()
           .eq('id', sessionId);
         
-        return { success: false, error: 'Publicité non regardée entièrement' };
+        return { 
+          success: false, 
+          error: `Publicité non regardée entièrement (${Math.round(actualDuration/1000)}s/${Math.round(minWatchDuration/1000)}s requis)` 
+        };
       }
 
       const now = new Date();
       const rewardData = session.reward_data as any;
-      const startTime = new Date(rewardData.started_at);
-      const actualDuration = now.getTime() - startTime.getTime();
 
-      // Vérifier la cohérence temporelle
-      if (Math.abs(actualDuration - watchDuration) > 5000) { // 5 secondes de tolérance
-        await supabase
-          .from('ad_sessions')
-          .delete()
-          .eq('id', sessionId);
-        
-        return { success: false, error: 'Durée de visionnage incohérente' };
-      }
-
-      // Marquer la session comme complétée
+      // Marquer la session comme complétée avec les durées mesurées
       const { error: updateError } = await supabase
         .from('ad_sessions')
         .update({
@@ -211,7 +250,9 @@ export class AdRewardService {
             started_at: rewardData.started_at,
             completed: true,
             completed_at: now.toISOString(),
-            watch_duration: watchDuration
+            ad_duration: actualDuration,
+            estimated_duration: estimatedDuration,
+            minimum_required: minWatchDuration
           }
         })
         .eq('id', sessionId);
@@ -221,7 +262,12 @@ export class AdRewardService {
       // Récupérer l'état actuel pour le cooldown
       const adState = await this.getAdState(userId);
 
-      // Mettre à jour le cooldown
+      // Calculer le nouveau cooldown basé sur la durée réelle
+      const cooldownMinutes = this.calculateCooldownMinutes(actualDuration);
+      
+      console.log(`AdMob: Setting cooldown to ${cooldownMinutes} minutes based on ${actualDuration}ms ad duration`);
+
+      // Mettre à jour le cooldown avec la durée calculée
       const { error: cooldownError } = await supabase
         .from('ad_cooldowns')
         .upsert({
