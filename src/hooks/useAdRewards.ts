@@ -42,43 +42,62 @@ export const useAdRewards = () => {
     setAvailableRewards(rewards);
   }, [gameState.garden]);
 
-  // Regarder une publicité
+  // Regarder une publicité avec validation
   const watchAd = useCallback(async (reward: AdReward): Promise<boolean> => {
     if (!user?.id || loading) return false;
 
     setLoading(true);
+    let sessionId: string | undefined;
+    const startTime = Date.now();
+
     try {
-      const result = await AdRewardService.watchAd(user.id, reward);
+      // Démarrer la session publicitaire
+      const startResult = await AdRewardService.startAdSession(user.id, reward);
       
-      if (result.success) {
+      if (!startResult.success || !startResult.sessionId) {
+        toast.error(startResult.error || 'Impossible de démarrer la publicité');
+        return false;
+      }
+
+      sessionId = startResult.sessionId;
+
+      // Simuler la publicité (minimum 25 secondes)
+      const AD_DURATION = 30000; // 30 secondes
+      await new Promise(resolve => setTimeout(resolve, AD_DURATION));
+
+      const watchDuration = Date.now() - startTime;
+
+      // Finaliser la session avec validation
+      const completeResult = await AdRewardService.completeAdSession(user.id, sessionId, watchDuration);
+      
+      if (completeResult.success) {
         toast.success(`Récompense reçue: ${reward.description} ${reward.emoji}`);
         await refreshAdState();
         return true;
       } else {
-        toast.error(result.error || 'Erreur lors de la publicité');
+        toast.error(completeResult.error || 'Publicité non validée');
         return false;
       }
     } catch (error) {
       console.error('Error watching ad:', error);
-      toast.error('Erreur lors de la publicité');
+      
+      // Annuler la session en cas d'erreur
+      if (sessionId) {
+        await AdRewardService.cancelAdSession(user.id, sessionId);
+      }
+      
+      toast.error('Publicité interrompue');
       return false;
     } finally {
       setLoading(false);
     }
   }, [user?.id, loading, refreshAdState]);
 
-  // Simuler le visionnage d'une publicité (pour le développement)
+  // Simuler le visionnage d'une publicité avec possibilité d'interruption
   const simulateAdWatch = useCallback(async (reward: AdReward): Promise<boolean> => {
     if (!user?.id) return false;
 
-    // Simuler un délai de 3 secondes
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    const success = await watchAd(reward);
-    setLoading(false);
-    
-    return success;
+    return await watchAd(reward);
   }, [user?.id, watchAd]);
 
   // Timer pour actualiser le cooldown

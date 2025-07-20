@@ -120,7 +120,7 @@ export class AdRewardService {
     }
   }
 
-  static async watchAd(userId: string, reward: AdReward): Promise<{ success: boolean; error?: string }> {
+  static async startAdSession(userId: string, reward: AdReward): Promise<{ success: boolean; sessionId?: string; error?: string }> {
     try {
       const adState = await this.getAdState(userId);
       
@@ -136,19 +136,92 @@ export class AdRewardService {
         reward_data: {
           duration: reward.duration,
           multiplier: reward.multiplier,
-          description: reward.description
+          description: reward.description,
+          started_at: now.toISOString(),
+          completed: false
         },
         watched_at: now.toISOString()
       };
 
-      // Créer la session
-      const { error: sessionError } = await supabase
+      // Créer la session en attente
+      const { data: session, error: sessionError } = await supabase
         .from('ad_sessions')
-        .insert(sessionData);
+        .insert(sessionData)
+        .select('id')
+        .single();
 
       if (sessionError) throw sessionError;
 
-      // Mettre à jour ou créer le cooldown
+      return { success: true, sessionId: session.id };
+    } catch (error) {
+      console.error('Error starting ad session:', error);
+      return { success: false, error: 'Erreur lors du démarrage de la publicité' };
+    }
+  }
+
+  static async completeAdSession(userId: string, sessionId: string, watchDuration: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Vérifier que la session existe et appartient à l'utilisateur
+      const { data: session, error: sessionError } = await supabase
+        .from('ad_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .eq('user_id', userId)
+        .single();
+
+      if (sessionError || !session) {
+        return { success: false, error: 'Session invalide' };
+      }
+
+      // Vérifier que la publicité a été regardée suffisamment longtemps (minimum 25 secondes)
+      const MIN_WATCH_DURATION = 25000; // 25 secondes en millisecondes
+      if (watchDuration < MIN_WATCH_DURATION) {
+        // Supprimer la session incomplète
+        await supabase
+          .from('ad_sessions')
+          .delete()
+          .eq('id', sessionId);
+        
+        return { success: false, error: 'Publicité non regardée entièrement' };
+      }
+
+      const now = new Date();
+      const rewardData = session.reward_data as any;
+      const startTime = new Date(rewardData.started_at);
+      const actualDuration = now.getTime() - startTime.getTime();
+
+      // Vérifier la cohérence temporelle
+      if (Math.abs(actualDuration - watchDuration) > 5000) { // 5 secondes de tolérance
+        await supabase
+          .from('ad_sessions')
+          .delete()
+          .eq('id', sessionId);
+        
+        return { success: false, error: 'Durée de visionnage incohérente' };
+      }
+
+      // Marquer la session comme complétée
+      const { error: updateError } = await supabase
+        .from('ad_sessions')
+        .update({
+          reward_data: {
+            duration: rewardData.duration,
+            multiplier: rewardData.multiplier,
+            description: rewardData.description,
+            started_at: rewardData.started_at,
+            completed: true,
+            completed_at: now.toISOString(),
+            watch_duration: watchDuration
+          }
+        })
+        .eq('id', sessionId);
+
+      if (updateError) throw updateError;
+
+      // Récupérer l'état actuel pour le cooldown
+      const adState = await this.getAdState(userId);
+
+      // Mettre à jour le cooldown
       const { error: cooldownError } = await supabase
         .from('ad_cooldowns')
         .upsert({
@@ -163,8 +236,21 @@ export class AdRewardService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error watching ad:', error);
-      return { success: false, error: 'Erreur lors du traitement de la publicité' };
+      console.error('Error completing ad session:', error);
+      return { success: false, error: 'Erreur lors de la finalisation de la publicité' };
+    }
+  }
+
+  static async cancelAdSession(userId: string, sessionId: string): Promise<void> {
+    try {
+      // Supprimer la session annulée
+      await supabase
+        .from('ad_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('user_id', userId);
+    } catch (error) {
+      console.error('Error canceling ad session:', error);
     }
   }
 
