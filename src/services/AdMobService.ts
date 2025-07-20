@@ -62,41 +62,8 @@ export class AdMobService {
   }
 
   private static setupEventListeners(): void {
-    if (!Capacitor.isNativePlatform()) return;
-
-    try {
-      // Événement quand la publicité commence
-      AdMob.addListener('onRewardedVideoAdLoaded', () => {
-        console.log('AdMob: Rewarded ad loaded');
-        this.state.isAdLoaded = true;
-        this.state.isAdLoading = false;
-      });
-
-      AdMob.addListener('onRewardedVideoAdOpened', () => {
-        console.log('AdMob: Rewarded ad opened');
-        this.adStartTime = Date.now();
-      });
-
-      AdMob.addListener('onRewardedVideoAdClosed', () => {
-        console.log('AdMob: Rewarded ad closed');
-        this.adEndTime = Date.now();
-        this.state.isAdLoaded = false; // Marquer comme non chargée après fermeture
-      });
-
-      AdMob.addListener('onRewardedVideoAdFailedToLoad', (error: any) => {
-        console.error('AdMob: Failed to load rewarded ad:', error);
-        this.state.isAdLoading = false;
-        this.state.isAdLoaded = false;
-        this.state.lastError = error.message || 'Failed to load ad';
-      });
-
-      AdMob.addListener('onRewarded', (reward: AdMobRewardItem) => {
-        console.log('AdMob: User rewarded:', reward);
-      });
-
-    } catch (error) {
-      console.error('AdMob: Error setting up event listeners:', error);
-    }
+    // Simplified event handling - removed unsupported event listeners
+    console.log('AdMob: Event listeners setup (simplified)');
   }
 
   static async loadRewardedAd(retryCount: number = 0): Promise<boolean> {
@@ -135,7 +102,11 @@ export class AdMobService {
 
       await AdMob.prepareRewardVideoAd(options);
       
-      // Les événements se chargeront de mettre à jour l'état
+      // Mark as loaded since we can't rely on events
+      this.state.isAdLoaded = true;
+      this.state.isAdLoading = false;
+      
+      console.log('AdMob: Rewarded ad loaded successfully');
       return true;
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
@@ -205,32 +176,20 @@ export class AdMobService {
         }
       }
 
-      // Reset des timers
-      this.adStartTime = null;
-      this.adEndTime = null;
-
+      // Start timing the ad
+      const adStartTime = Date.now();
+      
       console.log('AdMob: Showing rewarded ad...');
       await AdMob.showRewardVideoAd();
       
-      // Attendre que la publicité se termine (avec timeout)
-      let waitTime = 0;
-      const maxWaitTime = 60000; // 60 secondes maximum
+      // Calculate actual duration (ad completion time)
+      const adEndTime = Date.now();
+      const actualDuration = adEndTime - adStartTime;
       
-      while (this.adEndTime === null && waitTime < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        waitTime += 500;
-      }
-
-      // Calculer la durée réelle
-      let actualDuration = 0;
-      if (this.adStartTime && this.adEndTime) {
-        actualDuration = this.adEndTime - this.adStartTime;
-        console.log(`AdMob: Ad watched for ${actualDuration}ms`);
-      } else {
-        // Fallback si les événements n'ont pas fonctionné
-        actualDuration = Math.max(waitTime, 5000); // Minimum 5 secondes
-        console.log(`AdMob: Using fallback duration: ${actualDuration}ms`);
-      }
+      console.log(`AdMob: Ad completed in ${actualDuration}ms`);
+      
+      // Mark ad as no longer loaded since it was consumed
+      this.state.isAdLoaded = false;
 
       return { 
         success: true, 
@@ -269,12 +228,6 @@ export class AdMobService {
 
   static cleanup(): void {
     console.log('AdMob: Cleanup method called');
-    if (Capacitor.isNativePlatform()) {
-      try {
-        AdMob.removeAllListeners();
-      } catch (error) {
-        console.error('AdMob: Error during cleanup:', error);
-      }
-    }
+    // Simplified cleanup - removed unsupported removeAllListeners
   }
 }
