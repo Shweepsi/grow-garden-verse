@@ -13,7 +13,7 @@ export class AdMobService {
   // ID test officiel Google pour les publicités rewarded
   private static readonly REWARDED_AD_ID = __DEV__ 
     ? 'ca-app-pub-3940256099942544/5224354917' 
-    : 'ca-app-pub-4824355487707598/1018150693';
+    : 'ca-app-pub-4824355487707598/1680280074';
 
   private static state: AdMobState = {
     isInitialized: false,
