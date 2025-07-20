@@ -63,10 +63,3 @@ try {
 }
 
 apply from: "./signing.gradle"
-
-// 🔧 Corrige l'erreur de JVM Kotlin vs Java
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-}
