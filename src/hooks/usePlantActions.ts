@@ -224,13 +224,13 @@ export const usePlantActions = () => {
       console.log('✅ Récolte terminée avec succès');
     },
     onSuccess: (_, plotNumber) => {
-      // Animation de récolte sur la parcelle
+      // Animation de récolte légère sur la parcelle
       const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`);
       if (plotElement) {
-        plotElement.classList.add('animate-bounce');
+        plotElement.classList.add('animate-pulse');
         setTimeout(() => {
-          plotElement.classList.remove('animate-bounce');
-        }, 600);
+          plotElement.classList.remove('animate-pulse');
+        }, 300);
       }
       
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
