@@ -11,10 +11,8 @@ interface AdMobState {
 
 interface AdWatchResult {
   success: boolean;
-  reward?: AdMobRewardItem;
+  rewarded: boolean; // AdMob a-t-il donné la récompense ?
   error?: string;
-  actualDuration?: number; // Durée réelle en millisecondes
-  estimatedDuration?: number; // Durée estimée en millisecondes
 }
 
 export class AdMobService {
@@ -138,13 +136,10 @@ export class AdMobService {
   static async showRewardedAd(): Promise<AdWatchResult> {
     if (!Capacitor.isNativePlatform()) {
       console.log('AdMob: Web platform - simulating ad watch');
-      const simulatedDuration = Math.floor(Math.random() * 25000) + 5000; // Entre 5 et 30 secondes
-      await new Promise(resolve => setTimeout(resolve, simulatedDuration));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation courte
       return { 
         success: true, 
-        reward: { type: 'coins', amount: 100 },
-        actualDuration: simulatedDuration,
-        estimatedDuration: simulatedDuration
+        rewarded: true // Simulation toujours réussie
       };
     }
 
@@ -156,6 +151,7 @@ export class AdMobService {
         if (!loaded) {
           return { 
             success: false, 
+            rewarded: false,
             error: this.state.lastError || 'Failed to load ad' 
           };
         }
@@ -170,35 +166,35 @@ export class AdMobService {
         if (!this.state.isAdLoaded) {
           return { 
             success: false, 
+            rewarded: false,
             error: 'Ad failed to load in time' 
           };
         }
       }
 
-      // Mesurer la durée simplement
-      const startTime = Date.now();
-      
       console.log('AdMob: Showing rewarded ad...');
-      await AdMob.showRewardVideoAd();
       
-      const endTime = Date.now();
-      const actualDuration = endTime - startTime;
+      // AdMob gère nativement la récompense
+      const result = await AdMob.showRewardVideoAd();
       
-      console.log(`AdMob: Ad completed in ${actualDuration}ms`);
+      console.log('AdMob: Ad result:', result);
       
       // Marquer comme plus chargé après utilisation
       this.state.isAdLoaded = false;
 
+      // AdMob détermine si l'utilisateur mérite la récompense
+      const rewarded = result && result !== undefined;
+      
       return { 
         success: true, 
-        reward: { type: 'coins', amount: 100 },
-        actualDuration: actualDuration,
-        estimatedDuration: actualDuration
+        rewarded
       };
     } catch (error) {
       console.error('AdMob: Error showing rewarded ad:', error);
+      this.state.isAdLoaded = false;
       return { 
         success: false, 
+        rewarded: false,
         error: (error as Error).message 
       };
     }

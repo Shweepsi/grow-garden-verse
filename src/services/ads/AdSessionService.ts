@@ -49,8 +49,7 @@ export class AdSessionService {
   static async completeSession(
     userId: string, 
     sessionId: string, 
-    actualDuration: number,
-    estimatedDuration: number
+    rewarded: boolean
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // Verify session exists and belongs to user with enhanced security
@@ -62,12 +61,14 @@ export class AdSessionService {
 
       const session = verification.session;
 
-      // Validation simple basée sur la durée réelle AdMob
-      const validation = AdValidationService.validateAdWatchTime(actualDuration);
-      
-      if (!validation.isValid) {
-        await this.cancelSession(userId, sessionId);
-        return { success: false, error: validation.errorMessage };
+      // 2. Valider que AdMob a confirmé la récompense
+      const isValidReward = AdValidationService.validateAdReward(rewarded);
+      if (!isValidReward) {
+        console.log('❌ AdMob n\'a pas confirmé la récompense');
+        return { 
+          success: false, 
+          error: 'Publicité non complétée selon AdMob' 
+        };
       }
 
       // Update session as completed
@@ -81,7 +82,7 @@ export class AdSessionService {
             ...rewardData,
             completed: true,
             completed_at: now.toISOString(),
-            ad_duration: actualDuration
+            rewarded_by_admob: rewarded
           }
         })
         .eq('id', sessionId);
@@ -90,7 +91,7 @@ export class AdSessionService {
 
       // Update cooldown
       const cooldownInfo = await AdCooldownService.getCooldownInfo(userId);
-      await AdCooldownService.updateCooldown(userId, actualDuration, cooldownInfo.dailyCount);
+      await AdCooldownService.updateCooldown(userId, 30000, cooldownInfo.dailyCount); // Durée fixe pour cooldown
 
       // Distribute reward to player
       const sessionRewardData = session.reward_data as any;

@@ -115,31 +115,30 @@ export const useAdRewards = () => {
         return false;
       }
 
-      const actualDuration = adResult.actualDuration || 5000; // Fallback à 5 secondes
-
-      console.log(`AdMob: Completed with duration - Actual: ${actualDuration}ms`);
-
-      // Finaliser la session avec la durée réelle AdMob
-      const completeResult = await AdRewardService.completeAdSession(
-        user.id, 
-        sessionId, 
-        actualDuration,
-        actualDuration // Plus besoin de durée estimée
-      );
+      if (adResult.rewarded) {
+        // Finaliser la session avec la confirmation AdMob  
+        const completeResult = await AdRewardService.completeAdSession(
+          user.id, 
+          sessionId, 
+          adResult.rewarded
+        );
       
-      if (completeResult.success) {
-        const durationSeconds = Math.round(actualDuration / 1000);
-        toast.success(`Récompense reçue: ${reward.description} ${reward.emoji} (${durationSeconds}s)`);
-        await refreshAdState();
-        
-        // Précharger la prochaine publicité
-        setTimeout(() => {
-          AdMobService.preloadAd();
-        }, 5000);
-        
-        return true;
+        if (completeResult.success) {
+          toast.success(`Récompense reçue: ${reward.description} ${reward.emoji}`);
+          await refreshAdState();
+          
+          // Précharger la prochaine publicité
+          setTimeout(() => {
+            AdMobService.preloadAd();
+          }, 5000);
+          
+          return true;
+        } else {
+          toast.error(completeResult.error || 'Publicité non validée');
+          return false;
+        }
       } else {
-        toast.error(completeResult.error || 'Publicité non validée');
+        toast.error('Publicité non complétée selon AdMob');
         return false;
       }
     } catch (error) {

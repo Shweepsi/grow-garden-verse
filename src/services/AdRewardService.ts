@@ -76,10 +76,9 @@ export class AdRewardService {
   static async completeAdSession(
     userId: string, 
     sessionId: string, 
-    actualDuration: number,
-    estimatedDuration: number
+    rewarded: boolean
   ) {
-    return AdSessionService.completeSession(userId, sessionId, actualDuration, estimatedDuration);
+    return AdSessionService.completeSession(userId, sessionId, rewarded);
   }
 
   static async cancelAdSession(userId: string, sessionId: string) {
