@@ -305,11 +305,6 @@ export const usePassiveIncomeRobot = () => {
       return rewards;
     },
     onSuccess: (rewards) => {
-      if (rewards) {
-        toast.success(`🤖 Revenus hors-ligne ajoutés !`, {
-          description: `+${rewards.offlineCoins.toLocaleString()} 🪙 de ${rewards.plantName} (${rewards.minutesOffline}min)`
-        });
-      }
       queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
     },
     onError: (error: any) => {
