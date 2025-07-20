@@ -39,7 +39,7 @@ export const GameHeader = ({
               </div>
               <div>
                 <h1 className="mobile-text-lg font-bold bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent">
-                  Grow Garden
+                  Idle Grow
                 </h1>
                 
               </div>

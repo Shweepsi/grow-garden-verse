@@ -38,7 +38,7 @@ export const AuthPage = () => {
               <Sprout className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-green-800">Grow Garden</CardTitle>
+          <CardTitle className="text-2xl font-bold text-green-800">Idle Grow</CardTitle>
           <CardDescription>
             Créez votre jardin virtuel et cultivez de magnifiques plantes
           </CardDescription>
