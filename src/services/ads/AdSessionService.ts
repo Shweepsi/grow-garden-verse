@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdReward } from "@/types/ads";
 import { AdValidationService } from "./AdValidationService";
 import { AdCooldownService } from "./AdCooldownService";
+import { AdRewardDistributionService } from "./AdRewardDistributionService";
+import { AdVerificationService } from "./AdVerificationService";
 
 export class AdSessionService {
   static async createSession(userId: string, reward: AdReward): Promise<{ success: boolean; sessionId?: string; error?: string }> {
@@ -51,23 +53,21 @@ export class AdSessionService {
     estimatedDuration: number
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // Verify session exists and belongs to user
-      const { data: session, error: sessionError } = await supabase
-        .from('ad_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .eq('user_id', userId)
-        .single();
-
-      if (sessionError || !session) {
-        return { success: false, error: 'Session invalide' };
+      // Verify session exists and belongs to user with enhanced security
+      const verification = await AdVerificationService.verifySession(userId, sessionId);
+      
+      if (!verification.isValid) {
+        return { success: false, error: verification.error };
       }
 
-      // Validate watch time
+      const session = verification.session;
+
+      // Validate watch time with enhanced security
       const validation = AdValidationService.validateAdWatchTime(actualDuration, estimatedDuration);
       
       if (!validation.isValid) {
         await this.cancelSession(userId, sessionId);
+        await AdVerificationService.markSuspiciousSession(sessionId, `Insufficient watch time: ${actualDuration}ms < ${validation.minRequired}ms`);
         return { success: false, error: validation.errorMessage };
       }
 
@@ -94,6 +94,27 @@ export class AdSessionService {
       // Update cooldown
       const cooldownInfo = await AdCooldownService.getCooldownInfo(userId);
       await AdCooldownService.updateCooldown(userId, actualDuration, cooldownInfo.dailyCount);
+
+      // Distribute reward to player
+      const sessionRewardData = session.reward_data as any;
+      const reward: AdReward = {
+        type: session.reward_type as any,
+        amount: session.reward_amount,
+        duration: sessionRewardData.duration,
+        multiplier: sessionRewardData.multiplier,
+        description: sessionRewardData.description,
+        emoji: ''
+      };
+
+      const distributionResult = await AdRewardDistributionService.distributeReward(userId, reward);
+      
+      if (!distributionResult.success) {
+        console.error('Failed to distribute reward:', distributionResult.error);
+        // On continue même si la distribution échoue pour éviter de bloquer l'utilisateur
+        // mais on log l'erreur pour investigation
+      } else {
+        console.log(`AdMob: Successfully distributed reward ${reward.type}:${reward.amount} to user ${userId}`);
+      }
 
       return { success: true };
     } catch (error) {
