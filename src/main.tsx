@@ -12,17 +12,17 @@ import './index.css'
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AnimationProvider>
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AnimationProvider>
+          <TooltipProvider>
             <App />
-          </AnimationProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </AnimationProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </BrowserRouter>
 );
