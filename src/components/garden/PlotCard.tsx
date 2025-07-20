@@ -101,7 +101,7 @@ export const PlotCard = memo(({
   }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState]);
 
   return (
-    <div className={containerClasses} onClick={handleClick}>
+    <div className={containerClasses} onClick={handleClick} data-plot={plot.plot_number}>
       <div className={cardClasses}>
         
         {!plot.unlocked ? (
