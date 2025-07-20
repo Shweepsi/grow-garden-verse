@@ -20,7 +20,7 @@ interface AdModalProps {
 }
 
 export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
-  const { adState, availableRewards, loading, watchAd, formatTimeUntilNext } = useAdRewards();
+  const { adState, availableRewards, loading, watchAd, formatTimeUntilNext, debug } = useAdRewards();
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
 
@@ -79,13 +79,13 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <DialogDescription>
-            Regardez une courte publicité pour gagner des récompenses !
+          <DialogDescription className="text-sm">
+            Regardez une courte publicité (minimum 3 secondes) pour gagner des récompenses !
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* État actuel */}
+          {/* État AdMob et disponibilité */}
           <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-green-200/30">
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -93,11 +93,22 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
                 {adState.dailyCount}/{adState.maxDaily} publicités aujourd'hui
               </span>
             </div>
-            {!adState.available && adState.timeUntilNext > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {formatTimeUntilNext(adState.timeUntilNext)}
-              </Badge>
-            )}
+            <div className="flex items-center space-x-2">
+              {debug.adMobInitialized ? (
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                  ✓ AdMob
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                  ⚠ Chargement...
+                </Badge>
+              )}
+              {!adState.available && adState.timeUntilNext > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {formatTimeUntilNext(adState.timeUntilNext)}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Liste des récompenses */}
@@ -167,18 +178,23 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
               </Button>
               <Button
                 onClick={() => selectedReward && handleWatchAd(selectedReward)}
-                disabled={!selectedReward || isWatching || loading}
+                disabled={!selectedReward || isWatching || loading || !debug.adMobInitialized}
                 className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600"
               >
                 {isWatching ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    En cours...
+                    Publicité en cours...
+                  </>
+                ) : !debug.adMobInitialized ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Initialisation...
                   </>
                 ) : (
                   <>
                     <Play className="mr-2 h-4 w-4" />
-                    Regarder (30s)
+                    Regarder la pub
                   </>
                 )}
               </Button>
