@@ -10,9 +10,10 @@ interface AdMobState {
 }
 
 export class AdMobService {
+  // ID test officiel Google pour les publicités rewarded
   private static readonly REWARDED_AD_ID = __DEV__ 
-    ? 'ca-app-pub-3940256099942544/5224354917' // Test ID Google officiel
-    : 'ca-app-pub-4824355487707598/1018150693'; // Production ID
+    ? 'ca-app-pub-3940256099942544/5224354917' 
+    : 'ca-app-pub-4824355487707598/1018150693';
 
   private static state: AdMobState = {
     isInitialized: false,
@@ -20,8 +21,6 @@ export class AdMobService {
     isAdLoading: false,
     lastError: null
   };
-
-  private static eventListeners: { [key: string]: any } = {};
 
   static async initialize(): Promise<boolean> {
     if (this.state.isInitialized || !Capacitor.isNativePlatform()) {
@@ -33,12 +32,9 @@ export class AdMobService {
       console.log('AdMob: Initializing...');
       
       await AdMob.initialize({
-        testingDevices: __DEV__ ? [] : [], // Pas d'ID spécifique en test
+        testingDevices: __DEV__ ? [] : [],
         initializeForTesting: __DEV__
       });
-      
-      // Configurer les listeners d'événements
-      this.setupEventListeners();
       
       this.state.isInitialized = true;
       this.state.lastError = null;
@@ -49,42 +45,6 @@ export class AdMobService {
       this.state.lastError = (error as Error).message;
       return false;
     }
-  }
-
-  private static setupEventListeners(): void {
-    console.log('AdMob: Setting up event listeners');
-
-    // Listener pour le chargement réussi
-    this.eventListeners.onRewardedVideoAdLoaded = AdMob.addListener('onRewardedVideoAdLoaded', (info: AdLoadInfo) => {
-      console.log('AdMob: Rewarded ad loaded successfully', info);
-      this.state.isAdLoaded = true;
-      this.state.isAdLoading = false;
-      this.state.lastError = null;
-    });
-
-    // Listener pour les erreurs de chargement
-    this.eventListeners.onRewardedVideoAdFailedToLoad = AdMob.addListener('onRewardedVideoAdFailedToLoad', (error: AdMobError) => {
-      console.error('AdMob: Failed to load rewarded ad:', error);
-      this.state.isAdLoaded = false;
-      this.state.isAdLoading = false;
-      this.state.lastError = error.message || 'Unknown error';
-    });
-
-    // Listener pour l'affichage de la pub
-    this.eventListeners.onRewardedVideoAdShowed = AdMob.addListener('onRewardedVideoAdShowed', () => {
-      console.log('AdMob: Rewarded ad showed');
-    });
-
-    // Listener pour la fermeture de la pub
-    this.eventListeners.onRewardedVideoAdClosed = AdMob.addListener('onRewardedVideoAdClosed', () => {
-      console.log('AdMob: Rewarded ad closed');
-      this.state.isAdLoaded = false; // La pub est consommée
-    });
-
-    // Listener pour la récompense
-    this.eventListeners.onRewarded = AdMob.addListener('onRewarded', (reward: AdMobRewardItem) => {
-      console.log('AdMob: User rewarded:', reward);
-    });
   }
 
   static async loadRewardedAd(retryCount: number = 0): Promise<boolean> {
@@ -123,19 +83,13 @@ export class AdMobService {
 
       await AdMob.prepareRewardVideoAd(options);
       
-      // Attendre un peu pour que l'événement soit déclenché
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Attendre un peu pour le chargement et marquer comme chargé
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      if (this.state.isAdLoaded) {
-        console.log('AdMob: Rewarded ad loaded successfully');
-        return true;
-      } else if (this.state.lastError && retryCount < 2) {
-        console.log(`AdMob: Retrying load due to error: ${this.state.lastError}`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Attendre 2s avant retry
-        return this.loadRewardedAd(retryCount + 1);
-      } else {
-        throw new Error(this.state.lastError || 'Ad failed to load within timeout');
-      }
+      console.log('AdMob: Rewarded ad preparation completed');
+      this.state.isAdLoaded = true;
+      this.state.isAdLoading = false;
+      return true;
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
       this.state.isAdLoading = false;
@@ -217,12 +171,7 @@ export class AdMobService {
   }
 
   static cleanup(): void {
-    console.log('AdMob: Cleaning up event listeners');
-    Object.values(this.eventListeners).forEach(listener => {
-      if (listener && typeof listener.remove === 'function') {
-        listener.remove();
-      }
-    });
-    this.eventListeners = {};
+    console.log('AdMob: Cleanup method called');
+    // Pas d'event listeners à nettoyer dans cette version simplifiée
   }
 }
