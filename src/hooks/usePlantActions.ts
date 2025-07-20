@@ -224,13 +224,18 @@ export const usePlantActions = () => {
       console.log('✅ Récolte terminée avec succès');
     },
     onSuccess: (_, plotNumber) => {
-      // Animation de récolte légère sur la parcelle
-      const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`);
+      // Animation de récolte subtile - léger zoom
+      const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`) as HTMLElement;
       if (plotElement) {
-        plotElement.classList.add('animate-pulse');
+        plotElement.style.transform = 'scale(1.05)';
+        plotElement.style.transition = 'transform 0.15s ease-out';
         setTimeout(() => {
-          plotElement.classList.remove('animate-pulse');
-        }, 300);
+          plotElement.style.transform = 'scale(1)';
+          setTimeout(() => {
+            plotElement.style.transform = '';
+            plotElement.style.transition = '';
+          }, 150);
+        }, 150);
       }
       
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
