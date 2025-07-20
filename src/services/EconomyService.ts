@@ -145,4 +145,19 @@ export class EconomyService {
 
     return multipliers;
   }
+
+  // Méthodes pour les récompenses publicitaires
+  static getAdCoinReward(baseAmount: number, playerLevel: number, permanentMultiplier: number): number {
+    const levelBonus = 1 + (Math.max(0, playerLevel - 1) * 0.05); // 5% par niveau après le niveau 1
+    return Math.floor(baseAmount * levelBonus * permanentMultiplier);
+  }
+
+  static getAdGemReward(playerLevel: number): number {
+    // 5 gemmes de base + 1 par niveau (max 20)
+    return Math.min(5 + Math.floor(playerLevel / 2), 20);
+  }
+
+  static applyPermanentMultiplier(baseAmount: number, permanentMultiplier: number): number {
+    return Math.floor(baseAmount * permanentMultiplier);
+  }
 }

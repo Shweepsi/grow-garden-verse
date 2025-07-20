@@ -1,17 +1,20 @@
-import { Coins, Sprout, Star } from 'lucide-react';
+import { Coins, Sprout, Star, Gift } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { FloatingNumber } from '@/components/animations/FloatingNumber';
+import { AdRewardCard } from '@/components/ads/AdRewardCard';
+import { AdModal } from '@/components/ads/AdModal';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 interface GameHeaderProps {
   garden: PlayerGarden | null;
 }
 export const GameHeader = ({
   garden
 }: GameHeaderProps) => {
-  const {
-    animations
-  } = useAnimations();
+  const { animations } = useAnimations();
+  const [showAdModal, setShowAdModal] = useState(false);
 
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
@@ -95,6 +98,15 @@ export const GameHeader = ({
                   </span>
                 </div>
               </div>
+
+              {/* Bouton Publicité */}
+              <Button
+                size="sm"
+                onClick={() => setShowAdModal(true)}
+                className="h-8 px-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 border-0"
+              >
+                <Gift className="h-3 w-3" />
+              </Button>
             </div>
 
             {/* Ligne 2: Barre d'XP avec pourcentage et animations */}
@@ -129,5 +141,8 @@ export const GameHeader = ({
           </div>
         </div>
       </div>
+
+      {/* Modal des publicités */}
+      <AdModal open={showAdModal} onOpenChange={setShowAdModal} />
     </div>;
 };

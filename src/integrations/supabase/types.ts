@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_cooldowns: {
+        Row: {
+          created_at: string
+          daily_count: number
+          daily_reset_date: string
+          id: string
+          last_ad_watched: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_count?: number
+          daily_reset_date?: string
+          id?: string
+          last_ad_watched?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_count?: number
+          daily_reset_date?: string
+          id?: string
+          last_ad_watched?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ad_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          reward_amount: number
+          reward_data: Json | null
+          reward_type: string
+          user_id: string
+          watched_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reward_amount: number
+          reward_data?: Json | null
+          reward_type: string
+          user_id: string
+          watched_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reward_amount?: number
+          reward_data?: Json | null
+          reward_type?: string
+          user_id?: string
+          watched_at?: string
+        }
+        Relationships: []
+      }
       coin_transactions: {
         Row: {
           amount: number
