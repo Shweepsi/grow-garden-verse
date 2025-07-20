@@ -2,6 +2,7 @@ import { GameHeader } from '@/components/garden/GameHeader';
 import { PlayerStats } from '@/components/garden/PlayerStats';
 import { PrestigeSystem } from '@/components/garden/PrestigeSystem';
 import { LadderModal } from '@/components/garden/LadderModal';
+import { PremiumStore } from '@/components/store/PremiumStore';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,9 @@ export const ProfilePage = () => {
         <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
         
         <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
+        
+        {/* Boutique Premium */}
+        <PremiumStore />
         
         {/* Système de Prestige */}
         {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
