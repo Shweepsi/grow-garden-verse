@@ -106,13 +106,13 @@ export const GameHeader = ({
                 size="sm"
                 onClick={() => setShowAdModal(true)}
                 className={`h-8 px-2 border-0 relative overflow-hidden ${
-                  availableRewards.length > 0 
+                  adState.available && availableRewards.length > 0 
                     ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 animate-pulse shadow-lg shadow-orange-400/50' 
                     : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
                 }`}
               >
-                <Gift className={`h-3 w-3 ${availableRewards.length > 0 ? 'animate-bounce' : ''}`} />
-                {availableRewards.length > 0 && (
+                <Gift className={`h-3 w-3 ${adState.available && availableRewards.length > 0 ? 'animate-bounce' : ''}`} />
+                {adState.available && availableRewards.length > 0 && (
                   <div className="absolute inset-0 bg-gradient-to-r from-orange-300/30 to-orange-200/30 animate-pulse" />
                 )}
               </Button>
