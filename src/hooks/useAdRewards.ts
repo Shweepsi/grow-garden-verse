@@ -116,16 +116,15 @@ export const useAdRewards = () => {
       }
 
       const actualDuration = adResult.actualDuration || 5000; // Fallback à 5 secondes
-      const estimatedDuration = adResult.estimatedDuration || actualDuration;
 
-      console.log(`AdMob: Completed with durations - Actual: ${actualDuration}ms, Estimated: ${estimatedDuration}ms`);
+      console.log(`AdMob: Completed with duration - Actual: ${actualDuration}ms`);
 
-      // Finaliser la session avec les durées mesurées
+      // Finaliser la session avec la durée réelle AdMob
       const completeResult = await AdRewardService.completeAdSession(
         user.id, 
         sessionId, 
         actualDuration,
-        estimatedDuration
+        actualDuration // Plus besoin de durée estimée
       );
       
       if (completeResult.success) {

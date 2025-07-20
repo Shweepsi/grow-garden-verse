@@ -1,29 +1,21 @@
 export class AdValidationService {
-  private static readonly MIN_WATCH_PERCENTAGE = 0.8;
-  private static readonly MIN_ABSOLUTE_SECONDS = 3;
+  private static readonly MIN_WATCH_SECONDS = 3;
 
-  static getMinimumWatchTime(estimatedDurationMs: number): number {
-    const calculatedMinimum = estimatedDurationMs * this.MIN_WATCH_PERCENTAGE;
-    return Math.max(this.MIN_ABSOLUTE_SECONDS * 1000, Math.round(calculatedMinimum));
-  }
-
-  static validateAdWatchTime(actualDuration: number, estimatedDuration: number): {
+  static validateAdWatchTime(actualDuration: number): {
     isValid: boolean;
-    minRequired: number;
     errorMessage?: string;
   } {
-    const minRequired = this.getMinimumWatchTime(estimatedDuration);
+    const minRequiredMs = this.MIN_WATCH_SECONDS * 1000;
     
-    console.log(`AdMob: Validation - Required: ${minRequired}ms, Actual: ${actualDuration}ms, Estimated: ${estimatedDuration}ms`);
+    console.log(`AdMob: Validation simple - Actual: ${actualDuration}ms, Min required: ${minRequiredMs}ms`);
     
-    if (actualDuration < minRequired) {
+    if (actualDuration < minRequiredMs) {
       return {
         isValid: false,
-        minRequired,
-        errorMessage: `Publicité non regardée entièrement (${Math.round(actualDuration/1000)}s/${Math.round(minRequired/1000)}s requis)`
+        errorMessage: `Publicité trop courte (${Math.round(actualDuration/1000)}s minimum ${this.MIN_WATCH_SECONDS}s)`
       };
     }
 
-    return { isValid: true, minRequired };
+    return { isValid: true };
   }
 }

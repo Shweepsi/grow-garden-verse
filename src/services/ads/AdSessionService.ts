@@ -62,12 +62,11 @@ export class AdSessionService {
 
       const session = verification.session;
 
-      // Validate watch time with enhanced security
-      const validation = AdValidationService.validateAdWatchTime(actualDuration, estimatedDuration);
+      // Validation simple basée sur la durée réelle AdMob
+      const validation = AdValidationService.validateAdWatchTime(actualDuration);
       
       if (!validation.isValid) {
         await this.cancelSession(userId, sessionId);
-        await AdVerificationService.markSuspiciousSession(sessionId, `Insufficient watch time: ${actualDuration}ms < ${validation.minRequired}ms`);
         return { success: false, error: validation.errorMessage };
       }
 
@@ -82,9 +81,7 @@ export class AdSessionService {
             ...rewardData,
             completed: true,
             completed_at: now.toISOString(),
-            ad_duration: actualDuration,
-            estimated_duration: estimatedDuration,
-            minimum_required: validation.minRequired
+            ad_duration: actualDuration
           }
         })
         .eq('id', sessionId);

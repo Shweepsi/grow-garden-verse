@@ -62,8 +62,8 @@ export class AdMobService {
   }
 
   private static setupEventListeners(): void {
-    // Simplified event handling - removed unsupported event listeners
-    console.log('AdMob: Event listeners setup (simplified)');
+    // AdMob simplifié - pas d'événements complexes
+    console.log('AdMob: Simple event handling enabled');
   }
 
   static async loadRewardedAd(retryCount: number = 0): Promise<boolean> {
@@ -102,11 +102,10 @@ export class AdMobService {
 
       await AdMob.prepareRewardVideoAd(options);
       
-      // Mark as loaded since we can't rely on events
+      // Marquer comme chargé immédiatement (approche simple)
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
-      
-      console.log('AdMob: Rewarded ad loaded successfully');
+      console.log('AdMob: Rewarded ad loaded');
       return true;
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
@@ -176,26 +175,25 @@ export class AdMobService {
         }
       }
 
-      // Start timing the ad
-      const adStartTime = Date.now();
+      // Mesurer la durée simplement
+      const startTime = Date.now();
       
       console.log('AdMob: Showing rewarded ad...');
       await AdMob.showRewardVideoAd();
       
-      // Calculate actual duration (ad completion time)
-      const adEndTime = Date.now();
-      const actualDuration = adEndTime - adStartTime;
+      const endTime = Date.now();
+      const actualDuration = endTime - startTime;
       
       console.log(`AdMob: Ad completed in ${actualDuration}ms`);
       
-      // Mark ad as no longer loaded since it was consumed
+      // Marquer comme plus chargé après utilisation
       this.state.isAdLoaded = false;
 
       return { 
         success: true, 
         reward: { type: 'coins', amount: 100 },
         actualDuration: actualDuration,
-        estimatedDuration: this.estimateAdDuration(actualDuration)
+        estimatedDuration: actualDuration
       };
     } catch (error) {
       console.error('AdMob: Error showing rewarded ad:', error);
@@ -206,13 +204,6 @@ export class AdMobService {
     }
   }
 
-  private static estimateAdDuration(actualDuration: number): number {
-    // Estimer la durée "normale" de la pub basée sur la durée réelle
-    if (actualDuration < 8000) return 5000;      // ~5 secondes
-    if (actualDuration < 20000) return 15000;    // ~15 secondes
-    if (actualDuration < 35000) return 30000;    // ~30 secondes
-    return Math.max(actualDuration, 30000);      // 30+ secondes
-  }
 
   // Méthodes utilitaires pour diagnostiquer l'état
   static getState(): AdMobState {
@@ -228,6 +219,6 @@ export class AdMobService {
 
   static cleanup(): void {
     console.log('AdMob: Cleanup method called');
-    // Simplified cleanup - removed unsupported removeAllListeners
+    // Nettoyage simple sans événements
   }
 }
