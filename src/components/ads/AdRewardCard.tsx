@@ -56,7 +56,7 @@ export function AdRewardCard() {
               
               <Button
                 onClick={handleOpenModal}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white animate-pulse shadow-lg shadow-orange-500/25"
                 size="lg"
               >
                 <Play className="w-4 h-4 mr-2" />
