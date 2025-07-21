@@ -132,7 +132,8 @@ export class AdMobService {
     if (!Capacitor.isNativePlatform()) {
       console.log('AdMob: Web platform - calling server validation directly');
       
-      // Simuler la validation serveur en développement
+      // AdMob gère la validation serveur automatiquement en production
+      // Pour le web/développement, simuler une récompense directe
       try {
         const response = await fetch(this.SERVER_VALIDATION_URL, {
           method: 'POST',
@@ -171,23 +172,41 @@ export class AdMobService {
 
       console.log('AdMob: Showing rewarded ad...');
       
-      // Configurer les options de base
+      // Pour l'instant, on gère la validation manuellement car AdMob SSV nécessite une configuration complexe
+      console.log('AdMob: Showing rewarded ad...');
+      
       const options: RewardAdOptions = {
         adId: this.REWARDED_AD_ID,
         isTesting: __DEV__
       };
 
-      // AdMob gère automatiquement la validation serveur
       const result = await AdMob.showRewardVideoAd();
       
-      console.log('AdMob: Ad completed, server validation handled automatically');
+      console.log('AdMob: Ad watched successfully, validating reward...');
       
-      this.state.isAdLoaded = false;
-      
-      return { 
-        success: true, 
-        rewarded: true // AdMob a géré la validation côté serveur
-      };
+      // Valider manuellement après que l'utilisateur ait regardé la pub
+      try {
+        const response = await fetch(this.SERVER_VALIDATION_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            reward_type: rewardType,
+            reward_amount: rewardAmount,
+            ad_duration: this.state.adDuration || 30
+          })
+        });
+
+        if (response.ok) {
+          this.state.isAdLoaded = false;
+          return { success: true, rewarded: true };
+        } else {
+          return { success: false, rewarded: false, error: 'Server validation failed' };
+        }
+      } catch (error) {
+        console.error('AdMob: Validation error:', error);
+        return { success: false, rewarded: false, error: 'Validation failed' };
+      }
     } catch (error) {
       console.error('AdMob: Error showing rewarded ad:', error);
       this.state.isAdLoaded = false;

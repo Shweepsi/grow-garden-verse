@@ -21,12 +21,63 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  // Handle GET requests for URL validation
+  // Handle GET requests from AdMob server-side verification
   if (req.method === 'GET') {
-    return new Response(
-      JSON.stringify({ message: 'AdMob validation endpoint is ready' }),
-      { headers: corsHeaders }
-    )
+    const url = new URL(req.url)
+    const searchParams = url.searchParams
+    
+    // Extract AdMob SSV parameters
+    const adNetwork = searchParams.get('ad_network')
+    const adUnit = searchParams.get('ad_unit')
+    const rewardAmount = searchParams.get('reward_amount')
+    const rewardItem = searchParams.get('reward_item')
+    const timestamp = searchParams.get('timestamp')
+    const transactionId = searchParams.get('transaction_id')
+    const signature = searchParams.get('signature')
+    const keyId = searchParams.get('key_id')
+    const userId = searchParams.get('user_id') // Custom parameter we should add
+    
+    console.log('AdMob SSV Request:', {
+      adNetwork, adUnit, rewardAmount, rewardItem, timestamp, transactionId, signature, keyId, userId
+    })
+    
+    // If no user_id in params, just acknowledge the test request
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ message: 'AdMob SSV endpoint acknowledged - test request' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    // Process the reward for actual user requests
+    try {
+      // For now, default reward values since AdMob doesn't send our custom data
+      const defaultRewardType = 'coins'
+      const adjustedAmount = calculateAdjustedReward(parseInt(rewardAmount || '1'), 30) // Default 30s
+      
+      const result = await applyReward(userId, defaultRewardType, adjustedAmount)
+      
+      if (result.success) {
+        await updateAdCooldown(userId)
+        await logAdReward(userId, defaultRewardType, adjustedAmount, 30)
+        
+        return new Response(
+          JSON.stringify({ success: true, applied_amount: adjustedAmount }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } else {
+        return new Response(
+          JSON.stringify({ error: result.error }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } catch (error) {
+      console.error('Error processing AdMob SSV:', error)
+      return new Response(
+        JSON.stringify({ error: 'Internal server error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
   }
 
   try {
