@@ -111,7 +111,6 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       const maxAttempts = 30; // 30 secondes avec vérifications toutes les secondes
       
       const checkRewardReceived = async (): Promise<boolean> => {
-        await refetchGameData();
         const updatedData = await refetchGameData();
         
         if (!updatedData.data?.garden) return false;

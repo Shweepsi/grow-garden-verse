@@ -6,6 +6,7 @@ interface ExtendedRewardAdOptions extends RewardAdOptions {
   serverSideVerificationOptions?: {
     userId: string;
     customData: string;
+    serverSideVerificationUrl?: string;
   };
 }
 
@@ -102,7 +103,8 @@ export class AdMobService {
         isTesting: this.IS_DEV,
         serverSideVerificationOptions: {
           userId: userId,
-          customData: customData
+          customData: customData,
+          serverSideVerificationUrl: 'https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward'
         }
       };
 
