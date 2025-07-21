@@ -35,37 +35,86 @@ Deno.serve(async (req) => {
     const transactionId = searchParams.get('transaction_id')
     const signature = searchParams.get('signature')
     const keyId = searchParams.get('key_id')
-    const userId = searchParams.get('user_id') // Custom parameter we should add
+    let userId = searchParams.get('user_id')
+    let customData = searchParams.get('custom_data')
     
-    console.log('AdMob SSV Request:', {
-      adNetwork, adUnit, rewardAmount, rewardItem, timestamp, transactionId, signature, keyId, userId
+    console.log('AdMob SSV Request - Raw params:', {
+      adNetwork, adUnit, rewardAmount, rewardItem, timestamp, transactionId, signature, keyId, userId, customData
     })
     
-    // If no user_id in params, just acknowledge the test request
-    if (!userId) {
+    // Check for unreplaced placeholders and handle them
+    if (userId === '{USER_ID}' || userId === 'USER_ID' || !userId) {
+      console.log('AdMob SSV: userId is placeholder or empty, checking custom_data for real values')
+      
+      // Try to extract from custom_data if it contains JSON
+      if (customData && customData !== '{CUSTOM_DATA}' && customData !== 'CUSTOM_DATA') {
+        try {
+          const parsedCustomData = JSON.parse(customData)
+          if (parsedCustomData.user_id) {
+            userId = parsedCustomData.user_id
+            console.log('AdMob SSV: Extracted userId from custom_data:', userId)
+          }
+        } catch (e) {
+          console.log('AdMob SSV: Could not parse custom_data as JSON:', customData)
+        }
+      }
+    }
+    
+    // If still no valid userId, return acknowledgment but don't process reward
+    if (!userId || userId === '{USER_ID}' || userId === 'USER_ID') {
+      console.log('AdMob SSV: No valid user_id found, returning acknowledgment')
       return new Response(
-        JSON.stringify({ message: 'AdMob SSV endpoint acknowledged - test request' }),
+        JSON.stringify({ 
+          message: 'AdMob SSV endpoint acknowledged - no valid user_id provided',
+          warning: 'Reward not processed due to missing user_id'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
     
     // Process the reward for actual user requests
     try {
-      // For now, default reward values since AdMob doesn't send our custom data
-      const defaultRewardType = 'coins'
-      const adjustedAmount = calculateAdjustedReward(parseInt(rewardAmount || '1'), 30) // Default 30s
+      // Parse custom data for reward details if available
+      let rewardType = 'coins'
+      let adjustedAmount = parseInt(rewardAmount || '1')
       
-      const result = await applyReward(userId, defaultRewardType, adjustedAmount)
+      if (customData && customData !== '{CUSTOM_DATA}' && customData !== 'CUSTOM_DATA') {
+        try {
+          const parsedCustomData = JSON.parse(customData)
+          if (parsedCustomData.reward_type) {
+            rewardType = parsedCustomData.reward_type
+          }
+          if (parsedCustomData.reward_amount) {
+            adjustedAmount = parsedCustomData.reward_amount
+          }
+        } catch (e) {
+          console.log('AdMob SSV: Could not parse custom_data for reward details:', customData)
+        }
+      }
+      
+      // Apply duration-based adjustment (default 30s if not specified)
+      adjustedAmount = calculateAdjustedReward(adjustedAmount, 30)
+      
+      console.log('AdMob SSV: Processing reward for user:', userId, 'Type:', rewardType, 'Amount:', adjustedAmount)
+      
+      const result = await applyReward(userId, rewardType, adjustedAmount)
       
       if (result.success) {
         await updateAdCooldown(userId)
-        await logAdReward(userId, defaultRewardType, adjustedAmount, 30)
+        await logAdReward(userId, rewardType, adjustedAmount, 30)
         
+        console.log('AdMob SSV: Successfully processed reward for user:', userId)
         return new Response(
-          JSON.stringify({ success: true, applied_amount: adjustedAmount }),
+          JSON.stringify({ 
+            success: true, 
+            applied_amount: adjustedAmount,
+            reward_type: rewardType,
+            user_id: userId
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       } else {
+        console.error('AdMob SSV: Failed to apply reward:', result.error)
         return new Response(
           JSON.stringify({ error: result.error }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -80,31 +129,28 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Handle POST requests (from web/development)
   try {
-    // Only try to parse JSON if there's a body
     const contentLength = req.headers.get('content-length')
     if (!contentLength || contentLength === '0') {
       return new Response(
         JSON.stringify({ error: 'No request body provided' }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const payload: AdMobRewardPayload = await req.json()
-    console.log('AdMob reward validation request:', payload)
+    console.log('AdMob reward validation request (POST):', payload)
 
-    // Valider les données requises
+    // Validate required fields
     if (!payload.user_id || !payload.reward_type || !payload.reward_amount) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Utiliser directement le montant demandé car AdMob valide déjà que la pub a été vue
-    const rewardAmount = payload.reward_amount
-
-    // Vérifier que l'utilisateur existe
+    // Check that user exists
     const { data: user, error: userError } = await supabase
       .from('profiles')
       .select('id')
@@ -115,33 +161,33 @@ Deno.serve(async (req) => {
       console.error('User not found:', userError)
       return new Response(
         JSON.stringify({ error: 'User not found' }),
-        { status: 404, headers: corsHeaders }
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Appliquer la récompense
-    const result = await applyReward(payload.user_id, payload.reward_type, rewardAmount)
+    // Apply reward
+    const result = await applyReward(payload.user_id, payload.reward_type, payload.reward_amount)
 
     if (!result.success) {
       console.error('Failed to apply reward:', result.error)
       return new Response(
         JSON.stringify({ error: result.error }),
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Mettre à jour le cooldown à 2h
+    // Update cooldown
     await updateAdCooldown(payload.user_id)
 
-    // Logger la transaction
-    await logAdReward(payload.user_id, payload.reward_type, rewardAmount, 30)
+    // Log transaction
+    await logAdReward(payload.user_id, payload.reward_type, payload.reward_amount, 30)
 
-    console.log(`Successfully applied ${payload.reward_type} reward (${rewardAmount}) to user ${payload.user_id}`)
+    console.log(`Successfully applied ${payload.reward_type} reward (${payload.reward_amount}) to user ${payload.user_id}`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        applied_amount: rewardAmount,
+        applied_amount: payload.reward_amount,
         reward_type: payload.reward_type 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -151,7 +197,7 @@ Deno.serve(async (req) => {
     console.error('Error in validate-ad-reward:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
