@@ -98,13 +98,15 @@ export class AdMobService {
         reward_amount: rewardAmount
       });
 
+      const ssvUrl = `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward?ad_network={AD_NETWORK}&ad_unit={AD_UNIT}&reward_amount={REWARD_AMOUNT}&reward_item={REWARD_ITEM}&timestamp={TIMESTAMP}&transaction_id={TRANSACTION_ID}&signature={SIGNATURE}&key_id={KEY_ID}&user_id=${userId}&custom_data=${encodeURIComponent(customData)}`;
+
       const options: ExtendedRewardAdOptions = {
         adId: this.REWARDED_AD_ID,
         isTesting: this.IS_DEV,
         serverSideVerificationOptions: {
           userId: userId,
           customData: customData,
-          serverSideVerificationUrl: 'https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward'
+          serverSideVerificationUrl: ssvUrl
         }
       };
 
