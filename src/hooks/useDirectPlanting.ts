@@ -152,18 +152,14 @@ export const useDirectPlanting = () => {
 
       console.log('🌱 Plante plantée avec succès');
 
-      // Déduire le coût et synchroniser robot_last_collected si robot actif
-      const newCoins = Math.max(0, currentCoins - cost);
+      // ❌ BUG FIX: NE PLUS synchroniser robot_last_collected lors de la plantation
+      // Cela efface l'accumulation du robot passif !!
       const updateData: any = {
-        coins: newCoins,
+        coins: Math.max(0, currentCoins - cost),
         last_played: now
       };
 
-      // Si le robot passif est actif, synchroniser son timestamp pour éviter l'accumulation incorrecte
-      if (hasPassiveRobot) {
-        updateData.robot_last_collected = now;
-        console.log('🤖 Synchronisation timestamp robot lors de la plantation manuelle');
-      }
+      console.log(`🌱 Plantation sans affecter l'accumulation du robot`);
 
       const { error: updateCoinsError } = await supabase
         .from('player_gardens')
@@ -178,7 +174,8 @@ export const useDirectPlanting = () => {
       // Déclencher l'animation de déduction des pièces
       triggerCoinAnimation(-cost);
 
-      console.log(`💰 Coût déduit: ${currentCoins} → ${newCoins}`);
+      console.log(`💰 Coût déduit: ${currentCoins} → ${Math.max(0, currentCoins - cost)}`);
+      console.log(`🤖 Accumulation robot préservée (pas de réinitialisation du timestamp)`);
 
       // Enregistrer la transaction
       try {
@@ -216,8 +213,8 @@ export const useDirectPlanting = () => {
             ...old.garden,
             coins: newCoins,
             last_played: now,
-            // Synchroniser robot_last_collected si robot actif
-            robot_last_collected: hasPassiveRobot ? now : old.garden.robot_last_collected
+            // ❌ BUG FIX: Préserver robot_last_collected pour maintenir l'accumulation
+            robot_last_collected: old.garden.robot_last_collected
           },
           plots: old.plots.map((plot: any) => 
             plot.plot_number === plotNumber 

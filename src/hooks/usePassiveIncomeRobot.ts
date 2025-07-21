@@ -98,15 +98,15 @@ export const usePassiveIncomeRobot = () => {
         if (safeMinutesElapsed >= 1) {
           const freshAccumulation = safeMinutesElapsed * coinsPerMinute;
           const maxAccumulation = coinsPerMinute * maxMinutes;
-          const newAccumulation = Math.min(freshAccumulation, maxAccumulation);
+          const newAccumulation = Math.min(robotState.accumulatedCoins + freshAccumulation, maxAccumulation);
 
           console.log(`🤖 Robot accumulation update: ${safeMinutesElapsed}min × ${coinsPerMinute} = ${newAccumulation} coins`);
 
+          // Mettre à jour UNIQUEMENT l'accumulation (pas le timestamp)
           await supabase
             .from('player_gardens')
             .update({ 
-              robot_accumulated_coins: newAccumulation,
-              robot_last_collected: now.toISOString()
+              robot_accumulated_coins: newAccumulation
             })
             .eq('user_id', user.id);
 
@@ -312,18 +312,19 @@ export const usePassiveIncomeRobot = () => {
     }
   });
 
-  // Fonction utilitaire pour synchroniser robot_last_collected (utilisée par d'autres hooks)
+  // Fonction utilitaire pour synchroniser robot_last_collected UNIQUEMENT lors de la collecte
   const syncRobotTimestamp = async () => {
     if (!user?.id || !hasPassiveRobot) return;
     
     const now = new Date().toISOString();
-    console.log(`🤖 Synchronisation timestamp robot: ${now}`);
+    console.log(`🤖 Synchronisation timestamp robot lors de la collecte: ${now}`);
     
     try {
       await supabase
         .from('player_gardens')
         .update({ 
           robot_last_collected: now,
+          robot_accumulated_coins: 0, // Réinitialiser l'accumulation après collecte
           last_played: now
         })
         .eq('user_id', user.id);
