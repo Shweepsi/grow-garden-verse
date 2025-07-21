@@ -5,7 +5,7 @@ import { useAnimations } from '@/contexts/AnimationContext';
 import { FloatingNumber } from '@/components/animations/FloatingNumber';
 import { AdRewardCard } from '@/components/ads/AdRewardCard';
 import { AdModal } from '@/components/ads/AdModal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
@@ -51,6 +51,16 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
       default: return 'Boost';
     }
   };
+
+  // Debug pour comprendre l'état du bouton
+  useEffect(() => {
+    console.log('🎁 AdState Debug:', { 
+      dailyCount: adState.dailyCount, 
+      maxDaily: adState.maxDaily, 
+      available: adState.available,
+      shouldAnimate: adState.dailyCount < adState.maxDaily && adState.available
+    });
+  }, [adState]);
 
   return (
     <div className="relative z-20">
