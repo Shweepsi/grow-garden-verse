@@ -89,9 +89,8 @@ export class AdSessionService {
 
       if (updateError) throw updateError;
 
-      // Update cooldown
-      const cooldownInfo = await AdCooldownService.getCooldownInfo(userId);
-      await AdCooldownService.updateCooldown(userId, 30000, cooldownInfo.dailyCount); // Durée fixe pour cooldown
+      // Update cooldown - 2 heures fixes
+      await AdCooldownService.updateAfterAdWatch(userId);
 
       // Distribute reward to player
       const sessionRewardData = session.reward_data as any;

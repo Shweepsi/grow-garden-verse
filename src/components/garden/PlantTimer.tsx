@@ -16,8 +16,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
   // Calculer l'intervalle optimal avec useMemo pour éviter les recalculs
   const updateInterval = useMemo(() => {
     if (!plantedAt) return 1000;
-    const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds);
-    return PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds, remaining);
+    return PlantGrowthService.getOptimalUpdateInterval();
   }, [plantedAt, growthTimeSeconds]);
 
   useEffect(() => {
@@ -49,7 +48,9 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
   return (
     <div className={`flex items-center gap-1 text-xs transition-colors duration-300 ${urgencyClass} ${className}`}>
       <Clock className="h-3 w-3" />
-      <span className="font-medium">{PlantGrowthService.formatTimeRemaining(timeRemaining)}</span>
+      <span className="font-medium">{PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds) > 0 
+        ? `${Math.floor(PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds) / 60)}m ${PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds) % 60}s`
+        : 'Prêt !'}</span>
     </div>
   );
 };

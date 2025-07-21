@@ -13,14 +13,14 @@ export class AdRewardDistributionService {
         case 'gems':
           return await this.distributeGemReward(userId, reward.amount);
         
-        case 'xp_boost':
-          return await this.distributeXpReward(userId, reward.amount);
+        case 'coin_boost':
+          return await this.distributeCoinBoost(userId, reward.amount, reward.duration || 60);
+        
+        case 'gem_boost':
+          return await this.distributeGemBoost(userId, reward.amount, reward.duration || 30);
         
         case 'growth_boost':
           return await this.distributeGrowthBoost(userId, reward.amount, reward.duration || 30);
-        
-        case 'robot_boost':
-          return await this.distributeRobotBoost(userId, reward.amount, reward.duration || 60);
         
         default:
           return { success: false, error: `Type de récompense non supporté: ${reward.type}` };
@@ -93,47 +93,67 @@ export class AdRewardDistributionService {
     return { success: true };
   }
 
-  private static async distributeXpReward(userId: string, amount: number): Promise<{ success: boolean; error?: string }> {
-    const { data: garden, error: fetchError } = await supabase
-      .from('player_gardens')
-      .select('experience, level')
-      .eq('user_id', userId)
-      .single();
+  private static async distributeCoinBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
+    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
 
-    if (fetchError) {
-      return { success: false, error: 'Erreur lors de la récupération du jardin' };
+    const { error } = await supabase
+      .from('active_effects')
+      .insert({
+        user_id: userId,
+        effect_type: 'coin_boost',
+        effect_value: multiplier,
+        expires_at: expiresAt.toISOString(),
+        source: 'ad_reward'
+      });
+
+    if (error) {
+      return { success: false, error: 'Erreur lors de l\'activation du boost pièces' };
     }
 
-    const newXp = (garden.experience || 0) + amount;
-    const newLevel = Math.floor(newXp / 100) + 1; // Niveau basé sur l'XP
+    console.log(`AdMob: Applied coin boost (x${multiplier} for ${durationMinutes}min) to user ${userId}`);
+    return { success: true };
+  }
 
-    const { error: updateError } = await supabase
-      .from('player_gardens')
-      .update({ 
-        experience: newXp,
-        level: Math.max(garden.level || 1, newLevel)
-      })
-      .eq('user_id', userId);
+  private static async distributeGemBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
+    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
 
-    if (updateError) {
-      return { success: false, error: 'Erreur lors de la mise à jour de l\'expérience' };
+    const { error } = await supabase
+      .from('active_effects')
+      .insert({
+        user_id: userId,
+        effect_type: 'gem_boost',
+        effect_value: multiplier,
+        expires_at: expiresAt.toISOString(),
+        source: 'ad_reward'
+      });
+
+    if (error) {
+      return { success: false, error: 'Erreur lors de l\'activation du boost gemmes' };
     }
 
-    console.log(`AdMob: Distributed ${amount} XP to user ${userId}. New total: ${newXp}`);
+    console.log(`AdMob: Applied gem boost (x${multiplier} for ${durationMinutes}min) to user ${userId}`);
     return { success: true };
   }
 
   private static async distributeGrowthBoost(userId: string, reductionPercentage: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
-    // Cette fonction nécessiterait une table active_effects pour stocker les boosts temporaires
-    // Pour l'instant, on simule le succès
-    console.log(`AdMob: Applied growth boost (${reductionPercentage}% reduction for ${durationMinutes}min) to user ${userId}`);
-    return { success: true };
-  }
+    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+    const effectValue = 1 - (reductionPercentage / 100); // Convertir en multiplicateur
 
-  private static async distributeRobotBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
-    // Cette fonction nécessiterait une table active_effects pour stocker les boosts temporaires
-    // Pour l'instant, on simule le succès
-    console.log(`AdMob: Applied robot boost (${multiplier}% for ${durationMinutes}min) to user ${userId}`);
+    const { error } = await supabase
+      .from('active_effects')
+      .insert({
+        user_id: userId,
+        effect_type: 'growth_boost',
+        effect_value: effectValue,
+        expires_at: expiresAt.toISOString(),
+        source: 'ad_reward'
+      });
+
+    if (error) {
+      return { success: false, error: 'Erreur lors de l\'activation du boost croissance' };
+    }
+
+    console.log(`AdMob: Applied growth boost (${reductionPercentage}% reduction for ${durationMinutes}min) to user ${userId}`);
     return { success: true };
   }
 }

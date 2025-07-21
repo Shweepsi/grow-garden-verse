@@ -14,11 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_effects: {
+        Row: {
+          created_at: string
+          effect_type: string
+          effect_value: number
+          expires_at: string
+          id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effect_type: string
+          effect_value?: number
+          expires_at: string
+          id?: string
+          source?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effect_type?: string
+          effect_value?: number
+          expires_at?: string
+          id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ad_cooldowns: {
         Row: {
           created_at: string
           daily_count: number
           daily_reset_date: string
+          fixed_cooldown_duration: number | null
           id: string
           last_ad_watched: string | null
           updated_at: string
@@ -28,6 +59,7 @@ export type Database = {
           created_at?: string
           daily_count?: number
           daily_reset_date?: string
+          fixed_cooldown_duration?: number | null
           id?: string
           last_ad_watched?: string | null
           updated_at?: string
@@ -37,6 +69,7 @@ export type Database = {
           created_at?: string
           daily_count?: number
           daily_reset_date?: string
+          fixed_cooldown_duration?: number | null
           id?: string
           last_ad_watched?: string | null
           updated_at?: string
@@ -454,6 +487,16 @@ export type Database = {
       cleanup_expired_effects: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_active_effects: {
+        Args: { p_user_id: string }
+        Returns: {
+          id: string
+          effect_type: string
+          effect_value: number
+          expires_at: string
+          source: string
+        }[]
       }
       get_plot_unlock_cost: {
         Args: { plot_number: number }

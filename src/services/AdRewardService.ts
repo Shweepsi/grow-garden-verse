@@ -27,19 +27,6 @@ export class AdRewardService {
         duration: 30,
         description: 'Croissance -50% (30min)',
         emoji: '⚡'
-      },
-      {
-        type: 'robot_boost',
-        amount: 100, // 100% de bonus
-        duration: 60,
-        description: 'Robot ×2 (1h)',
-        emoji: '🤖'
-      },
-      {
-        type: 'xp_boost',
-        amount: Math.floor(playerLevel * 10 * permanentMultiplier),
-        description: `${Math.floor(playerLevel * 10 * permanentMultiplier)} XP`,
-        emoji: '⭐'
       }
     ];
   }
@@ -51,8 +38,8 @@ export class AdRewardService {
       return {
         available: cooldownInfo.available,
         cooldownEnds: cooldownInfo.cooldownEnds,
-        dailyCount: cooldownInfo.dailyCount,
-        maxDaily: AdCooldownService.maxDailyAds,
+        dailyCount: 0, // Plus de limite quotidienne
+        maxDaily: 999, // Pas de limite
         currentReward: null,
         timeUntilNext: cooldownInfo.timeUntilNext
       };
@@ -62,7 +49,7 @@ export class AdRewardService {
         available: false,
         cooldownEnds: null,
         dailyCount: 0,
-        maxDaily: AdCooldownService.maxDailyAds,
+        maxDaily: 999,
         currentReward: null,
         timeUntilNext: 0
       };

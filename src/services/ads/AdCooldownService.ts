@@ -35,7 +35,7 @@ export class AdCooldownService {
     return { available, cooldownEnds, timeUntilNext };
   }
 
-  static async updateCooldown(userId: string): Promise<void> {
+  static async updateAfterAdWatch(userId: string): Promise<void> {
     const now = new Date();
     
     const { error } = await supabase
@@ -50,6 +50,10 @@ export class AdCooldownService {
       });
 
     if (error) throw error;
+  }
+
+  static async updateCooldown(userId: string): Promise<void> {
+    return this.updateAfterAdWatch(userId);
   }
 
   static get cooldownHours() {

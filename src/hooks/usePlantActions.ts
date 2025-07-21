@@ -73,7 +73,9 @@ export const usePlantActions = () => {
       
       if (!isReady) {
         const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, growthTime);
-        const timeString = PlantGrowthService.formatTimeRemaining(timeRemaining);
+        const timeString = timeRemaining > 60 
+          ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
+          : `${timeRemaining}s`;
         console.log(`⏰ Plante pas encore prête, temps restant: ${timeString}`);
         throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
       }
