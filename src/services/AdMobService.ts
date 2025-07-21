@@ -23,9 +23,12 @@ interface AdWatchResult {
 }
 
 export class AdMobService {
-  private static readonly REWARDED_AD_ID = __DEV__ 
-    ? 'ca-app-pub-3940256099942544/5224354917' 
-    : 'ca-app-pub-4824355487707598/1680280074';
+  // Détecter l'environnement de développement plus fiablement
+  private static readonly IS_DEV = !Capacitor.isNativePlatform() || window.location.hostname.includes('localhost') || window.location.hostname.includes('lovableproject');
+  
+  private static readonly REWARDED_AD_ID = AdMobService.IS_DEV 
+    ? 'ca-app-pub-3940256099942544/5224354917'  // ID de test AdMob
+    : 'ca-app-pub-4824355487707598/1680280074';  // ID de production
 
   private static state: AdMobState = {
     isInitialized: false,
@@ -44,8 +47,8 @@ export class AdMobService {
       console.log('AdMob: Initializing...');
       
       await AdMob.initialize({
-        testingDevices: __DEV__ ? [] : [],
-        initializeForTesting: __DEV__
+        testingDevices: this.IS_DEV ? [] : [],
+        initializeForTesting: this.IS_DEV
       });
 
       this.state.isInitialized = true;
@@ -96,7 +99,7 @@ export class AdMobService {
 
       const options: ExtendedRewardAdOptions = {
         adId: this.REWARDED_AD_ID,
-        isTesting: __DEV__,
+        isTesting: this.IS_DEV,
         serverSideVerificationOptions: {
           userId: userId,
           customData: customData
@@ -115,7 +118,7 @@ export class AdMobService {
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
       this.state.isAdLoading = false;
-      this.state.lastError = (error as Error).message;
+      this.state.lastError = this.getReadableError(error as Error);
       
       if (retryCount < 2 && this.shouldRetry(error as Error)) {
         console.log(`AdMob: Retrying load (${retryCount + 1}/3)...`);
@@ -132,11 +135,35 @@ export class AdMobService {
       'network',
       'timeout',
       'no_fill',
-      'internal'
+      'internal',
+      'doubleclick.net', // Erreurs de connexion aux serveurs AdMob
+      'failed to connect'
     ];
     
     const errorMessage = error.message.toLowerCase();
     return retryableErrors.some(retryableError => errorMessage.includes(retryableError));
+  }
+
+  private static getReadableError(error: Error): string {
+    const message = error.message.toLowerCase();
+    
+    if (message.includes('doubleclick.net') || message.includes('failed to connect')) {
+      return 'Connexion impossible aux serveurs publicitaires. Vérifiez votre connexion internet.';
+    }
+    
+    if (message.includes('no_fill')) {
+      return 'Aucune publicité disponible pour le moment. Réessayez plus tard.';
+    }
+    
+    if (message.includes('network')) {
+      return 'Problème de réseau. Vérifiez votre connexion internet.';
+    }
+    
+    if (message.includes('timeout')) {
+      return 'Timeout lors du chargement de la publicité. Réessayez.';
+    }
+    
+    return 'Erreur lors du chargement de la publicité. Réessayez plus tard.';
   }
 
   static async showRewardedAd(userId: string, rewardType: string, rewardAmount: number): Promise<AdWatchResult> {
@@ -181,7 +208,7 @@ export class AdMobService {
       return { 
         success: false, 
         rewarded: false,
-        error: (error as Error).message 
+        error: this.getReadableError(error as Error)
       };
     }
   }
