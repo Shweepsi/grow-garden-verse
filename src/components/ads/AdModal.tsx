@@ -7,6 +7,7 @@ import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { AdRewardDistributionService } from '@/services/ads/AdRewardDistributionService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useAnimations } from '@/contexts/AnimationContext';
 import { Loader2, Play, Coins, Gem, Zap, TrendingUp, Star } from 'lucide-react';
 import { AdReward } from '@/types/ads';
 
@@ -18,6 +19,7 @@ interface AdModalProps {
 export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
 
@@ -88,17 +90,31 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
         // Attendre un délai pour la validation serveur SSV, puis backup côté client
         await new Promise(resolve => setTimeout(resolve, 2000));
         
+        let rewardDistributed = false;
         try {
           await AdRewardDistributionService.distributeReward(user.id, selectedReward);
           console.log('Récompense distribuée côté client:', selectedReward);
+          rewardDistributed = true;
+          
+          // Déclencher les animations comme lors des récoltes
+          if (selectedReward.type === 'coins') {
+            triggerCoinAnimation(selectedReward.amount);
+          } else if (selectedReward.type === 'gems') {
+            triggerGemAnimation(selectedReward.amount);
+          }
+          // Les boosts ne nécessitent pas d'animation particulière
+          
         } catch (rewardError) {
           console.error('Erreur distribution côté client:', rewardError);
         }
         
-        toast({
-          title: "Récompense obtenue !",
-          description: selectedReward.description
-        });
+        // Afficher le message de succès seulement si la récompense a été distribuée
+        if (rewardDistributed) {
+          toast({
+            title: "Récompense obtenue !",
+            description: selectedReward.description
+          });
+        }
         
         // Fermer la modal et actualiser les cooldowns
         onOpenChange(false);
