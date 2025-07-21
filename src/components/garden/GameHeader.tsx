@@ -158,21 +158,13 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
-                className={`h-8 px-2 border-0 relative overflow-hidden transition-all duration-300 ${
+                className={`h-8 px-2 border-0 transition-all duration-300 ${
                   adState.dailyCount < adState.maxDaily && adState.available
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-lg shadow-orange-400/50 animate-bounce-slow hover:scale-110' 
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-lg shadow-orange-400/50 animate-bounce-slow' 
                     : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
                 }`}
               >
-                <Gift className={`h-3 w-3 transition-transform duration-200 ${
-                  adState.dailyCount < adState.maxDaily && adState.available ? 'animate-pulse text-white' : ''
-                }`} />
-                {adState.dailyCount < adState.maxDaily && adState.available && (
-                  <>
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-300/40 to-orange-200/40 animate-pulse" />
-                    <div className="absolute -inset-1 bg-orange-400/20 rounded-lg animate-ping" />
-                  </>
-                )}
+                <Gift className="h-3 w-3 text-white" />
               </Button>
             </div>
 
