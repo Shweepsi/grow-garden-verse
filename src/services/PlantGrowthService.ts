@@ -14,10 +14,21 @@ export class PlantGrowthService {
   }
 
   static calculateHarvestAmount(plantType: PlantType, level: number): number {
-    // Montant de récolte de base, ajusté selon le niveau
-    const baseAmount = plantType.base_harvest_amount || 10;
+    // Montant de récolte de base selon la rareté
+    const baseAmount = this.getBaseAmount(plantType);
     const levelMultiplier = 1 + (level / 10); // Augmente de 10% par niveau
     return Math.floor(baseAmount * levelMultiplier);
+  }
+
+  private static getBaseAmount(plantType: PlantType): number {
+    switch (plantType.rarity) {
+      case 'common': return 10;
+      case 'uncommon': return 25;
+      case 'rare': return 50;
+      case 'epic': return 100;
+      case 'legendary': return 200;
+      default: return 10;
+    }
   }
 
   static calculateResellPrice(plantType: PlantType, level: number): number {
@@ -67,5 +78,18 @@ export class PlantGrowthService {
     const elapsed = now - plantedTime;
     
     return Math.max(0, Math.ceil((requiredTime - elapsed) / 1000));
+  }
+
+  // Aliases pour compatibilité avec le code existant
+  static isPlantReady = this.isReadyToHarvest;
+  static formatTimeRemaining = this.getTimeRemaining;
+  static calculateGrowthProgress(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
+    const timeRemaining = this.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
+    const totalTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
+    return Math.max(0, Math.min(100, ((totalTime - timeRemaining) / totalTime) * 100));
+  }
+
+  static getOptimalUpdateInterval(): number {
+    return 1000; // 1 seconde
   }
 }

@@ -92,11 +92,35 @@ export const useAdRewards = () => {
     }
   }, []);
 
+  // Fonction pour regarder une pub avec validation serveur
+  const watchAd = async (rewardType: string, rewardAmount: number) => {
+    if (!user?.id) return { success: false, error: 'Not authenticated' };
+
+    try {
+      setLoading(true);
+      const result = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
+      
+      if (result.success) {
+        await refreshAdState();
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('Error watching ad:', error);
+      return { success: false, error: (error as Error).message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     adState,
     loading,
     refreshAdState,
     formatTimeUntilNext,
+    watchAd,
+    debug: { adMobState: AdMobService.getState() },
     availableRewards: [] // Géré maintenant dans AdModal
   };
 };

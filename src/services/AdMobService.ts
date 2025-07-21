@@ -89,12 +89,7 @@ export class AdMobService {
       
       const options: RewardAdOptions = {
         adId: this.REWARDED_AD_ID,
-        isTesting: __DEV__,
-        serverSideVerificationOptions: {
-          userId: '', // Sera défini lors de showRewardedAd
-          customData: '',
-          serverSideVerificationURL: this.SERVER_VALIDATION_URL
-        }
+        isTesting: __DEV__
       };
 
       await AdMob.prepareRewardVideoAd(options);
@@ -176,15 +171,10 @@ export class AdMobService {
 
       console.log('AdMob: Showing rewarded ad...');
       
-      // Configurer les options avec validation serveur
+      // Configurer les options de base
       const options: RewardAdOptions = {
         adId: this.REWARDED_AD_ID,
-        isTesting: __DEV__,
-        serverSideVerificationOptions: {
-          userId: userId,
-          customData: JSON.stringify({ reward_type: rewardType, reward_amount: rewardAmount }),
-          serverSideVerificationURL: this.SERVER_VALIDATION_URL
-        }
+        isTesting: __DEV__
       };
 
       // AdMob gère automatiquement la validation serveur
