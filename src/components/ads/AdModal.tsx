@@ -160,38 +160,11 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
-        // Timeout atteint, essayer le fallback manuel
-        console.log('AdMob: SSV timeout - trying manual fallback');
-        
-        try {
-          const { error } = await supabase.functions.invoke('validate-ad-reward', {
-            body: {
-              user_id: user.id,
-              reward_type: selectedReward.type,
-              reward_amount: selectedReward.amount,
-              ad_duration: 30
-            }
-          });
-          
-          if (!error) {
-            console.log('Manual fallback reward applied successfully');
-            await checkRewardReceived();
-            toast({
-              title: "Récompense obtenue !",
-              description: selectedReward.description
-            });
-            onOpenChange(false);
-            await AdCooldownService.updateAfterAdWatch(user.id);
-            return;
-          }
-        } catch (fallbackError) {
-          console.error('Manual fallback failed:', fallbackError);
-        }
-        
-        // Si même le fallback échoue
+        // Timeout atteint - seul AdMob SSV peut accorder la récompense
+        console.log('AdMob: Timeout - récompense non reçue via SSV');
         toast({
           title: "Délai d'attente dépassé",
-          description: "La récompense n'a pas été reçue. Réessayez dans quelques instants.",
+          description: "La récompense n'a pas été reçue. La validation AdMob peut prendre quelques minutes.",
           variant: "destructive"
         });
       };
