@@ -101,8 +101,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Calculer la récompense ajustée selon la durée
-    const adjustedAmount = calculateAdjustedReward(payload.reward_amount, payload.ad_duration)
+    // Utiliser directement le montant demandé car AdMob valide déjà que la pub a été vue
+    const rewardAmount = payload.reward_amount
 
     // Vérifier que l'utilisateur existe
     const { data: user, error: userError } = await supabase
@@ -119,8 +119,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Appliquer la récompense selon le type
-    const result = await applyReward(payload.user_id, payload.reward_type, adjustedAmount)
+    // Appliquer la récompense
+    const result = await applyReward(payload.user_id, payload.reward_type, rewardAmount)
 
     if (!result.success) {
       console.error('Failed to apply reward:', result.error)
@@ -134,14 +134,14 @@ Deno.serve(async (req) => {
     await updateAdCooldown(payload.user_id)
 
     // Logger la transaction
-    await logAdReward(payload.user_id, payload.reward_type, adjustedAmount, payload.ad_duration)
+    await logAdReward(payload.user_id, payload.reward_type, rewardAmount, 30)
 
-    console.log(`Successfully applied ${payload.reward_type} reward (${adjustedAmount}) to user ${payload.user_id}`)
+    console.log(`Successfully applied ${payload.reward_type} reward (${rewardAmount}) to user ${payload.user_id}`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        applied_amount: adjustedAmount,
+        applied_amount: rewardAmount,
         reward_type: payload.reward_type 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

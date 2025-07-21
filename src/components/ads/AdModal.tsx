@@ -6,7 +6,7 @@ import { AdMobService } from '@/services/AdMobService';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Play, Clock, Coins, Gem, Zap, TrendingUp, Star } from 'lucide-react';
+import { Loader2, Play, Coins, Gem, Zap, TrendingUp, Star } from 'lucide-react';
 import { AdReward } from '@/types/ads';
 
 interface AdModalProps {
@@ -19,60 +19,47 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { toast } = useToast();
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
-  const [adDuration, setAdDuration] = useState<number | null>(null);
 
-  // Charger la durée de la pub dès l'ouverture
+  // Précharger la publicité à l'ouverture
   useEffect(() => {
     if (open) {
-      const loadAdDuration = async () => {
+      const preloadAd = async () => {
         await AdMobService.loadRewardedAd();
-        const duration = AdMobService.getAdDuration();
-        setAdDuration(duration);
       };
-      loadAdDuration();
+      preloadAd();
     }
   }, [open]);
 
-  // Calculer les récompenses ajustées selon la durée
-  const calculateAdjustedReward = (baseAmount: number): number => {
-    if (!adDuration) return baseAmount;
-    
-    if (adDuration >= 60) return Math.floor(baseAmount * 2.0); // 60s+ = x2
-    if (adDuration >= 30) return Math.floor(baseAmount * 1.5); // 30s+ = x1.5
-    if (adDuration >= 15) return baseAmount; // 15s+ = normal
-    return Math.floor(baseAmount * 0.5); // <15s = réduit
-  };
-
-  // Récompenses disponibles avec montants ajustés
+  // Récompenses disponibles avec montants fixes (AdMob valide déjà la visualisation)
   const availableRewards: AdReward[] = [
     {
       type: 'coins',
-      amount: calculateAdjustedReward(100),
-      description: `Gagnez ${calculateAdjustedReward(100)} pièces`,
+      amount: 150,
+      description: 'Gagnez 150 pièces',
       emoji: '🪙'
     },
     {
       type: 'gems',
-      amount: calculateAdjustedReward(10),
-      description: `Gagnez ${calculateAdjustedReward(10)} gemmes`,
+      amount: 15,
+      description: 'Gagnez 15 gemmes',
       emoji: '💎'
     },
     {
       type: 'coin_boost',
-      amount: calculateAdjustedReward(2),
-      description: `Boost pièces x2 pendant 1h`,
+      amount: 2,
+      description: 'Boost pièces x2 pendant 1h',
       emoji: '💰'
     },
     {
       type: 'gem_boost',
-      amount: calculateAdjustedReward(1.5),
-      description: `Boost gemmes x1.5 pendant 30min`,
+      amount: 1.5,
+      description: 'Boost gemmes x1.5 pendant 30min',
       emoji: '✨'
     },
     {
       type: 'growth_boost',
-      amount: calculateAdjustedReward(0.5),
-      description: `Croissance -50% pendant 30min`,
+      amount: 0.5,
+      description: 'Croissance -50% pendant 30min',
       emoji: '🌱'
     }
   ];
@@ -142,24 +129,10 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           <DialogTitle className="flex items-center gap-2">
             <Play className="w-5 h-5" />
             Regarder une publicité
-            {adDuration && (
-              <span className="text-sm text-muted-foreground">
-                ({adDuration}s)
-              </span>
-            )}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {adDuration && (
-            <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">
-                Publicité de {adDuration} secondes - Récompenses ajustées
-              </span>
-            </div>
-          )}
-
           <div className="space-y-2">
             <h3 className="font-medium">Choisissez votre récompense :</h3>
             
@@ -205,7 +178,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  Regarder{adDuration ? ` (${adDuration}s)` : ''}
+                  Regarder
                 </>
               )}
             </Button>

@@ -7,7 +7,6 @@ interface AdMobState {
   isAdLoaded: boolean;
   isAdLoading: boolean;
   lastError: string | null;
-  adDuration: number | null;
 }
 
 interface AdWatchResult {
@@ -29,8 +28,7 @@ export class AdMobService {
     isInitialized: false,
     isAdLoaded: false,
     isAdLoading: false,
-    lastError: null,
-    adDuration: null
+    lastError: null
   };
 
   static async initialize(): Promise<boolean> {
@@ -62,7 +60,6 @@ export class AdMobService {
     if (!Capacitor.isNativePlatform()) {
       console.log('AdMob: Not on native platform - simulating load success');
       this.state.isAdLoaded = true;
-      this.state.adDuration = 30; // Simuler 30 secondes
       return true;
     }
 
@@ -94,12 +91,10 @@ export class AdMobService {
 
       await AdMob.prepareRewardVideoAd(options);
       
-      // Pour le moment, on utilise une durée par défaut car AdMob ne fournit pas facilement la durée réelle
-      this.state.adDuration = 30; // Durée typique des publicités récompensées
-      
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
-      console.log(`AdMob: Rewarded ad loaded, duration: ${this.state.adDuration}s`);
+      
+      console.log('AdMob: Rewarded ad loaded successfully');
       return true;
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
@@ -141,8 +136,7 @@ export class AdMobService {
           body: JSON.stringify({
             user_id: userId,
             reward_type: rewardType,
-            reward_amount: rewardAmount,
-            ad_duration: this.state.adDuration || 30
+            reward_amount: rewardAmount
           })
         });
 
@@ -184,9 +178,6 @@ export class AdMobService {
       
       console.log('AdMob: Ad watched successfully, result:', result);
       
-      // Garder la durée par défaut de 30 secondes
-      this.state.adDuration = 30;
-      
       console.log('AdMob: Validating reward with server...');
       
       // Valider manuellement après que l'utilisateur ait regardé la pub
@@ -197,8 +188,7 @@ export class AdMobService {
           body: JSON.stringify({
             user_id: userId,
             reward_type: rewardType,
-            reward_amount: rewardAmount,
-            ad_duration: this.state.adDuration || 30
+            reward_amount: rewardAmount
           })
         });
 
@@ -227,10 +217,6 @@ export class AdMobService {
         error: (error as Error).message 
       };
     }
-  }
-
-  static getAdDuration(): number | null {
-    return this.state.adDuration;
   }
 
   static getState(): AdMobState {
