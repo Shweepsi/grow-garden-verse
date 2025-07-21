@@ -13,6 +13,7 @@ import { useGameData } from '@/hooks/useGameData';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { Loader2, Play, Coins, Gem, Zap, TrendingUp, Star, AlertCircle } from 'lucide-react';
 import { AdReward } from '@/types/ads';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdModalProps {
   open: boolean;
@@ -159,8 +160,35 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
-        // Timeout atteint
-        console.log('AdMob: Timeout - récompense non reçue');
+        // Timeout atteint, essayer le fallback manuel
+        console.log('AdMob: SSV timeout - trying manual fallback');
+        
+        try {
+          const { error } = await supabase.functions.invoke('validate-ad-reward', {
+            body: {
+              user_id: user.id,
+              reward_type: selectedReward.type,
+              reward_amount: selectedReward.amount,
+              ad_duration: 30
+            }
+          });
+          
+          if (!error) {
+            console.log('Manual fallback reward applied successfully');
+            await checkRewardReceived();
+            toast({
+              title: "Récompense obtenue !",
+              description: selectedReward.description
+            });
+            onOpenChange(false);
+            await AdCooldownService.updateAfterAdWatch(user.id);
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('Manual fallback failed:', fallbackError);
+        }
+        
+        // Si même le fallback échoue
         toast({
           title: "Délai d'attente dépassé",
           description: "La récompense n'a pas été reçue. Réessayez dans quelques instants.",

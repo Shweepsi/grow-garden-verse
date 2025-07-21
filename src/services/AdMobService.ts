@@ -111,6 +111,7 @@ export class AdMobService {
       };
 
       console.log('AdMob: Loading with SSV options:', options.serverSideVerificationOptions);
+      console.log('AdMob: Complete SSV URL:', ssvUrl);
 
       await AdMob.prepareRewardVideoAd(options);
       
@@ -198,6 +199,7 @@ export class AdMobService {
       const result = await AdMob.showRewardVideoAd();
       
       console.log('AdMob: Ad watched successfully, SSV should handle validation:', result);
+      console.log('AdMob: Expected SSV callback to:', `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`);
       
       // AdMob handles server validation automatically via SSV
       this.state.isAdLoaded = false;
