@@ -10,7 +10,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameData } from '@/hooks/useGameData';
-import { Loader2, Play, Coins, Gem, Zap, TrendingUp, Star } from 'lucide-react';
+import { useAdRewards } from '@/hooks/useAdRewards';
+import { Loader2, Play, Coins, Gem, Zap, TrendingUp, Star, AlertCircle } from 'lucide-react';
 import { AdReward } from '@/types/ads';
 
 interface AdModalProps {
@@ -23,6 +24,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { toast } = useToast();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
   const { data: gameData, refetch: refetchGameData } = useGameData();
+  const { adState } = useAdRewards();
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
   const [isWaitingForReward, setIsWaitingForReward] = useState(false);
@@ -65,10 +67,12 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   }, [open, user?.id]);
 
   const handleWatchAd = async () => {
-    if (!selectedReward || !user?.id) {
+    if (!selectedReward || !user?.id || adState.dailyCount >= adState.maxDaily) {
       toast({
         title: "Erreur",
-        description: "Veuillez sélectionner une récompense",
+        description: adState.dailyCount >= adState.maxDaily 
+          ? "Limite quotidienne de 5 publicités atteinte" 
+          : "Veuillez sélectionner une récompense",
         variant: "destructive"
       });
       return;
@@ -252,7 +256,11 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
             </Button>
             <Button 
               onClick={handleWatchAd}
-              disabled={!selectedReward || isLoading}
+              disabled={
+                !selectedReward || 
+                isLoading ||
+                adState.dailyCount >= adState.maxDaily
+              }
               className="flex-1"
             >
               {isWatching ? (
@@ -264,6 +272,11 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Validation...
+                </>
+              ) : adState.dailyCount >= adState.maxDaily ? (
+                <>
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  Limite atteinte
                 </>
               ) : (
                 <>

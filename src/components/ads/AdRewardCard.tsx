@@ -7,7 +7,7 @@ import { AdModal } from './AdModal';
 import { Play, Clock, Loader2, Tv, AlertCircle } from 'lucide-react';
 
 export function AdRewardCard() {
-  const { adState, loading, formatTimeUntilNext, refreshAdState } = useAdRewards();
+  const { adState, loading, formatTimeUntilNext, getAdStatusMessage, refreshAdState } = useAdRewards();
   const [showAdModal, setShowAdModal] = useState(false);
 
   const handleOpenModal = async () => {
@@ -45,13 +45,19 @@ export function AdRewardCard() {
         <CardContent className="space-y-4">
           {adState.available ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  Disponible
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Regardez une pub pour gagner des récompenses !
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Disponible
+                  </Badge>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {adState.dailyCount}/{adState.maxDaily} aujourd'hui
+                </div>
+              </div>
+              
+              <div className="text-sm text-muted-foreground text-center">
+                Regardez une pub pour gagner des récompenses !
               </div>
               
               <Button
@@ -65,14 +71,20 @@ export function AdRewardCard() {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="border-orange-200 text-orange-800 dark:border-orange-800 dark:text-orange-200">
-                  <Clock className="w-3 h-3 mr-1" />
-                  Cooldown
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Prochaine disponible dans {formatTimeUntilNext(adState.timeUntilNext)}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-orange-200 text-orange-800 dark:border-orange-800 dark:text-orange-200">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {adState.dailyCount >= adState.maxDaily ? 'Limite atteinte' : 'Cooldown'}
+                  </Badge>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {adState.dailyCount}/{adState.maxDaily} aujourd'hui
+                </div>
+              </div>
+              
+              <div className="text-sm text-muted-foreground text-center">
+                {getAdStatusMessage()}
               </div>
               
               <Button
@@ -82,13 +94,20 @@ export function AdRewardCard() {
                 size="lg"
               >
                 <Clock className="w-4 h-4 mr-2" />
-                Attendre {formatTimeUntilNext(adState.timeUntilNext)}
+                {adState.dailyCount >= adState.maxDaily ? 
+                  'Limite quotidienne atteinte' : 
+                  `Attendre ${formatTimeUntilNext(adState.timeUntilNext)}`
+                }
               </Button>
             </div>
           )}
 
           <div className="bg-muted/50 p-3 rounded-lg">
             <div className="text-sm space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Limite quotidienne:</span>
+                <span className="font-medium">5 publicités</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Cooldown:</span>
                 <span className="font-medium">2 heures</span>

@@ -12,7 +12,7 @@ export const useAdRewards = () => {
     available: false,
     cooldownEnds: null,
     dailyCount: 0,
-    maxDaily: 999, // Plus de limite quotidienne
+    maxDaily: 5, // Limite quotidienne fixée
     currentReward: null,
     timeUntilNext: 0
   });
@@ -47,7 +47,9 @@ export const useAdRewards = () => {
         ...prev,
         available: cooldownInfo.available,
         cooldownEnds: cooldownInfo.cooldownEnds,
-        timeUntilNext: cooldownInfo.timeUntilNext
+        timeUntilNext: cooldownInfo.timeUntilNext,
+        dailyCount: cooldownInfo.dailyCount,
+        maxDaily: cooldownInfo.maxDaily
       }));
     } catch (error) {
       console.error('Error refreshing ad state:', error);
@@ -83,7 +85,10 @@ export const useAdRewards = () => {
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     
-    if (hours > 0) {
+    // Si c'est plus de 12 heures, c'est probablement le reset quotidien
+    if (hours >= 12) {
+      return `${hours}h`;
+    } else if (hours > 0) {
       return `${hours}h ${minutes}m`;
     } else if (minutes > 0) {
       return `${minutes}m ${secs}s`;
@@ -91,6 +96,20 @@ export const useAdRewards = () => {
       return `${secs}s`;
     }
   }, []);
+
+  // Formater le message d'état des publicités  
+  const getAdStatusMessage = useCallback((): string => {
+    if (adState.dailyCount >= adState.maxDaily) {
+      return `Limite quotidienne atteinte (${adState.dailyCount}/${adState.maxDaily})`;
+    }
+    
+    if (!adState.available && adState.timeUntilNext > 0) {
+      const timeFormatted = formatTimeUntilNext(adState.timeUntilNext);
+      return `Prochaine pub dans ${timeFormatted}`;
+    }
+    
+    return `Pubs regardées: ${adState.dailyCount}/${adState.maxDaily}`;
+  }, [adState, formatTimeUntilNext]);
 
   // Fonction pour regarder une pub avec validation serveur
   const watchAd = async (rewardType: string, rewardAmount: number) => {
@@ -119,6 +138,7 @@ export const useAdRewards = () => {
     loading,
     refreshAdState,
     formatTimeUntilNext,
+    getAdStatusMessage,
     watchAd,
     debug: { adMobState: AdMobService.getState() },
     availableRewards: [] // Géré maintenant dans AdModal
