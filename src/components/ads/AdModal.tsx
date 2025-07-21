@@ -86,40 +86,38 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
         selectedReward.amount
       );
 
-      if (result.success) {
-        // Attendre un délai pour la validation serveur SSV, puis backup côté client
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      // Attendre un délai pour la validation serveur SSV, puis backup côté client
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      let rewardDistributed = false;
+      try {
+        await AdRewardDistributionService.distributeReward(user.id, selectedReward);
+        console.log('Récompense distribuée côté client:', selectedReward);
+        rewardDistributed = true;
         
-        let rewardDistributed = false;
-        try {
-          await AdRewardDistributionService.distributeReward(user.id, selectedReward);
-          console.log('Récompense distribuée côté client:', selectedReward);
-          rewardDistributed = true;
-          
-          // Déclencher les animations comme lors des récoltes
-          if (selectedReward.type === 'coins') {
-            triggerCoinAnimation(selectedReward.amount);
-          } else if (selectedReward.type === 'gems') {
-            triggerGemAnimation(selectedReward.amount);
-          }
-          // Les boosts ne nécessitent pas d'animation particulière
-          
-        } catch (rewardError) {
-          console.error('Erreur distribution côté client:', rewardError);
+        // Déclencher les animations comme lors des récoltes
+        if (selectedReward.type === 'coins') {
+          triggerCoinAnimation(selectedReward.amount);
+        } else if (selectedReward.type === 'gems') {
+          triggerGemAnimation(selectedReward.amount);
         }
+        // Les boosts ne nécessitent pas d'animation particulière
         
-        // Afficher le message de succès seulement si la récompense a été distribuée
-        if (rewardDistributed) {
-          toast({
-            title: "Récompense obtenue !",
-            description: selectedReward.description
-          });
-        }
+      } catch (rewardError) {
+        console.error('Erreur distribution côté client:', rewardError);
+      }
+      
+      // Afficher le message de succès seulement si la récompense a été distribuée
+      if (rewardDistributed) {
+        toast({
+          title: "Récompense obtenue !",
+          description: selectedReward.description
+        });
         
         // Fermer la modal et actualiser les cooldowns
         onOpenChange(false);
         await AdCooldownService.updateAfterAdWatch(user.id);
-      } else {
+      } else if (result.success === false) {
         toast({
           title: "Erreur",
           description: result.error || "Impossible de regarder la publicité",
@@ -128,11 +126,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       }
     } catch (error) {
       console.error('Error watching ad:', error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue",
-        variant: "destructive"
-      });
+      // Ne pas afficher d'erreur si on arrive ici, la logique de récompense est gérée au-dessus
     } finally {
       setIsWatching(false);
     }
