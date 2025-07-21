@@ -1,13 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AdMobService } from '@/services/AdMobService';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
-import { AdRewardDistributionService } from '@/services/ads/AdRewardDistributionService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useAnimations } from '@/contexts/AnimationContext';
+import { useGameData } from '@/hooks/useGameData';
 import { Loader2, Play, Coins, Gem, Zap, TrendingUp, Star } from 'lucide-react';
 import { AdReward } from '@/types/ads';
 
@@ -20,8 +21,10 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
+  const { data: gameData, refetch: refetchGameData } = useGameData();
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
+  const [isWaitingForReward, setIsWaitingForReward] = useState(false);
 
   // Précharger la publicité à l'ouverture
   useEffect(() => {
@@ -33,7 +36,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     }
   }, [open, user?.id]);
 
-  // Récompenses disponibles avec montants fixes (AdMob valide déjà la visualisation)
+  // Récompenses disponibles avec montants fixes
   const availableRewards: AdReward[] = [
     {
       type: 'coins',
@@ -80,55 +83,106 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     try {
       setIsWatching(true);
       
+      // Capturer les valeurs actuelles avant de regarder la pub
+      const currentCoins = gameData?.garden?.coins || 0;
+      const currentGems = gameData?.garden?.gems || 0;
+      
       const result = await AdMobService.showRewardedAd(
         user.id, 
         selectedReward.type, 
         selectedReward.amount
       );
 
-      // Attendre un délai pour la validation serveur SSV, puis backup côté client
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      let rewardDistributed = false;
-      try {
-        await AdRewardDistributionService.distributeReward(user.id, selectedReward);
-        console.log('Récompense distribuée côté client:', selectedReward);
-        rewardDistributed = true;
-        
-        // Déclencher les animations comme lors des récoltes
-        if (selectedReward.type === 'coins') {
-          triggerCoinAnimation(selectedReward.amount);
-        } else if (selectedReward.type === 'gems') {
-          triggerGemAnimation(selectedReward.amount);
-        }
-        // Les boosts ne nécessitent pas d'animation particulière
-        
-      } catch (rewardError) {
-        console.error('Erreur distribution côté client:', rewardError);
-      }
-      
-      // Afficher le message de succès seulement si la récompense a été distribuée
-      if (rewardDistributed) {
-        toast({
-          title: "Récompense obtenue !",
-          description: selectedReward.description
-        });
-        
-        // Fermer la modal et actualiser les cooldowns
-        onOpenChange(false);
-        await AdCooldownService.updateAfterAdWatch(user.id);
-      } else if (result.success === false) {
+      if (!result.success) {
         toast({
           title: "Erreur",
           description: result.error || "Impossible de regarder la publicité",
           variant: "destructive"
         });
+        return;
       }
+
+      // La pub a été regardée avec succès, attendre la validation SSV
+      setIsWatching(false);
+      setIsWaitingForReward(true);
+
+      console.log('AdMob: Pub regardée, attente de la validation SSV...');
+
+      // Surveiller les changements dans la base de données pendant 30 secondes maximum
+      let attempts = 0;
+      const maxAttempts = 30; // 30 secondes avec vérifications toutes les secondes
+      
+      const checkRewardReceived = async (): Promise<boolean> => {
+        await refetchGameData();
+        const updatedData = await refetchGameData();
+        
+        if (!updatedData.data?.garden) return false;
+
+        const newCoins = updatedData.data.garden.coins || 0;
+        const newGems = updatedData.data.garden.gems || 0;
+
+        // Vérifier si la récompense a été accordée
+        if (selectedReward.type === 'coins' && newCoins > currentCoins) {
+          const gainedCoins = newCoins - currentCoins;
+          triggerCoinAnimation(gainedCoins);
+          return true;
+        }
+        
+        if (selectedReward.type === 'gems' && newGems > currentGems) {
+          const gainedGems = newGems - currentGems;
+          triggerGemAnimation(gainedGems);
+          return true;
+        }
+        
+        // Pour les boosts, on considère que c'est accordé (pas de validation visuelle simple)
+        if (['coin_boost', 'gem_boost', 'growth_boost'].includes(selectedReward.type)) {
+          return true;
+        }
+
+        return false;
+      };
+
+      // Polling pour vérifier si la récompense a été accordée
+      const pollForReward = async () => {
+        while (attempts < maxAttempts) {
+          attempts++;
+          
+          if (await checkRewardReceived()) {
+            console.log('AdMob: Récompense reçue via SSV');
+            toast({
+              title: "Récompense obtenue !",
+              description: selectedReward.description
+            });
+            
+            onOpenChange(false);
+            await AdCooldownService.updateAfterAdWatch(user.id);
+            return;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        // Timeout atteint
+        console.log('AdMob: Timeout - récompense non reçue');
+        toast({
+          title: "Délai d'attente dépassé",
+          description: "La récompense n'a pas été reçue. Réessayez dans quelques instants.",
+          variant: "destructive"
+        });
+      };
+
+      await pollForReward();
+
     } catch (error) {
       console.error('Error watching ad:', error);
-      // Ne pas afficher d'erreur si on arrive ici, la logique de récompense est gérée au-dessus
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la visualisation de la publicité",
+        variant: "destructive"
+      });
     } finally {
       setIsWatching(false);
+      setIsWaitingForReward(false);
     }
   };
 
@@ -142,6 +196,8 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       default: return <Coins className="w-6 h-6" />;
     }
   };
+
+  const isLoading = isWatching || isWaitingForReward;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -182,19 +238,31 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
             </div>
           </div>
 
+          {isWaitingForReward && (
+            <div className="text-center py-4 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
+              Attente de la validation de la récompense...
+            </div>
+          )}
+
           <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1" disabled={isLoading}>
               Annuler
             </Button>
             <Button 
               onClick={handleWatchAd}
-              disabled={!selectedReward || isWatching}
+              disabled={!selectedReward || isLoading}
               className="flex-1"
             >
               {isWatching ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Chargement...
+                </>
+              ) : isWaitingForReward ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Validation...
                 </>
               ) : (
                 <>

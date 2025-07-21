@@ -27,10 +27,6 @@ export class AdMobService {
     ? 'ca-app-pub-3940256099942544/5224354917' 
     : 'ca-app-pub-4824355487707598/1680280074';
 
-  private static readonly SERVER_VALIDATION_URL = __DEV__
-    ? 'http://localhost:54321/functions/v1/validate-ad-reward'
-    : 'https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward';
-
   private static state: AdMobState = {
     isInitialized: false,
     isAdLoaded: false,
@@ -65,9 +61,9 @@ export class AdMobService {
 
   static async loadRewardedAd(userId: string, rewardType: string, rewardAmount: number, retryCount: number = 0): Promise<boolean> {
     if (!Capacitor.isNativePlatform()) {
-      console.log('AdMob: Not on native platform - simulating load success');
-      this.state.isAdLoaded = true;
-      return true;
+      console.log('AdMob: Not on native platform - ads not available');
+      this.state.lastError = 'Publicités disponibles uniquement sur mobile';
+      return false;
     }
 
     if (this.state.isAdLoading) {
@@ -145,30 +141,12 @@ export class AdMobService {
 
   static async showRewardedAd(userId: string, rewardType: string, rewardAmount: number): Promise<AdWatchResult> {
     if (!Capacitor.isNativePlatform()) {
-      console.log('AdMob: Web platform - calling server validation directly');
-      
-      // For web/development, simulate direct reward
-      try {
-        const response = await fetch(this.SERVER_VALIDATION_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            reward_type: rewardType,
-            reward_amount: rewardAmount
-          })
-        });
-
-        if (response.ok) {
-          this.state.isAdLoaded = false;
-          return { success: true, rewarded: true };
-        } else {
-          const errorData = await response.json();
-          return { success: false, rewarded: false, error: errorData.error || 'Server validation failed' };
-        }
-      } catch (error) {
-        return { success: false, rewarded: false, error: (error as Error).message };
-      }
+      console.log('AdMob: Web platform - ads not available');
+      return { 
+        success: false, 
+        rewarded: false,
+        error: 'Publicités disponibles uniquement sur mobile' 
+      };
     }
 
     try {
