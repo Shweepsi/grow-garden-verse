@@ -85,8 +85,9 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       );
 
       if (result.success) {
-        // Si la pub a été vue avec succès, distribuer la récompense côté client
-        // (backup au cas où la validation serveur échoue)
+        // Attendre un délai pour la validation serveur SSV, puis backup côté client
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         try {
           await AdRewardDistributionService.distributeReward(user.id, selectedReward);
           console.log('Récompense distribuée côté client:', selectedReward);
