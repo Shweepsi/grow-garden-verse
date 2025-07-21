@@ -4,16 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { EconomyService } from '@/services/EconomyService';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 
 export const useGameEconomy = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { getBoostMultiplier } = useActiveBoosts();
 
   const unlockPlotMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Utilise la fonction Supabase pour obtenir le coût
       const { data: costData } = await supabase.rpc('get_plot_unlock_cost', { plot_number: plotNumber });
       const cost = costData || 0;
 
@@ -27,19 +28,16 @@ export const useGameEconomy = () => {
         throw new Error('Jardin non trouvé');
       }
 
-      // Utiliser la même logique que pour les améliorations avec protection des 100 pièces
       if (!EconomyService.canAffordUpgrade(garden.coins, cost)) {
         throw new Error('Pas assez de pièces (minimum 100 pièces à conserver)');
       }
 
-      // Unlock plot
       await supabase
         .from('garden_plots')
         .update({ unlocked: true })
         .eq('user_id', user.id)
         .eq('plot_number', plotNumber);
 
-      // Deduct coins
       await supabase
         .from('player_gardens')
         .update({
@@ -48,7 +46,6 @@ export const useGameEconomy = () => {
         })
         .eq('user_id', user.id);
 
-      // Record transaction
       await supabase
         .from('coin_transactions')
         .insert({
@@ -67,8 +64,22 @@ export const useGameEconomy = () => {
     }
   });
 
+  // Fonction pour appliquer les boosts aux gains de pièces
+  const applyCoinsBoost = (amount: number): number => {
+    const coinBoostMultiplier = getBoostMultiplier('coin_boost');
+    return Math.floor(amount * coinBoostMultiplier);
+  };
+
+  // Fonction pour appliquer les boosts aux gains de gemmes
+  const applyGemsBoost = (amount: number): number => {
+    const gemBoostMultiplier = getBoostMultiplier('gem_boost');
+    return Math.floor(amount * gemBoostMultiplier);
+  };
+
   return {
     unlockPlot: (plotNumber: number) => unlockPlotMutation.mutate(plotNumber),
-    isUnlocking: unlockPlotMutation.isPending
+    isUnlocking: unlockPlotMutation.isPending,
+    applyCoinsBoost,
+    applyGemsBoost
   };
 };

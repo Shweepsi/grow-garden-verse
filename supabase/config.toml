@@ -1,3 +1,4 @@
+
 project_id = "osfexuqvlpxrfaukfobn"
 
 [api]
@@ -59,3 +60,6 @@ port = 54328
 
 [analytics]
 enabled = false
+
+[functions.validate-ad-reward]
+verify_jwt = false

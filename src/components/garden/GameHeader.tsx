@@ -8,15 +8,19 @@ import { AdModal } from '@/components/ads/AdModal';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAdRewards } from '@/hooks/useAdRewards';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { Badge } from '@/components/ui/badge';
+import { Zap, Clock } from 'lucide-react';
+
 interface GameHeaderProps {
   garden: PlayerGarden | null;
 }
-export const GameHeader = ({
-  garden
-}: GameHeaderProps) => {
+
+export const GameHeader = ({ garden }: GameHeaderProps) => {
   const { animations } = useAnimations();
   const [showAdModal, setShowAdModal] = useState(false);
   const { availableRewards, adState } = useAdRewards();
+  const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
 
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
@@ -29,12 +33,31 @@ export const GameHeader = ({
   const xpProgress = currentXp - xpForCurrentLevel;
   const xpNeeded = xpForNextLevel - xpForCurrentLevel;
   const progressPercentage = Math.min(xpProgress / xpNeeded * 100, 100);
-  return <div className="relative z-20">
+
+  const getBoostIcon = (effectType: string) => {
+    switch (effectType) {
+      case 'coin_boost': return '🪙';
+      case 'gem_boost': return '💎';
+      case 'growth_boost': return '⚡';
+      default: return '🎁';
+    }
+  };
+
+  const getBoostLabel = (effectType: string) => {
+    switch (effectType) {
+      case 'coin_boost': return 'Pièces ×2';
+      case 'gem_boost': return 'Gemmes ×1.5';
+      case 'growth_boost': return 'Croissance -50%';
+      default: return 'Boost';
+    }
+  };
+
+  return (
+    <div className="relative z-20">
       <div className="mx-3 mt-3 mb-2">
         <div className="glassmorphism rounded-xl p-3 shadow-xl">
-          {/* Header principal - Layout mobile optimisé */}
+          {/* Header principal */}
           <div className="flex items-center justify-between mb-3">
-            {/* Logo et titre - Plus compact */}
             <div className="flex items-center space-x-2">
               <div className="relative">
                 <img 
@@ -42,18 +65,36 @@ export const GameHeader = ({
                   alt="Idle Grow Logo" 
                   className="h-8 w-8 object-contain rounded-lg"
                 />
-                
               </div>
               <div>
                 <h1 className="mobile-text-lg font-bold bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent">
                   Idle Grow
                 </h1>
-                
               </div>
             </div>
           </div>
 
-          {/* Statistiques - Layout vertical sur mobile */}
+          {/* Boosts actifs */}
+          {boosts.length > 0 && (
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-1">
+                {boosts.map((boost) => (
+                  <Badge 
+                    key={boost.id} 
+                    variant="outline" 
+                    className="text-xs bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 animate-pulse"
+                  >
+                    <span className="mr-1">{getBoostIcon(boost.effect_type)}</span>
+                    {getBoostLabel(boost.effect_type)}
+                    <Clock className="h-3 w-3 ml-1" />
+                    {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Statistiques */}
           <div className="space-y-2">
             {/* Ligne 1: Coins, Gemmes et Niveau */}
             <div className="flex items-center justify-between space-x-2">
@@ -120,7 +161,7 @@ export const GameHeader = ({
               </Button>
             </div>
 
-            {/* Ligne 2: Barre d'XP avec pourcentage et animations */}
+            {/* Ligne 2: Barre d'XP */}
             <div className="relative premium-card rounded-lg p-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="mobile-text-xs text-blue-600 font-medium">Expérience</span>
@@ -155,5 +196,6 @@ export const GameHeader = ({
 
       {/* Modal des publicités */}
       <AdModal open={showAdModal} onOpenChange={setShowAdModal} />
-    </div>;
+    </div>
+  );
 };

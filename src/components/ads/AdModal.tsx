@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,9 @@ import { Progress } from '@/components/ui/progress';
 import { X, Play, Loader2, Gift, Clock, Zap } from 'lucide-react';
 import { AdReward } from '@/types/ads';
 import { useAdRewards } from '@/hooks/useAdRewards';
+import { useAuth } from '@/hooks/useAuth';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { AdMobService } from '@/services/AdMobService';
 
 interface AdModalProps {
   open: boolean;
@@ -20,46 +23,75 @@ interface AdModalProps {
 }
 
 export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
-  const { adState, availableRewards, loading, watchAd, formatTimeUntilNext, debug } = useAdRewards();
+  const { user } = useAuth();
+  const { adState, loading, refreshAdState, formatTimeUntilNext } = useAdRewards();
+  const { refreshBoosts } = useActiveBoosts();
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
+  const [adDuration, setAdDuration] = useState<number | null>(null);
+
+  // Récupérer la durée de la pub quand la modal s'ouvre
+  useEffect(() => {
+    if (open) {
+      const duration = AdMobService.getAdDuration();
+      setAdDuration(duration);
+    }
+  }, [open]);
+
+  const getAdjustedReward = (baseAmount: number, duration: number | null): number => {
+    if (!duration) return baseAmount;
+    if (duration >= 60) return Math.floor(baseAmount * 2.0);
+    if (duration >= 30) return Math.floor(baseAmount * 1.5);
+    if (duration >= 15) return baseAmount;
+    return Math.floor(baseAmount * 0.5);
+  };
+
+  const getAvailableRewards = (): AdReward[] => {
+    const baseRewards = [
+      { type: 'coins' as const, amount: 500, description: 'Pièces', emoji: '💰' },
+      { type: 'gems' as const, amount: 10, description: 'Gemmes', emoji: '💎' },
+      { type: 'coin_boost' as const, amount: 2, description: 'Boost Pièces ×2 (1h)', emoji: '🪙' },
+      { type: 'gem_boost' as const, amount: 1.5, description: 'Boost Gemmes ×1.5 (30min)', emoji: '💎' },
+      { type: 'growth_boost' as const, amount: 0.5, description: 'Croissance -50% (30min)', emoji: '⚡' }
+    ];
+
+    return baseRewards.map(reward => ({
+      ...reward,
+      amount: ['coins', 'gems'].includes(reward.type) 
+        ? getAdjustedReward(reward.amount, adDuration)
+        : reward.amount,
+      description: ['coins', 'gems'].includes(reward.type)
+        ? `${getAdjustedReward(reward.amount, adDuration)} ${reward.description}`
+        : reward.description
+    }));
+  };
 
   const handleWatchAd = async (reward: AdReward) => {
-    if (!adState.available) return;
+    if (!user?.id || !adState.available) return;
 
     setIsWatching(true);
     try {
-      const success = await watchAd(reward);
-      if (success) {
+      // Utiliser AdMobService avec validation serveur
+      const result = await AdMobService.showRewardedAd(user.id, reward.type, reward.amount);
+      
+      if (result.success && result.rewarded) {
+        toast.success(`Récompense appliquée: ${reward.description} ${reward.emoji}`);
+        await refreshAdState();
+        await refreshBoosts();
         onOpenChange(false);
+      } else {
+        toast.error(result.error || 'Publicité non complétée');
       }
+    } catch (error) {
+      console.error('Error watching ad:', error);
+      toast.error('Erreur lors de la publicité');
     } finally {
       setIsWatching(false);
       setSelectedReward(null);
     }
   };
 
-  const getRewardIcon = (type: AdReward['type']) => {
-    switch (type) {
-      case 'coins': return '💰';
-      case 'gems': return '💎';
-      case 'growth_boost': return '⚡';
-      case 'robot_boost': return '🤖';
-      case 'xp_boost': return '⭐';
-      default: return '🎁';
-    }
-  };
-
-  const getRewardColor = (type: AdReward['type']) => {
-    switch (type) {
-      case 'coins': return 'from-yellow-400 to-yellow-600';
-      case 'gems': return 'from-blue-400 to-blue-600';
-      case 'growth_boost': return 'from-green-400 to-green-600';
-      case 'robot_boost': return 'from-purple-400 to-purple-600';
-      case 'xp_boost': return 'from-orange-400 to-orange-600';
-      default: return 'from-gray-400 to-gray-600';
-    }
-  };
+  const availableRewards = getAvailableRewards();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,29 +112,27 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
             </Button>
           </div>
           <DialogDescription className="text-sm">
-            Regardez une courte publicité (minimum 3 secondes) pour gagner des récompenses !
+            {adDuration ? (
+              <>Regardez une publicité de {adDuration} secondes pour gagner des récompenses ajustées !</>
+            ) : (
+              <>Regardez une courte publicité pour gagner des récompenses !</>
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* État AdMob et disponibilité */}
+          {/* État de disponibilité */}
           <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-green-200/30">
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                {adState.dailyCount}/{adState.maxDaily} publicités aujourd'hui
+                Cooldown: 2 heures
               </span>
             </div>
             <div className="flex items-center space-x-2">
-              {debug.adMobInitialized ? (
-                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                  ✓ AdMob
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
-                  ⚠ Chargement...
-                </Badge>
-              )}
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                {adDuration ? `${adDuration}s` : 'Chargement...'}
+              </Badge>
               {!adState.available && adState.timeUntilNext > 0 && (
                 <Badge variant="outline" className="text-xs">
                   {formatTimeUntilNext(adState.timeUntilNext)}
@@ -129,18 +159,17 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
                 >
                   <CardContent className="p-3">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${getRewardColor(reward.type)} flex items-center justify-center text-white font-bold`}>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-green-400 flex items-center justify-center text-white font-bold">
                         {reward.emoji}
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-foreground">{reward.description}</div>
-                        {reward.duration && (
+                        {adDuration && ['coins', 'gems'].includes(reward.type) && (
                           <div className="text-xs text-muted-foreground">
-                            Durée: {reward.duration} minutes
+                            Ajusté selon la durée ({adDuration}s)
                           </div>
                         )}
                       </div>
-                      <div className="text-xl">{getRewardIcon(reward.type)}</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -151,17 +180,12 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
               <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <h4 className="font-medium text-foreground mb-2">Publicité non disponible</h4>
               <p className="text-sm text-muted-foreground mb-4">
-                {adState.dailyCount >= adState.maxDaily
-                  ? 'Vous avez atteint la limite quotidienne'
-                  : `Prochaine publicité dans ${formatTimeUntilNext(adState.timeUntilNext)}`
-                }
+                Prochaine publicité dans {formatTimeUntilNext(adState.timeUntilNext)}
               </p>
-              {adState.timeUntilNext > 0 && (
-                <Progress 
-                  value={((7200 - adState.timeUntilNext) / 7200) * 100} 
-                  className="w-full h-2"
-                />
-              )}
+              <Progress 
+                value={((7200 - adState.timeUntilNext) / 7200) * 100} 
+                className="w-full h-2"
+              />
             </div>
           )}
 
@@ -178,7 +202,7 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
               </Button>
               <Button
                 onClick={() => selectedReward && handleWatchAd(selectedReward)}
-                disabled={!selectedReward || isWatching || loading || !debug.adMobInitialized}
+                disabled={!selectedReward || isWatching || loading || !adDuration}
                 className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600"
               >
                 {isWatching ? (
@@ -186,15 +210,15 @@ export const AdModal = ({ open, onOpenChange }: AdModalProps) => {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Publicité en cours...
                   </>
-                ) : !debug.adMobInitialized ? (
+                ) : !adDuration ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Initialisation...
+                    Chargement...
                   </>
                 ) : (
                   <>
                     <Play className="mr-2 h-4 w-4" />
-                    Regarder la pub
+                    Regarder ({adDuration}s)
                   </>
                 )}
               </Button>
