@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AdMobService } from '@/services/AdMobService';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
+import { AdRewardDistributionService } from '@/services/ads/AdRewardDistributionService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Play, Coins, Gem, Zap, TrendingUp, Star } from 'lucide-react';
@@ -84,6 +85,15 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       );
 
       if (result.success) {
+        // Si la pub a été vue avec succès, distribuer la récompense côté client
+        // (backup au cas où la validation serveur échoue)
+        try {
+          await AdRewardDistributionService.distributeReward(user.id, selectedReward);
+          console.log('Récompense distribuée côté client:', selectedReward);
+        } catch (rewardError) {
+          console.error('Erreur distribution côté client:', rewardError);
+        }
+        
         toast({
           title: "Récompense obtenue !",
           description: selectedReward.description
