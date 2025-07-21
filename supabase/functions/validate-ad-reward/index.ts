@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     try {
       // Parse custom data for reward details if available
       let rewardType = 'coins'
-      let adjustedAmount = parseInt(rewardAmount || '1')
+      let playerLevel = 1
       
       if (customData && customData !== '{CUSTOM_DATA}' && customData !== 'CUSTOM_DATA') {
         try {
@@ -84,20 +84,48 @@ Deno.serve(async (req) => {
           if (parsedCustomData.reward_type) {
             rewardType = parsedCustomData.reward_type
           }
-          if (parsedCustomData.reward_amount) {
-            adjustedAmount = parsedCustomData.reward_amount
+          if (parsedCustomData.player_level) {
+            playerLevel = parsedCustomData.player_level
           }
         } catch (e) {
           console.log('AdMob SSV: Could not parse custom_data for reward details:', customData)
         }
       }
       
-      // Apply duration-based adjustment (default 30s if not specified)
-      adjustedAmount = calculateAdjustedReward(adjustedAmount, 30)
+      // Get player level if not in custom data
+      if (playerLevel === 1) {
+        const { data: garden } = await supabase
+          .from('player_gardens')
+          .select('level')
+          .eq('user_id', userId)
+          .single()
+        
+        if (garden?.level) {
+          playerLevel = garden.level
+        }
+      }
+      
+      // Calculate reward based on database configuration
+      const { data: rewardConfig, error: rewardError } = await supabase
+        .rpc('calculate_ad_reward', {
+          reward_type_param: rewardType,
+          player_level_param: playerLevel
+        })
+        .single()
+      
+      if (rewardError || !rewardConfig) {
+        console.error('AdMob SSV: Failed to calculate reward:', rewardError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to calculate reward' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      const adjustedAmount = rewardConfig.calculated_amount
       
       console.log('AdMob SSV: Processing reward for user:', userId, 'Type:', rewardType, 'Amount:', adjustedAmount)
       
-      const result = await applyReward(userId, rewardType, adjustedAmount)
+      const result = await applyReward(userId, rewardType, adjustedAmount, rewardConfig.duration_minutes || 30)
       
       if (result.success) {
         await updateAdCooldown(userId)
@@ -165,8 +193,36 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Get player level and calculate actual reward amount
+    const { data: garden } = await supabase
+      .from('player_gardens')
+      .select('level')
+      .eq('user_id', payload.user_id)
+      .single()
+    
+    const playerLevel = garden?.level || 1
+    
+    // Calculate reward based on database configuration
+    const { data: rewardConfig, error: rewardError } = await supabase
+      .rpc('calculate_ad_reward', {
+        reward_type_param: payload.reward_type,
+        player_level_param: playerLevel
+      })
+      .single()
+    
+    if (rewardError || !rewardConfig) {
+      console.error('Failed to calculate reward:', rewardError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to calculate reward' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    const calculatedAmount = rewardConfig.calculated_amount
+    const durationMinutes = rewardConfig.duration_minutes || 30
+    
     // Apply reward
-    const result = await applyReward(payload.user_id, payload.reward_type, payload.reward_amount)
+    const result = await applyReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes)
 
     if (!result.success) {
       console.error('Failed to apply reward:', result.error)
@@ -180,14 +236,14 @@ Deno.serve(async (req) => {
     await updateAdCooldown(payload.user_id)
 
     // Log transaction
-    await logAdReward(payload.user_id, payload.reward_type, payload.reward_amount, 30)
+    await logAdReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes)
 
     console.log(`Successfully applied ${payload.reward_type} reward (${payload.reward_amount}) to user ${payload.user_id}`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        applied_amount: payload.reward_amount,
+        applied_amount: calculatedAmount,
         reward_type: payload.reward_type 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -210,19 +266,17 @@ function calculateAdjustedReward(baseAmount: number, adDuration: number): number
   return Math.floor(baseAmount * 0.5) // <15s = réduit
 }
 
-async function applyReward(userId: string, rewardType: string, amount: number): Promise<{ success: boolean; error?: string }> {
+async function applyReward(userId: string, rewardType: string, amount: number, durationMinutes?: number): Promise<{ success: boolean; error?: string }> {
   try {
     switch (rewardType) {
       case 'coins':
-        return await applyCoinsReward(userId, amount)
+        return await applyCoinsReward(userId, Math.floor(amount))
       case 'gems':
-        return await applyGemsReward(userId, amount)
+        return await applyGemsReward(userId, Math.floor(amount))
       case 'coin_boost':
-        return await applyBoostReward(userId, 'coin_boost', 2.0, 60) // x2 pendant 1h
       case 'gem_boost':
-        return await applyBoostReward(userId, 'gem_boost', 1.5, 30) // x1.5 pendant 30min
       case 'growth_boost':
-        return await applyBoostReward(userId, 'growth_boost', 0.5, 30) // -50% temps pendant 30min
+        return await applyBoostReward(userId, rewardType, amount, durationMinutes || 30)
       default:
         return { success: false, error: 'Unknown reward type' }
     }

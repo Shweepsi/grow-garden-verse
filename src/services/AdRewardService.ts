@@ -1,34 +1,59 @@
-import { EconomyService } from "./EconomyService";
+import { supabase } from "@/integrations/supabase/client";
 import { AdReward, AdState } from "@/types/ads";
 import { AdCooldownService } from "./ads/AdCooldownService";
 import { AdSessionService } from "./ads/AdSessionService";
 
 export class AdRewardService {
-  static getAvailableRewards(playerLevel: number, permanentMultiplier: number): AdReward[] {
-    const baseCoins = EconomyService.getAdCoinReward(500, playerLevel, permanentMultiplier);
-    const gems = EconomyService.getAdGemReward(playerLevel);
+  static async getAvailableRewards(playerLevel: number): Promise<AdReward[]> {
+    try {
+      const { data: configs, error } = await supabase
+        .from('ad_reward_configs')
+        .select('*')
+        .eq('active', true)
+        .lte('min_player_level', playerLevel)
+        .order('reward_type');
 
-    return [
-      {
-        type: 'coins',
-        amount: baseCoins,
-        description: `${baseCoins} pièces`,
-        emoji: '💰'
-      },
-      {
-        type: 'gems',
-        amount: gems,
-        description: `${gems} gemmes`,
-        emoji: '💎'
-      },
-      {
-        type: 'growth_boost',
-        amount: 50, // 50% de réduction
-        duration: 30,
-        description: 'Croissance -50% (30min)',
-        emoji: '⚡'
-      }
-    ];
+      if (error) throw error;
+
+      return configs.map(config => {
+        // Calculer le montant basé sur le niveau
+        let amount = config.base_amount + (config.level_coefficient * (playerLevel - 1));
+        
+        // Appliquer le maximum si défini
+        if (config.max_amount && amount > config.max_amount) {
+          amount = config.max_amount;
+        }
+
+        // Formater la description selon le type
+        let description = config.description;
+        if (config.reward_type === 'coins' || config.reward_type === 'gems') {
+          description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
+        } else if (config.reward_type === 'growth_boost') {
+          description = `Croissance ${Math.floor((1 - amount) * 100)}% plus rapide (${config.duration_minutes}min)`;
+        } else if (config.reward_type.includes('boost')) {
+          description = `${config.display_name} x${amount} (${config.duration_minutes}min)`;
+        }
+
+        return {
+          type: config.reward_type as AdReward['type'],
+          amount: Math.floor(amount * 100) / 100, // Arrondir à 2 décimales
+          description,
+          emoji: config.emoji || '🎁',
+          duration: config.duration_minutes
+        };
+      });
+    } catch (error) {
+      console.error('Error loading ad rewards:', error);
+      // Fallback en cas d'erreur
+      return [
+        {
+          type: 'coins',
+          amount: 1000 + (800 * (playerLevel - 1)),
+          description: `${1000 + (800 * (playerLevel - 1))} pièces`,
+          emoji: '🪙'
+        }
+      ];
+    }
   }
 
   static async getAdState(userId: string): Promise<AdState> {

@@ -77,6 +77,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_reward_configs: {
+        Row: {
+          active: boolean | null
+          base_amount: number
+          created_at: string | null
+          description: string
+          display_name: string
+          duration_minutes: number | null
+          emoji: string | null
+          id: string
+          level_coefficient: number | null
+          max_amount: number | null
+          min_player_level: number | null
+          reward_type: string
+        }
+        Insert: {
+          active?: boolean | null
+          base_amount: number
+          created_at?: string | null
+          description: string
+          display_name: string
+          duration_minutes?: number | null
+          emoji?: string | null
+          id?: string
+          level_coefficient?: number | null
+          max_amount?: number | null
+          min_player_level?: number | null
+          reward_type: string
+        }
+        Update: {
+          active?: boolean | null
+          base_amount?: number
+          created_at?: string | null
+          description?: string
+          display_name?: string
+          duration_minutes?: number | null
+          emoji?: string | null
+          id?: string
+          level_coefficient?: number | null
+          max_amount?: number | null
+          min_player_level?: number | null
+          reward_type?: string
+        }
+        Relationships: []
+      }
       ad_sessions: {
         Row: {
           created_at: string
@@ -484,6 +529,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_ad_reward: {
+        Args: { reward_type_param: string; player_level_param: number }
+        Returns: {
+          reward_type: string
+          display_name: string
+          description: string
+          emoji: string
+          calculated_amount: number
+          duration_minutes: number
+        }[]
+      }
       cleanup_expired_effects: {
         Args: Record<PropertyKey, never>
         Returns: undefined

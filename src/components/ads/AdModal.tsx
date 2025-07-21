@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AdMobService } from '@/services/AdMobService';
+import { AdRewardService } from '@/services/AdRewardService';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +26,33 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
   const [isWaitingForReward, setIsWaitingForReward] = useState(false);
+  const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
+  const [loadingRewards, setLoadingRewards] = useState(false);
+
+  // Charger les récompenses disponibles
+  useEffect(() => {
+    const loadRewards = async () => {
+      if (!open || !user?.id) return;
+
+      try {
+        setLoadingRewards(true);
+        const playerLevel = gameData?.garden?.level || 1;
+        const rewards = await AdRewardService.getAvailableRewards(playerLevel);
+        setAvailableRewards(rewards);
+      } catch (error) {
+        console.error('Error loading rewards:', error);
+        toast({
+          title: "Erreur",
+          description: "Erreur lors du chargement des récompenses",
+          variant: "destructive"
+        });
+      } finally {
+        setLoadingRewards(false);
+      }
+    };
+
+    loadRewards();
+  }, [open, user?.id, gameData?.garden?.level, toast]);
 
   // Précharger la publicité à l'ouverture
   useEffect(() => {
@@ -35,40 +63,6 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       preloadAd();
     }
   }, [open, user?.id]);
-
-  // Récompenses disponibles avec montants fixes
-  const availableRewards: AdReward[] = [
-    {
-      type: 'coins',
-      amount: 150,
-      description: 'Gagnez 150 pièces',
-      emoji: '🪙'
-    },
-    {
-      type: 'gems',
-      amount: 15,
-      description: 'Gagnez 15 gemmes',
-      emoji: '💎'
-    },
-    {
-      type: 'coin_boost',
-      amount: 2,
-      description: 'Boost pièces x2 pendant 1h',
-      emoji: '💰'
-    },
-    {
-      type: 'gem_boost',
-      amount: 1.5,
-      description: 'Boost gemmes x1.5 pendant 30min',
-      emoji: '✨'
-    },
-    {
-      type: 'growth_boost',
-      amount: 0.5,
-      description: 'Croissance -50% pendant 30min',
-      emoji: '🌱'
-    }
-  ];
 
   const handleWatchAd = async () => {
     if (!selectedReward || !user?.id) {
@@ -213,29 +207,36 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           <div className="space-y-2">
             <h3 className="font-medium">Choisissez votre récompense :</h3>
             
-            <div className="grid gap-2">
-              {availableRewards.map((reward) => (
-                <Card 
-                  key={reward.type}
-                  className={`cursor-pointer transition-colors ${
-                    selectedReward?.type === reward.type 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:bg-muted/50'
-                  }`}
-                  onClick={() => setSelectedReward(reward)}
-                >
-                  <CardContent className="p-3 flex items-center gap-3">
-                    {getRewardIcon(reward.type)}
-                    <div className="flex-1">
-                      <div className="font-medium">{reward.description}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {reward.emoji} {reward.type}
+            {loadingRewards ? (
+              <div className="text-center py-4">
+                <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
+                <div className="text-sm text-muted-foreground">Chargement des récompenses...</div>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {availableRewards.map((reward) => (
+                  <Card 
+                    key={reward.type}
+                    className={`cursor-pointer transition-colors ${
+                      selectedReward?.type === reward.type 
+                        ? 'ring-2 ring-primary bg-primary/5' 
+                        : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => setSelectedReward(reward)}
+                  >
+                    <CardContent className="p-3 flex items-center gap-3">
+                      {getRewardIcon(reward.type)}
+                      <div className="flex-1">
+                        <div className="font-medium">{reward.description}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {reward.emoji}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
 
           {isWaitingForReward && (
