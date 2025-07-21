@@ -2,6 +2,13 @@
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdLoadInfo, AdMobError } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
+interface ExtendedRewardAdOptions extends RewardAdOptions {
+  serverSideVerificationOptions?: {
+    userId: string;
+    customData: string;
+  };
+}
+
 interface AdMobState {
   isInitialized: boolean;
   isAdLoaded: boolean;
@@ -56,7 +63,7 @@ export class AdMobService {
     }
   }
 
-  static async loadRewardedAd(retryCount: number = 0): Promise<boolean> {
+  static async loadRewardedAd(userId: string, rewardType: string, rewardAmount: number, retryCount: number = 0): Promise<boolean> {
     if (!Capacitor.isNativePlatform()) {
       console.log('AdMob: Not on native platform - simulating load success');
       this.state.isAdLoaded = true;
@@ -84,9 +91,16 @@ export class AdMobService {
 
       console.log(`AdMob: Loading rewarded ad (attempt ${retryCount + 1})...`);
       
-      const options: RewardAdOptions = {
+      const options: ExtendedRewardAdOptions = {
         adId: this.REWARDED_AD_ID,
-        isTesting: __DEV__
+        isTesting: __DEV__,
+        serverSideVerificationOptions: {
+          userId: userId,
+          customData: JSON.stringify({
+            reward_type: rewardType,
+            reward_amount: rewardAmount
+          })
+        }
       };
 
       await AdMob.prepareRewardVideoAd(options);
@@ -94,7 +108,7 @@ export class AdMobService {
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
       
-      console.log('AdMob: Rewarded ad loaded successfully');
+      console.log('AdMob: Rewarded ad loaded successfully with SSV options');
       return true;
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
@@ -104,7 +118,7 @@ export class AdMobService {
       if (retryCount < 2 && this.shouldRetry(error as Error)) {
         console.log(`AdMob: Retrying load (${retryCount + 1}/3)...`);
         await new Promise(resolve => setTimeout(resolve, 3000));
-        return this.loadRewardedAd(retryCount + 1);
+        return this.loadRewardedAd(userId, rewardType, rewardAmount, retryCount + 1);
       }
       
       return false;
@@ -127,7 +141,6 @@ export class AdMobService {
     if (!Capacitor.isNativePlatform()) {
       console.log('AdMob: Web platform - calling server validation directly');
       
-      // AdMob gère la validation serveur automatiquement en production
       // Pour le web/développement, simuler une récompense directe
       try {
         const response = await fetch(this.SERVER_VALIDATION_URL, {
@@ -154,7 +167,7 @@ export class AdMobService {
     try {
       if (!this.state.isAdLoaded) {
         console.log('AdMob: Ad not loaded, loading now...');
-        const loaded = await this.loadRewardedAd();
+        const loaded = await this.loadRewardedAd(userId, rewardType, rewardAmount);
         if (!loaded) {
           return { 
             success: false, 
@@ -164,50 +177,20 @@ export class AdMobService {
         }
       }
 
-      console.log('AdMob: Showing rewarded ad...');
+      console.log('AdMob: Showing rewarded ad with SSV...');
       
-      // Pour l'instant, on gère la validation manuellement car AdMob SSV nécessite une configuration complexe
-      console.log('AdMob: Showing rewarded ad...');
-      
-      const options: RewardAdOptions = {
-        adId: this.REWARDED_AD_ID,
-        isTesting: __DEV__
-      };
-
       const result = await AdMob.showRewardVideoAd();
       
-      console.log('AdMob: Ad watched successfully, result:', result);
+      console.log('AdMob: Ad watched successfully, SSV will handle validation:', result);
       
-      console.log('AdMob: Validating reward with server...');
+      // AdMob gère maintenant automatiquement la validation serveur
+      // via les serverSideVerificationOptions configurées lors du chargement
+      this.state.isAdLoaded = false;
       
-      // Valider manuellement après que l'utilisateur ait regardé la pub
-      try {
-        const response = await fetch(this.SERVER_VALIDATION_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            reward_type: rewardType,
-            reward_amount: rewardAmount
-          })
-        });
-
-        const responseData = await response.json();
-        console.log('AdMob: Server validation response:', responseData);
-
-        if (response.ok && responseData.success) {
-          this.state.isAdLoaded = false;
-          // Précharger une nouvelle pub pour la prochaine fois
-          setTimeout(() => this.preloadAd(), 1000);
-          return { success: true, rewarded: true };
-        } else {
-          console.error('AdMob: Server validation failed:', responseData);
-          return { success: false, rewarded: false, error: responseData.error || 'Server validation failed' };
-        }
-      } catch (error) {
-        console.error('AdMob: Validation error:', error);
-        return { success: false, rewarded: false, error: 'Validation failed' };
-      }
+      // Précharger une nouvelle pub pour la prochaine fois
+      setTimeout(() => this.preloadAd(userId, rewardType, rewardAmount), 1000);
+      
+      return { success: true, rewarded: true };
     } catch (error) {
       console.error('AdMob: Error showing rewarded ad:', error);
       this.state.isAdLoaded = false;
@@ -223,10 +206,10 @@ export class AdMobService {
     return { ...this.state };
   }
 
-  static async preloadAd(): Promise<void> {
-    if (!this.state.isAdLoaded && !this.state.isAdLoading) {
-      console.log('AdMob: Preloading ad...');
-      await this.loadRewardedAd();
+  static async preloadAd(userId?: string, rewardType?: string, rewardAmount?: number): Promise<void> {
+    if (!this.state.isAdLoaded && !this.state.isAdLoading && userId && rewardType && rewardAmount) {
+      console.log('AdMob: Preloading ad with SSV options...');
+      await this.loadRewardedAd(userId, rewardType, rewardAmount);
     }
   }
 

@@ -18,13 +18,13 @@ export const useAdRewards = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Initialiser AdMob et précharger une publicité
+  // Initialiser AdMob
   useEffect(() => {
     const initializeAdMob = async () => {
       if (Capacitor.isNativePlatform()) {
         console.log('Initializing AdMob...');
         await AdMobService.initialize();
-        await AdMobService.preloadAd();
+        // Ne précharge plus automatiquement - sera fait quand nécessaire
       }
     };
 

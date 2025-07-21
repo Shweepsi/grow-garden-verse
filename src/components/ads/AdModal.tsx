@@ -22,13 +22,13 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
 
   // Précharger la publicité à l'ouverture
   useEffect(() => {
-    if (open) {
+    if (open && user?.id) {
       const preloadAd = async () => {
-        await AdMobService.loadRewardedAd();
+        await AdMobService.preloadAd(user.id, 'coins', 100);
       };
       preloadAd();
     }
-  }, [open]);
+  }, [open, user?.id]);
 
   // Récompenses disponibles avec montants fixes (AdMob valide déjà la visualisation)
   const availableRewards: AdReward[] = [
