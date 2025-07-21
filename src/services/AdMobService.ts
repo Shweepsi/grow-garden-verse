@@ -94,8 +94,8 @@ export class AdMobService {
 
       await AdMob.prepareRewardVideoAd(options);
       
-      // Simuler récupération de durée (en production, cela viendrait des métadonnées AdMob)
-      this.state.adDuration = Math.floor(Math.random() * 45) + 15; // 15-60 secondes
+      // Pour le moment, on utilise une durée par défaut car AdMob ne fournit pas facilement la durée réelle
+      this.state.adDuration = 30; // Durée typique des publicités récompensées
       
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
@@ -182,7 +182,12 @@ export class AdMobService {
 
       const result = await AdMob.showRewardVideoAd();
       
-      console.log('AdMob: Ad watched successfully, validating reward...');
+      console.log('AdMob: Ad watched successfully, result:', result);
+      
+      // Garder la durée par défaut de 30 secondes
+      this.state.adDuration = 30;
+      
+      console.log('AdMob: Validating reward with server...');
       
       // Valider manuellement après que l'utilisateur ait regardé la pub
       try {
@@ -197,11 +202,17 @@ export class AdMobService {
           })
         });
 
-        if (response.ok) {
+        const responseData = await response.json();
+        console.log('AdMob: Server validation response:', responseData);
+
+        if (response.ok && responseData.success) {
           this.state.isAdLoaded = false;
+          // Précharger une nouvelle pub pour la prochaine fois
+          setTimeout(() => this.preloadAd(), 1000);
           return { success: true, rewarded: true };
         } else {
-          return { success: false, rewarded: false, error: 'Server validation failed' };
+          console.error('AdMob: Server validation failed:', responseData);
+          return { success: false, rewarded: false, error: responseData.error || 'Server validation failed' };
         }
       } catch (error) {
         console.error('AdMob: Validation error:', error);

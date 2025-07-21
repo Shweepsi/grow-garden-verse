@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         applied_amount: adjustedAmount,
         reward_type: payload.reward_type 
       }),
-      { headers: corsHeaders }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
