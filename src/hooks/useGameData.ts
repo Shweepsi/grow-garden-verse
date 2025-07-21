@@ -8,12 +8,12 @@ export const useGameData = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Configuration du realtime pour garden_plots
+  // Configuration du realtime pour garden_plots et player_gardens
   useEffect(() => {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel('garden_plots_realtime')
+      .channel('garden_realtime')
       .on(
         'postgres_changes',
         {
@@ -24,6 +24,19 @@ export const useGameData = () => {
         },
         () => {
           // Invalider et refetch les données quand une parcelle change
+          queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'player_gardens',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Invalider et refetch les données quand le jardin change (récompenses, coins, gems, etc.)
           queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
         }
       )
