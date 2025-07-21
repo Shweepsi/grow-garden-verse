@@ -21,7 +21,24 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Handle GET requests for URL validation
+  if (req.method === 'GET') {
+    return new Response(
+      JSON.stringify({ message: 'AdMob validation endpoint is ready' }),
+      { headers: corsHeaders }
+    )
+  }
+
   try {
+    // Only try to parse JSON if there's a body
+    const contentLength = req.headers.get('content-length')
+    if (!contentLength || contentLength === '0') {
+      return new Response(
+        JSON.stringify({ error: 'No request body provided' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
     const payload: AdMobRewardPayload = await req.json()
     console.log('AdMob reward validation request:', payload)
 
