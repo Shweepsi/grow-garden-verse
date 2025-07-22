@@ -24,12 +24,11 @@ interface AdWatchResult {
 }
 
 export class AdMobService {
-  // Détecter l'environnement de développement plus fiablement
-  private static readonly IS_DEV = !Capacitor.isNativePlatform() || window.location.hostname.includes('localhost') || window.location.hostname.includes('lovableproject');
+  // Forcer le mode production pour AdMob
+  private static readonly IS_DEV = false;
   
-  private static readonly REWARDED_AD_ID = AdMobService.IS_DEV 
-    ? 'ca-app-pub-3940256099942544/5224354917'  // ID de test AdMob
-    : 'ca-app-pub-4824355487707598/1680280074';  // ID de production
+  // Toujours utiliser l'ID de production
+  private static readonly REWARDED_AD_ID = 'ca-app-pub-4824355487707598/1680280074';  // ID de production
 
   private static state: AdMobState = {
     isInitialized: false,

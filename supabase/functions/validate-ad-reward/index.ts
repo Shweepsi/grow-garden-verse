@@ -21,10 +21,29 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Test endpoint for validating configuration
+  if (req.method === 'GET' && new URL(req.url).pathname.endsWith('/test')) {
+    console.log('Edge Function: Test endpoint accessed')
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'AdMob SSV endpoint is working', 
+        timestamp: new Date().toISOString(),
+        environment: {
+          supabase_url: Deno.env.get('SUPABASE_URL') ? 'configured' : 'missing',
+          service_role: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ? 'configured' : 'missing'
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
   // Handle GET requests from AdMob server-side verification
   if (req.method === 'GET') {
     const url = new URL(req.url)
     const searchParams = url.searchParams
+    
+    console.log('Edge Function: AdMob SSV raw URL:', req.url)
     
     // Extract AdMob SSV parameters
     const adNetwork = searchParams.get('ad_network')
