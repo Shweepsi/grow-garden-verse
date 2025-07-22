@@ -186,12 +186,12 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
 
   const getRewardIcon = (type: string) => {
     switch (type) {
-      case 'coins': return <Coins className="w-6 h-6 text-yellow-500" />;
+      case 'coins': return <Coins className="w-6 h-6 text-amber-500" />;
       case 'gems': return <Gem className="w-6 h-6 text-purple-500" />;
-      case 'coin_boost': return <TrendingUp className="w-6 h-6 text-green-500" />;
+      case 'coin_boost': return <TrendingUp className="w-6 h-6 text-emerald-500" />;
       case 'gem_boost': return <Star className="w-6 h-6 text-blue-500" />;
       case 'growth_boost': return <Zap className="w-6 h-6 text-orange-500" />;
-      default: return <Coins className="w-6 h-6" />;
+      default: return <Coins className="w-6 h-6 text-muted-foreground" />;
     }
   };
 
