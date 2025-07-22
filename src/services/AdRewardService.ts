@@ -29,7 +29,8 @@ export class AdRewardService {
         if (config.reward_type === 'coins' || config.reward_type === 'gems') {
           description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
         } else if (config.reward_type === 'growth_boost') {
-          description = `Croissance ${Math.floor((1 - amount) * 100)}% plus rapide (${config.duration_minutes}min)`;
+          const speedMultiplier = 1 / amount;
+          description = `Croissance x${speedMultiplier} (${config.duration_minutes}min)`;
         } else if (config.reward_type.includes('boost')) {
           description = `${config.display_name} x${amount} (${config.duration_minutes}min)`;
         }
