@@ -91,14 +91,15 @@ export class AdMobService {
 
       console.log(`AdMob: Loading rewarded ad (attempt ${retryCount + 1})...`);
       
-      // Create properly formatted custom data
+      // Simplified SSV configuration
       const customData = JSON.stringify({
         user_id: userId,
         reward_type: rewardType,
         reward_amount: rewardAmount
       });
 
-      const ssvUrl = `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward?ad_network={AD_NETWORK}&ad_unit={AD_UNIT}&reward_amount={REWARD_AMOUNT}&reward_item={REWARD_ITEM}&timestamp={TIMESTAMP}&transaction_id={TRANSACTION_ID}&signature={SIGNATURE}&key_id={KEY_ID}&user_id=${userId}&custom_data=${encodeURIComponent(customData)}`;
+      // Simplified SSV URL with essential parameters only
+      const ssvUrl = `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`;
 
       const options: ExtendedRewardAdOptions = {
         adId: this.REWARDED_AD_ID,
@@ -110,8 +111,11 @@ export class AdMobService {
         }
       };
 
-      console.log('AdMob: Loading with SSV options:', options.serverSideVerificationOptions);
-      console.log('AdMob: Complete SSV URL:', ssvUrl);
+      console.log('AdMob: Loading with SSV options:', {
+        userId: options.serverSideVerificationOptions?.userId,
+        customDataParsed: JSON.parse(customData),
+        ssvUrl: ssvUrl
+      });
 
       await AdMob.prepareRewardVideoAd(options);
       

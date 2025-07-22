@@ -38,13 +38,16 @@ Deno.serve(async (req) => {
     let userId = searchParams.get('user_id')
     let customData = searchParams.get('custom_data')
     
-    console.log('AdMob SSV Request - Raw params:', {
+    console.log('Edge Function: AdMob SSV Request - Raw params:', {
       adNetwork, adUnit, rewardAmount, rewardItem, timestamp, transactionId, signature, keyId, userId, customData
     })
     
+    console.log('Edge Function: SSV Request URL:', req.url)
+    console.log('Edge Function: SSV Headers:', Object.fromEntries(req.headers.entries()))
+    
     // Check for unreplaced placeholders and handle them
     if (userId === '{USER_ID}' || userId === 'USER_ID' || !userId) {
-      console.log('AdMob SSV: userId is placeholder or empty, checking custom_data for real values')
+      console.log('Edge Function: userId is placeholder or empty, checking custom_data for real values')
       
       // Try to extract from custom_data if it contains JSON
       if (customData && customData !== '{CUSTOM_DATA}' && customData !== 'CUSTOM_DATA') {
@@ -78,9 +81,13 @@ Deno.serve(async (req) => {
       let rewardType = 'coins'
       let playerLevel = 1
       
+      console.log('Edge Function: Processing custom_data:', customData)
+      
       if (customData && customData !== '{CUSTOM_DATA}' && customData !== 'CUSTOM_DATA') {
         try {
           const parsedCustomData = JSON.parse(customData)
+          console.log('Edge Function: Parsed custom_data:', parsedCustomData)
+          
           if (parsedCustomData.reward_type) {
             rewardType = parsedCustomData.reward_type
           }
@@ -88,7 +95,7 @@ Deno.serve(async (req) => {
             playerLevel = parsedCustomData.player_level
           }
         } catch (e) {
-          console.log('AdMob SSV: Could not parse custom_data for reward details:', customData)
+          console.log('Edge Function: Could not parse custom_data for reward details:', customData, e)
         }
       }
       
@@ -350,18 +357,44 @@ async function applyBoostReward(userId: string, effectType: string, effectValue:
 }
 
 async function updateAdCooldown(userId: string): Promise<void> {
-  const now = new Date()
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
   
-  await supabase
+  console.log('Edge Function: Updating ad cooldown for user:', userId);
+  
+  // Get current cooldown to increment daily count correctly
+  const { data: currentCooldown } = await supabase
+    .from('ad_cooldowns')
+    .select('daily_count, daily_reset_date')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  let newDailyCount = 1;
+  
+  if (currentCooldown) {
+    // If same day, increment counter
+    if (currentCooldown.daily_reset_date === today) {
+      newDailyCount = (currentCooldown.daily_count || 0) + 1;
+    }
+    // Otherwise it's a new day, start at 1
+  }
+  
+  const { error } = await supabase
     .from('ad_cooldowns')
     .upsert({
       user_id: userId,
+      daily_count: newDailyCount,
+      daily_reset_date: today,
       last_ad_watched: now.toISOString(),
-      daily_count: 0, // Reset car nous gérons différemment
-      daily_reset_date: now.toISOString().split('T')[0],
-      fixed_cooldown_duration: 7200, // 2 heures
       updated_at: now.toISOString()
-    })
+    });
+
+  if (error) {
+    console.error('Edge Function: Failed to update ad cooldown:', error);
+    throw error;
+  }
+  
+  console.log(`Edge Function: Ad watched ${newDailyCount}/5 today for user ${userId}`);
 }
 
 async function logAdReward(userId: string, rewardType: string, amount: number, adDuration: number): Promise<void> {
