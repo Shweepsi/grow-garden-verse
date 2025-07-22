@@ -261,7 +261,8 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
                 isLoading ||
                 adState.dailyCount >= adState.maxDaily
               }
-              className="flex-1"
+              variant={adState.dailyCount >= adState.maxDaily ? "destructive" : "default"}
+              className="flex-1 transition-all duration-200"
             >
               {isWatching ? (
                 <>
