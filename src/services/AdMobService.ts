@@ -24,11 +24,11 @@ interface AdWatchResult {
 }
 
 export class AdMobService {
-  // Forcer le mode production pour AdMob
+  // Mode production pour AdMob (prêt pour publication)
   private static readonly IS_DEV = false;
   
-  // Toujours utiliser l'ID de production
-  private static readonly REWARDED_AD_ID = 'ca-app-pub-4824355487707598/1680280074';  // ID de production
+  // ID de l'annonce de récompense de production
+  private static readonly REWARDED_AD_ID = 'ca-app-pub-4824355487707598/9765834203';  // ID de production
 
   private static state: AdMobState = {
     isInitialized: false,
@@ -47,8 +47,8 @@ export class AdMobService {
       console.log('AdMob: Initializing...');
       
       await AdMob.initialize({
-        testingDevices: this.IS_DEV ? [] : [],
-        initializeForTesting: this.IS_DEV
+        testingDevices: [], // Aucun appareil de test en production
+        initializeForTesting: false // Jamais en mode test pour la production
       });
 
       this.state.isInitialized = true;
@@ -102,7 +102,7 @@ export class AdMobService {
 
       const options: ExtendedRewardAdOptions = {
         adId: this.REWARDED_AD_ID,
-        isTesting: this.IS_DEV,
+        isTesting: false, // Jamais en mode test pour la production
         serverSideVerificationOptions: {
           userId: userId,
           customData: customData,
