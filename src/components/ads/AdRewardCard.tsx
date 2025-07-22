@@ -62,7 +62,8 @@ export function AdRewardCard() {
               
               <Button
                 onClick={handleOpenModal}
-                className="w-full border-yellow-300/60 bg-yellow-50/40 hover:bg-yellow-50/60 text-yellow-800 hover:text-yellow-900 shadow-lg shadow-yellow-100/50 hover:shadow-yellow-200/50 hover:scale-[1.02] transition-all duration-200 animate-pulse"
+                variant="ghost"
+                className="w-full border-2 border-yellow-300/60 bg-yellow-50/40 hover:bg-yellow-50/60 text-yellow-800 hover:text-yellow-900 shadow-lg shadow-yellow-100/50 hover:shadow-yellow-200/50 hover:scale-[1.02] transition-all duration-200 animate-pulse"
                 size="lg"
               >
                 <Play className="w-4 h-4 mr-2" />
