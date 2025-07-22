@@ -2,8 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export class AdCooldownService {
-  private static readonly FIXED_COOLDOWN_HOURS = 2;
-  private static readonly FIXED_COOLDOWN_SECONDS = 2 * 60 * 60; // 2 heures
   private static readonly MAX_DAILY_ADS = 5; // Limite quotidienne
 
   static async getCooldownInfo(userId: string): Promise<{
@@ -43,18 +41,8 @@ export class AdCooldownService {
         tomorrow.setHours(0, 0, 0, 0);
         cooldownEnds = tomorrow;
         timeUntilNext = Math.ceil((tomorrow.getTime() - now.getTime()) / 1000);
-      } 
-      // Si pas encore à la limite, vérifier le cooldown fixe
-      else if (cooldown.last_ad_watched) {
-        const lastWatch = new Date(cooldown.last_ad_watched);
-        const cooldownEnd = new Date(lastWatch.getTime() + (this.FIXED_COOLDOWN_SECONDS * 1000));
-        
-        if (now < cooldownEnd) {
-          available = false;
-          cooldownEnds = cooldownEnd;
-          timeUntilNext = Math.ceil((cooldownEnd.getTime() - now.getTime()) / 1000);
-        }
       }
+      // Sinon pub disponible immédiatement
     }
 
     return { 
@@ -91,10 +79,8 @@ export class AdCooldownService {
       .from('ad_cooldowns')
       .upsert({
         user_id: userId,
-        last_ad_watched: now.toISOString(),
         daily_count: newDailyCount,
         daily_reset_date: today,
-        fixed_cooldown_duration: this.FIXED_COOLDOWN_SECONDS,
         updated_at: now.toISOString()
       });
 
@@ -105,10 +91,6 @@ export class AdCooldownService {
 
   static async updateCooldown(userId: string): Promise<void> {
     return this.updateAfterAdWatch(userId);
-  }
-
-  static get cooldownHours() {
-    return this.FIXED_COOLDOWN_HOURS;
   }
   
   static get maxDailyAds() {

@@ -100,12 +100,8 @@ export const useAdRewards = () => {
   // Formater le message d'état des publicités  
   const getAdStatusMessage = useCallback((): string => {
     if (adState.dailyCount >= adState.maxDaily) {
-      return `Limite quotidienne atteinte (${adState.dailyCount}/${adState.maxDaily})`;
-    }
-    
-    if (!adState.available && adState.timeUntilNext > 0) {
       const timeFormatted = formatTimeUntilNext(adState.timeUntilNext);
-      return `Prochaine pub dans ${timeFormatted}`;
+      return `Limite quotidienne atteinte. Reset dans ${timeFormatted}`;
     }
     
     return `Pubs regardées: ${adState.dailyCount}/${adState.maxDaily}`;

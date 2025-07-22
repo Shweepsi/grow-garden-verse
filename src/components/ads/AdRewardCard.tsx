@@ -62,9 +62,8 @@ export function AdRewardCard() {
               
               <Button
                 onClick={handleOpenModal}
-                variant="ghost"
-                className="w-full border-2 border-[var(--color-warning)] bg-[var(--color-warning)]/10 hover:bg-[var(--color-warning)]/20 text-[var(--color-text-primary)] hover:text-[var(--color-text-primary)] shadow-lg shadow-[var(--color-warning)]/20 hover:shadow-[var(--color-warning)]/30 hover:scale-[1.02] transition-all duration-200 animate-pulse"
                 size="lg"
+                className="w-full"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Regarder une publicité
@@ -75,8 +74,8 @@ export function AdRewardCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="border-orange-200 text-orange-800 dark:border-orange-800 dark:text-orange-200">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {adState.dailyCount >= adState.maxDaily ? 'Limite atteinte' : 'Cooldown'}
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    Limite atteinte
                   </Badge>
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -94,11 +93,8 @@ export function AdRewardCard() {
                 className="w-full"
                 size="lg"
               >
-                <Clock className="w-4 h-4 mr-2" />
-                {adState.dailyCount >= adState.maxDaily ? 
-                  'Limite quotidienne atteinte' : 
-                  `Attendre ${formatTimeUntilNext(adState.timeUntilNext)}`
-                }
+                <AlertCircle className="w-4 h-4 mr-2" />
+                Limite quotidienne atteinte
               </Button>
             </div>
           )}
@@ -110,8 +106,8 @@ export function AdRewardCard() {
                 <span className="font-medium">5 publicités</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Cooldown:</span>
-                <span className="font-medium">2 heures</span>
+                <span className="text-muted-foreground">Reset:</span>
+                <span className="font-medium">Minuit</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Récompenses:</span>
@@ -119,13 +115,6 @@ export function AdRewardCard() {
               </div>
             </div>
           </div>
-
-          {adState.timeUntilNext > 0 && (
-            <div className="text-xs text-center text-muted-foreground">
-              <AlertCircle className="w-3 h-3 inline mr-1" />
-              Les récompenses sont ajustées selon la durée de la publicité
-            </div>
-          )}
         </CardContent>
       </Card>
 
