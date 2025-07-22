@@ -30,7 +30,7 @@ export class AdRewardService {
           description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
         } else if (config.reward_type === 'growth_boost') {
           const speedMultiplier = 1 / amount;
-          description = `Croissance x${speedMultiplier} (${config.duration_minutes}min)`;
+          description = `Boost Croissance x${speedMultiplier}`;
         } else if (config.reward_type.includes('boost')) {
           description = `${config.display_name} x${amount} (${config.duration_minutes}min)`;
         }
