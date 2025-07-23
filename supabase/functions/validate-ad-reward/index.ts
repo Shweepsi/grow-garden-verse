@@ -211,6 +211,19 @@ interface AdMobRewardPayload {
   ad_duration: number
   signature?: string
   source?: string // 'client_immediate', 'ssv', etc.
+  transaction_id?: string
+}
+
+interface PendingReward {
+  id: string
+  user_id: string
+  transaction_id: string
+  reward_type: string
+  initial_amount: number
+  applied_amount: number 
+  source: string
+  status: 'pending' | 'confirmed' | 'revoked'
+  created_at: string
 }
 
 Deno.serve(async (req) => {
@@ -413,73 +426,139 @@ Deno.serve(async (req) => {
       
       const adjustedAmount = rewardConfig.calculated_amount
       
-      console.log('AdMob SSV: Processing reward for user:', userId, 'Type:', rewardType, 'Amount:', adjustedAmount)
+      console.log('AdMob SSV: Processing reward for user:', userId, 'Type:', rewardType, 'Amount:', adjustedAmount, 'Transaction:', transactionId)
       
-      const result = await applyReward(userId, rewardType, adjustedAmount, rewardConfig.duration_minutes || 30)
-      const processingTime = Date.now() - startTime;
+      // NOUVELLE LOGIQUE: Vérifier si c'est une confirmation/révocation d'une récompense immédiate
+      const { data: pendingReward } = await supabase
+        .from('pending_ad_rewards')
+        .select('*')
+        .eq('transaction_id', transactionId)
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .maybeSingle()
       
-      if (result.success) {
-        await updateAdCooldown(userId)
-        await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId, 'ssv')
+      if (pendingReward) {
+        console.log('AdMob SSV: Found pending reward to confirm/revoke:', pendingReward.id)
         
-        console.log(`AdMob SSV: Successfully processed reward for user: ${userId} - Type: ${rewardType}, Amount: ${adjustedAmount}, Processing time: ${processingTime}ms`)
-        
-        // AMÉLIORATION: Réponse enrichie avec métadonnées complètes
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            processed: true,
-            reward_details: {
-              type: rewardType,
-              amount: adjustedAmount,
-              duration: rewardConfig.duration_minutes || 30,
-              player_level: playerLevel
-            },
-            user_id: userId,
-            session_id: sessionId,
-            validation: {
-              method: 'server_side_verification',
-              signature_valid: signatureValid,
-              custom_data_used: !!customData
-            },
-            performance: {
-              processing_time_ms: processingTime
-            },
-            timestamp: new Date().toISOString()
-          }),
-          { 
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        if (signatureValid) {
+          // Confirmer la récompense immédiate
+          const { error: confirmError } = await supabase
+            .from('pending_ad_rewards')
+            .update({ 
+              status: 'confirmed',
+              ssv_validation_attempt_count: (pendingReward.ssv_validation_attempt_count || 0) + 1,
+              last_ssv_attempt: new Date().toISOString(),
+              metadata: {
+                ...pendingReward.metadata,
+                confirmed_by_ssv: true,
+                signature_validation: 'passed'
+              }
+            })
+            .eq('id', pendingReward.id)
+          
+          if (confirmError) {
+            console.error('Failed to confirm pending reward:', confirmError)
+          } else {
+            console.log(`AdMob SSV: CONFIRMED immediate reward - Transaction: ${transactionId}`)
           }
-        )
+          
+          await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId, 'ssv_confirmation')
+          
+        } else {
+          // Révoquer la récompense immédiate
+          console.log(`AdMob SSV: REVOKING immediate reward due to invalid signature - Transaction: ${transactionId}`)
+          
+          // Retirer la récompense qui avait été appliquée
+          const revokeResult = await revokeReward(userId, pendingReward.reward_type, pendingReward.applied_amount)
+          
+          const { error: revokeError } = await supabase
+            .from('pending_ad_rewards')
+            .update({ 
+              status: 'revoked',
+              ssv_validation_attempt_count: (pendingReward.ssv_validation_attempt_count || 0) + 1,
+              last_ssv_attempt: new Date().toISOString(),
+              metadata: {
+                ...pendingReward.metadata,
+                revoked_reason: 'invalid_ssv_signature',
+                revoke_success: revokeResult.success,
+                revoke_error: revokeResult.error
+              }
+            })
+            .eq('id', pendingReward.id)
+          
+          if (revokeError) {
+            console.error('Failed to mark reward as revoked:', revokeError)
+          }
+          
+          await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId, 'ssv_revocation')
+        }
+        
       } else {
-        console.error(`AdMob SSV: Failed to apply reward: ${result.error} - Processing time: ${processingTime}ms`)
+        // Nouveau reward SSV (mode déféré) - appliquer seulement si signature valide
+        if (!signatureValid) {
+          console.log('AdMob SSV: Rejecting new SSV reward due to invalid signature')
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true,
+              processed: false,
+              reason: 'invalid_signature_deferred_reward',
+              message: 'SSV reward rejected due to invalid signature',
+              timestamp: new Date().toISOString()
+            }),
+            { 
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          )
+        }
         
-        // AMÉLIORATION: Même en cas d'erreur, retourner 200 OK avec détails pour analyse
-        return new Response(
-          JSON.stringify({ 
-            success: true, // Pour Google, éviter les retries
-            processed: false,
-            reason: 'reward_application_failed',
-            error: result.error,
-            reward_details: {
-              type: rewardType,
-              amount: adjustedAmount,
-              player_level: playerLevel
-            },
-            user_id: userId,
-            session_id: sessionId,
-            performance: {
-              processing_time_ms: processingTime
-            },
-            timestamp: new Date().toISOString()
-          }),
-          { 
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
+        console.log('AdMob SSV: Applying new DEFERRED reward')
+        const result = await applyReward(userId, rewardType, adjustedAmount, rewardConfig.duration_minutes || 30)
+        
+        if (result.success) {
+          await updateAdCooldown(userId)
+          await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId, 'ssv_deferred')
+          
+          console.log(`AdMob SSV: Successfully applied DEFERRED reward - Transaction: ${transactionId}`)
+        } else {
+          console.error(`AdMob SSV: Failed to apply deferred reward: ${result.error}`)
+        }
       }
+      
+      const processingTime = Date.now() - startTime;
+        
+      console.log(`AdMob SSV: Successfully processed reward for user: ${userId} - Type: ${rewardType}, Amount: ${adjustedAmount}, Processing time: ${processingTime}ms`)
+      
+      // AMÉLIORATION: Réponse enrichie avec métadonnées complètes
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          processed: true,
+          reward_details: {
+            type: rewardType,
+            amount: adjustedAmount,
+            duration: rewardConfig.duration_minutes || 30,
+            player_level: playerLevel
+          },
+          user_id: userId,
+          session_id: sessionId,
+          validation: {
+            method: 'server_side_verification',
+            signature_valid: signatureValid,
+            custom_data_used: !!customData
+          },
+          performance: {
+            processing_time_ms: processingTime
+          },
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+
     } catch (error) {
       const processingTime = Date.now() - startTime;
       console.error(`AdMob SSV: Error processing callback: ${(error as Error).message} - Processing time: ${processingTime}ms`)
@@ -505,7 +584,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Handle POST requests (from client immediate reward ou development)
+  // Handle POST requests - New logic with deferred/immediate reward handling
   try {
     const contentLength = req.headers.get('content-length')
     if (!contentLength || contentLength === '0') {
@@ -518,12 +597,6 @@ Deno.serve(async (req) => {
     const payload: AdMobRewardPayload = await req.json()
     console.log('AdMob reward validation request (POST):', payload)
     
-    // AMÉLIORATION: Détecter si c'est une récompense immédiate côté client
-    const isClientImmediate = (payload as any).source === 'client_immediate';
-    if (isClientImmediate) {
-      console.log('AdMob: Processing immediate client reward for optimal UX');
-    }
-
     // Validate required fields
     if (!payload.user_id || !payload.reward_type || !payload.reward_amount) {
       return new Response(
@@ -547,7 +620,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get player level and calculate actual reward amount
+    // Calculate reward amount
     const { data: garden } = await supabase
       .from('player_gardens')
       .select('level')
@@ -556,7 +629,6 @@ Deno.serve(async (req) => {
     
     const playerLevel = garden?.level || 1
     
-    // Calculate reward based on database configuration
     const { data: rewardConfig, error: rewardError } = await supabase
       .rpc('calculate_ad_reward', {
         reward_type_param: payload.reward_type,
@@ -575,33 +647,107 @@ Deno.serve(async (req) => {
     const calculatedAmount = rewardConfig.calculated_amount
     const durationMinutes = rewardConfig.duration_minutes || 30
     
-    // Apply reward
-    const result = await applyReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes)
+    // NOUVELLE LOGIQUE: Différentiation entre récompenses immédiates et différées
+    const isClientImmediate = payload.source === 'client_immediate'
+    const transactionId = payload.transaction_id || `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    if (isClientImmediate) {
+      console.log('AdMob: Processing CLIENT_IMMEDIATE reward (revocable)')
+      
+      // Apply reward immediately but mark as pending confirmation
+      const result = await applyReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes)
 
-    if (!result.success) {
-      console.error('Failed to apply reward:', result.error)
+      if (!result.success) {
+        console.error('Failed to apply immediate reward:', result.error)
+        return new Response(
+          JSON.stringify({ error: result.error }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Store as pending reward for possible revocation
+      const { error: pendingError } = await supabase
+        .from('pending_ad_rewards')
+        .insert({
+          user_id: payload.user_id,
+          transaction_id: transactionId,
+          reward_type: payload.reward_type,
+          initial_amount: payload.reward_amount,
+          applied_amount: calculatedAmount,
+          source: 'client_immediate',
+          status: 'pending',
+          metadata: {
+            player_level: playerLevel,
+            ad_duration: payload.ad_duration,
+            applied_at: new Date().toISOString()
+          }
+        })
+
+      if (pendingError) {
+        console.error('Failed to store pending reward:', pendingError)
+        // Continue anyway - reward was applied
+      }
+
+      await updateAdCooldown(payload.user_id)
+      await logAdReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes, transactionId, 'client_immediate')
+
+      console.log(`Successfully applied IMMEDIATE reward (${payload.reward_type}: ${calculatedAmount}) to user ${payload.user_id} - Transaction: ${transactionId}`)
+
       return new Response(
-        JSON.stringify({ error: result.error }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true, 
+          applied_amount: calculatedAmount,
+          reward_type: payload.reward_type,
+          transaction_id: transactionId,
+          status: 'applied_pending_confirmation',
+          note: 'Reward applied immediately but subject to SSV confirmation'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+      
+    } else {
+      console.log('AdMob: Processing DEFERRED reward (awaiting SSV)')
+      
+      // For deferred rewards, don't apply immediately - wait for SSV
+      const { error: pendingError } = await supabase
+        .from('pending_ad_rewards')
+        .insert({
+          user_id: payload.user_id,
+          transaction_id: transactionId,
+          reward_type: payload.reward_type,
+          initial_amount: payload.reward_amount,
+          applied_amount: calculatedAmount,
+          source: payload.source || 'deferred',
+          status: 'pending',
+          metadata: {
+            player_level: playerLevel,
+            ad_duration: payload.ad_duration,
+            deferred_at: new Date().toISOString()
+          }
+        })
+
+      if (pendingError) {
+        console.error('Failed to store deferred reward:', pendingError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to store deferred reward' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log(`Successfully stored DEFERRED reward (${payload.reward_type}: ${calculatedAmount}) for user ${payload.user_id} - Transaction: ${transactionId}`)
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          calculated_amount: calculatedAmount,
+          reward_type: payload.reward_type,
+          transaction_id: transactionId,
+          status: 'pending_ssv_confirmation',
+          note: 'Reward will be applied after SSV confirmation'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    // Update cooldown
-    await updateAdCooldown(payload.user_id)
-
-    // Log transaction
-    await logAdReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes, payload.source || 'POST')
-
-    console.log(`Successfully applied ${payload.reward_type} reward (${payload.reward_amount}) to user ${payload.user_id}`)
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        applied_amount: calculatedAmount,
-        reward_type: payload.reward_type 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error) {
     console.error('Error in validate-ad-reward:', error)
@@ -699,6 +845,102 @@ async function applyBoostReward(userId: string, effectType: string, effectValue:
     })
 
   if (error) return { success: false, error: 'Failed to create boost effect' }
+
+  return { success: true }
+}
+
+/**
+ * Révoque une récompense qui avait été appliquée immédiatement
+ * Utilisé quand Google rejette la signature SSV
+ */
+async function revokeReward(userId: string, rewardType: string, amount: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`Revoking ${rewardType} reward of ${amount} for user ${userId}`)
+    
+    switch (rewardType) {
+      case 'coins':
+        return await revokeCoinsReward(userId, Math.floor(amount))
+      case 'gems':
+        return await revokeGemsReward(userId, Math.floor(amount))
+      case 'coin_boost':
+      case 'gem_boost':  
+      case 'growth_boost':
+        return await revokeBoostReward(userId, rewardType)
+      default:
+        return { success: false, error: 'Unknown reward type for revocation' }
+    }
+  } catch (error) {
+    console.error('Error revoking reward:', error)
+    return { success: false, error: (error as Error).message }
+  }
+}
+
+async function revokeCoinsReward(userId: string, amount: number): Promise<{ success: boolean; error?: string }> {
+  const { data: garden, error: fetchError } = await supabase
+    .from('player_gardens')
+    .select('coins')
+    .eq('user_id', userId)
+    .single()
+
+  if (fetchError) return { success: false, error: 'Failed to fetch garden for revocation' }
+
+  // S'assurer qu'on ne va pas en négatif
+  const newCoins = Math.max(0, (garden.coins || 0) - amount)
+
+  const { error: updateError } = await supabase
+    .from('player_gardens')
+    .update({ coins: newCoins })
+    .eq('user_id', userId)
+
+  if (updateError) return { success: false, error: 'Failed to revoke coins' }
+
+  // Logger la révocation
+  await supabase.from('coin_transactions').insert({
+    user_id: userId,
+    amount: -amount,
+    transaction_type: 'ad_revocation',
+    description: `Révocation pub: -${amount} pièces (signature invalide)`
+  })
+
+  return { success: true }
+}
+
+async function revokeGemsReward(userId: string, amount: number): Promise<{ success: boolean; error?: string }> {
+  const { data: garden, error: fetchError } = await supabase
+    .from('player_gardens')
+    .select('gems')
+    .eq('user_id', userId)
+    .single()
+
+  if (fetchError) return { success: false, error: 'Failed to fetch garden for gem revocation' }
+
+  // S'assurer qu'on ne va pas en négatif
+  const newGems = Math.max(0, (garden.gems || 0) - amount)
+
+  const { error: updateError } = await supabase
+    .from('player_gardens')
+    .update({ gems: newGems })
+    .eq('user_id', userId)
+
+  if (updateError) return { success: false, error: 'Failed to revoke gems' }
+
+  return { success: true }
+}
+
+async function revokeBoostReward(userId: string, effectType: string): Promise<{ success: boolean; error?: string }> {
+  // Pour les boosts, on marque les effets actifs comme expirés
+  const { error } = await supabase
+    .from('active_effects')
+    .update({ 
+      expires_at: new Date().toISOString(), // Expire immédiatement
+      source: 'ad_revocation'
+    })
+    .eq('user_id', userId)
+    .eq('effect_type', effectType)
+    .eq('source', 'ad_reward')
+    .gt('expires_at', new Date().toISOString()) // Seulement les effets encore actifs
+
+  if (error) return { success: false, error: 'Failed to revoke boost effect' }
 
   return { success: true }
 }
