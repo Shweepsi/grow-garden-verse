@@ -128,12 +128,16 @@ export class AdMobService {
       console.log(`AdMob: Loading rewarded ad with correct unit ID (attempt ${retryCount + 1})...`);
       console.log(`AdMob: Using ad unit: ${this.REWARDED_AD_ID}`);
       
-      // Configuration SSV simplifiée pour éviter les erreurs d'encodage
+      // AMÉLIORATION: Configuration SSV optimisée avec métadonnées enrichies
       const customData = JSON.stringify({
         user_id: userId,
         reward_type: rewardType,
         reward_amount: rewardAmount,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        session_id: `ad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        platform: Capacitor.getPlatform(),
+        app_version: '1.0.0',
+        validation_mode: 'ssv_enhanced'
       });
 
       const ssvUrl = `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`;
