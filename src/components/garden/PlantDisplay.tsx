@@ -79,26 +79,40 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
         {plantType.display_name || plantType.name || 'Plante inconnue'}
       </p>
 
-      {/* Vraie barre de progression avec shadcn/ui */}
-      <div className="mb-2">
-        <Progress 
-          value={progress} 
-          className={`h-2 transition-all duration-300 ${
-            isReady 
-              ? 'bg-yellow-100' 
-              : progress > 75
-                ? 'bg-green-100'
-                : 'bg-gray-100'
-          }`}
-        />
-        <div className="text-xs text-gray-500 mt-1">
+      {/* Barre de progression cohérente avec le design glassmorphism */}
+      <div className="mb-2 w-full">
+        <div className="relative h-2 bg-white/30 backdrop-blur-sm rounded-full border border-white/40 overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-500 ease-out ${
+              isReady 
+                ? 'bg-gradient-to-r from-yellow-400 to-orange-400 shadow-lg shadow-yellow-200/50' 
+                : progress > 75
+                  ? 'bg-gradient-to-r from-green-400 to-emerald-400 shadow-lg shadow-green-200/50'
+                  : progress > 50
+                    ? 'bg-gradient-to-r from-blue-400 to-cyan-400 shadow-lg shadow-blue-200/50'
+                    : 'bg-gradient-to-r from-gray-400 to-gray-500'
+            }`}
+            style={{ width: `${progress}%` }}
+          />
+          {/* Effet de brillance sur la barre */}
+          {progress > 0 && (
+            <div 
+              className="absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 animate-pulse"
+              style={{ 
+                left: `${Math.max(0, progress - 15)}%`,
+                opacity: progress > 10 ? 0.8 : 0 
+              }}
+            />
+          )}
+        </div>
+        <div className="text-xs text-gray-600 mt-1 font-medium">
           {progress.toFixed(0)}%
         </div>
       </div>
 
       {isReady ? (
-        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-1 rounded-full mobile-text-xs font-medium animate-pulse">
-          Prête !
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium animate-pulse shadow-lg">
+          ✨ Prête !
         </div>
       ) : (
         <div className={`transition-colors duration-300 ${

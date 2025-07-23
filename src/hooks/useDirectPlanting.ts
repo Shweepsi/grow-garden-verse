@@ -1,5 +1,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -16,9 +17,14 @@ export const useDirectPlanting = () => {
   const { getActiveMultipliers } = useUpgrades();
   const { triggerCoinAnimation } = useAnimations();
   const { syncRobotTimestamp, hasPassiveRobot } = usePassiveIncomeRobot();
+  
+  // État pour suivre les parcelles en cours de plantation (spécifique par parcelle)
+  const [plantingPlots, setPlantingPlots] = useState<Set<number>>(new Set());
 
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, cost }: { plotNumber: number; plantTypeId: string; cost: number }) => {
+      // Ajouter la parcelle aux parcelles en cours de plantation
+      setPlantingPlots(prev => new Set(prev).add(plotNumber));
       if (!user?.id) throw new Error('Not authenticated');
 
       // Validation stricte des paramètres
@@ -232,10 +238,15 @@ export const useDirectPlanting = () => {
       return { previousData };
     },
     onSuccess: (data) => {
-      // Invalidation ciblée pour optimiser les performances
+      // Retirer la parcelle des parcelles en cours de plantation
       const { plotNumber } = data;
+      setPlantingPlots(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(plotNumber);
+        return newSet;
+      });
       
-      // Invalider seulement les données nécessaires
+      // Invalidation ciblée pour optimiser les performances
       queryClient.invalidateQueries({ 
         queryKey: ['gameData'],
         refetchType: 'active' // Ne refetch que les queries actives
@@ -258,6 +269,14 @@ export const useDirectPlanting = () => {
       console.log(`✅ Plantation réussie sur la parcelle ${plotNumber}`);
     },
     onError: (error: any, variables, context: any) => {
+      // Retirer la parcelle des parcelles en cours de plantation en cas d'erreur
+      const { plotNumber } = variables;
+      setPlantingPlots(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(plotNumber);
+        return newSet;
+      });
+      
       // Restaurer les données précédentes en cas d'erreur
       if (context?.previousData) {
         queryClient.setQueryData(['gameData'], context.previousData);
@@ -270,6 +289,7 @@ export const useDirectPlanting = () => {
   return {
     plantDirect: (plotNumber: number, plantTypeId: string, cost: number) => 
       plantDirectMutation.mutate({ plotNumber, plantTypeId, cost }),
+    isPlantingPlot: (plotNumber: number) => plantingPlots.has(plotNumber),
     isPlanting: plantDirectMutation.isPending
   };
 };

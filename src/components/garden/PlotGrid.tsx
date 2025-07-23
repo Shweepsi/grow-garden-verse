@@ -27,7 +27,7 @@ export const PlotGrid = ({
   const [showPlantSelector, setShowPlantSelector] = useState(false);
   const [showRobotInterface, setShowRobotInterface] = useState(false);
   
-  const { plantDirect, isPlanting } = useDirectPlanting();
+  const { plantDirect, isPlantingPlot } = useDirectPlanting();
   const { 
     hasPassiveRobot, 
     robotPlantType,
@@ -124,7 +124,7 @@ export const PlotGrid = ({
             plantType={plantType}
             plantTypesCount={plantTypes.length}
             coins={coins}
-            isPlanting={isPlanting}
+            isPlanting={isPlantingPlot(plot.plot_number)}
             hasAutoHarvest={isAutoHarvestPlot}
             robotAtCapacity={robotAtCapacity}
             onPlotClick={handlePlotClick}
