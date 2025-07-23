@@ -703,6 +703,9 @@ async function updateAdCooldown(userId: string): Promise<void> {
       daily_reset_date: today,
       last_ad_watched: now.toISOString(),
       updated_at: now.toISOString()
+    }, {
+      onConflict: 'user_id',
+      ignoreDuplicates: false
     });
 
   if (error) {
