@@ -307,6 +307,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_ad_rewards: {
+        Row: {
+          applied_amount: number
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          initial_amount: number
+          last_ssv_attempt: string | null
+          metadata: Json | null
+          revoked_at: string | null
+          reward_type: string
+          source: string
+          ssv_validation_attempt_count: number | null
+          status: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          applied_amount: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          initial_amount: number
+          last_ssv_attempt?: string | null
+          metadata?: Json | null
+          revoked_at?: string | null
+          reward_type: string
+          source?: string
+          ssv_validation_attempt_count?: number | null
+          status?: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          applied_amount?: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          initial_amount?: number
+          last_ssv_attempt?: string | null
+          metadata?: Json | null
+          revoked_at?: string | null
+          reward_type?: string
+          source?: string
+          ssv_validation_attempt_count?: number | null
+          status?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plant_discoveries: {
         Row: {
           discovered_at: string | null
