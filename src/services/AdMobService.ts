@@ -1,6 +1,7 @@
 
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdLoadInfo, AdMobError } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExtendedRewardAdOptions extends RewardAdOptions {
   serverSideVerificationOptions?: {
@@ -236,6 +237,25 @@ export class AdMobService {
         success: false, 
         rewarded: false,
         error: 'Publicités disponibles uniquement sur mobile' 
+      };
+    }
+
+    // Vérifier la limite quotidienne avant de montrer la pub
+    try {
+      const { data: limitCheck } = await supabase.functions.invoke('check-ad-limit');
+      if (!limitCheck?.success) {
+        return {
+          success: false,
+          rewarded: false,
+          error: 'Limite quotidienne de publicités atteinte'
+        };
+      }
+    } catch (error) {
+      console.error('AdMob: Error checking ad limit:', error);
+      return {
+        success: false,
+        rewarded: false,
+        error: 'Erreur lors de la vérification des limites'
       };
     }
 
