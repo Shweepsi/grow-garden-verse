@@ -77,7 +77,7 @@ export const PlantSelector = ({
           <div className="flex items-center justify-between mb-4">
             {/* Bonus actifs remplaçant l'icône et le texte de parcelle */}
             {multipliers.harvest > 1 || multipliers.growth > 1 || multipliers.exp > 1 || multipliers.plantCostReduction < 1 ? <div className="flex items-center gap-2">
-                <Award className="h-4 w-4 text-green-600" />
+                
                 <div className="flex flex-wrap gap-2">
                   {multipliers.harvest > 1 && <div className="bg-gradient-to-r from-green-100 to-green-50 border border-green-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-green-700">
