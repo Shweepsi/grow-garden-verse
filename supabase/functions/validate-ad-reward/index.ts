@@ -97,11 +97,16 @@ async function fetchAdMobPublicKeys(): Promise<Map<number, CryptoKey>> {
  */
 async function validateSSVSignature(url: URL): Promise<boolean> {
   try {
-    const params = url.searchParams;
+    // CORRECTION CRITIQUE: Reconstruire l'URL avec HTTPS
+    // AdMob signe avec https:// mais Supabase peut recevoir en http://
+    const httpsUrl = new URL(url.toString().replace(/^http:/, 'https:'));
+    
+    const params = httpsUrl.searchParams;
     const signature = params.get('signature');
     const keyIdStr = params.get('key_id');
     
-    console.log('AdMob SSV: Full URL being validated:', url.toString());
+    console.log('AdMob SSV: Original URL received:', url.toString());
+    console.log('AdMob SSV: HTTPS URL for validation:', httpsUrl.toString());
     console.log('AdMob SSV: Query parameters:', Object.fromEntries(params.entries()));
     
     if (!signature || !keyIdStr) {
@@ -126,8 +131,8 @@ async function validateSSVSignature(url: URL): Promise<boolean> {
 
     // CORRECTION: Construire correctement le contenu à vérifier
     // Google signe l'URL complète SANS les paramètres signature et key_id
-    const queryString = url.search.substring(1); // Enlever le '?'
-    console.log('AdMob SSV: Original query string:', queryString);
+    const queryString = httpsUrl.search.substring(1); // Enlever le '?'
+    console.log('AdMob SSV: HTTPS query string:', queryString);
     
     // Reconstruire l'URL sans signature et key_id
     const paramsToSign = new URLSearchParams();
