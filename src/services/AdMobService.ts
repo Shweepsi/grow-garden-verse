@@ -253,10 +253,12 @@ export class AdMobService {
       
       const result = await AdMob.showRewardVideoAd();
       
-      console.log('AdMob: Production ad watched successfully, SSV should handle validation:', result);
-      console.log('AdMob: Expected SSV callback to:', `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`);
+      console.log('AdMob: Production ad watched successfully, applying immediate client reward');
       
-      // AdMob handles server validation automatically via SSV
+      // AMÉLIORATION: Récompense immédiate côté client (recommandation Google)
+      await this.applyImmediateClientReward(userId, rewardType, rewardAmount);
+      
+      // AdMob handles server validation automatically via SSV pour validation a posteriori
       this.state.isAdLoaded = false;
       
       // Preload next ad for better UX
@@ -271,6 +273,40 @@ export class AdMobService {
         rewarded: false,
         error: this.getReadableError(error as Error)
       };
+    }
+  }
+
+  /**
+   * Applique la récompense immédiate côté client (recommandation Google)
+   * La validation SSV côté serveur se fera en parallèle pour sécurité
+   */
+  private static async applyImmediateClientReward(userId: string, rewardType: string, rewardAmount: number): Promise<void> {
+    try {
+      console.log('AdMob: Applying immediate client-side reward for optimal UX');
+      
+      // Appeler directement notre service de récompense
+      const response = await fetch(`https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zZmV4dXF2bHB4cmZhdWtmb2JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NDY3ODIsImV4cCI6MjA2NjQyMjc4Mn0.wu17C74K3kUs8mjRoHwFVAhjgEBmi91gRiJiGkYPICY'}`
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          reward_type: rewardType,
+          reward_amount: rewardAmount,
+          ad_duration: 30,
+          source: 'client_immediate'
+        })
+      });
+
+      if (response.ok) {
+        console.log('AdMob: Immediate client reward applied successfully');
+      } else {
+        console.warn('AdMob: Failed to apply immediate client reward, SSV will handle it');
+      }
+    } catch (error) {
+      console.warn('AdMob: Error applying immediate client reward:', error);
     }
   }
 

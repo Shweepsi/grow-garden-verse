@@ -7,6 +7,173 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 )
 
+// AdMob SSV Cryptographic Validation
+interface AdMobPublicKey {
+  keyId: number;
+  pem: string;
+  base64: string;
+}
+
+interface AdMobKeysResponse {
+  keys: AdMobPublicKey[];
+}
+
+// Cache des clés publiques (24h selon recommandations Google)
+let cachedKeys: Map<number, CryptoKey> = new Map();
+let lastKeyFetch = 0;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 heures
+
+/**
+ * Récupère et met en cache les clés publiques AdMob
+ */
+async function fetchAdMobPublicKeys(): Promise<Map<number, CryptoKey>> {
+  const now = Date.now();
+  
+  // Utiliser le cache si valide
+  if (cachedKeys.size > 0 && (now - lastKeyFetch) < CACHE_DURATION) {
+    console.log('AdMob SSV: Using cached public keys');
+    return cachedKeys;
+  }
+
+  try {
+    console.log('AdMob SSV: Fetching fresh public keys from Google');
+    
+    const response = await fetch('https://www.gstatic.com/admob/reward/verifier-keys.json');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch keys: ${response.status}`);
+    }
+
+    const keysData: AdMobKeysResponse = await response.json();
+    
+    if (!keysData.keys || keysData.keys.length === 0) {
+      throw new Error('No public keys found in response');
+    }
+
+    // Nettoyer l'ancien cache
+    cachedKeys.clear();
+
+    // Importer les nouvelles clés
+    for (const key of keysData.keys) {
+      try {
+        const keyData = base64ToArrayBuffer(key.base64);
+        const cryptoKey = await crypto.subtle.importKey(
+          'spki',
+          keyData,
+          {
+            name: 'ECDSA',
+            namedCurve: 'P-256'
+          },
+          false,
+          ['verify']
+        );
+        
+        cachedKeys.set(key.keyId, cryptoKey);
+        console.log(`AdMob SSV: Imported key ${key.keyId}`);
+      } catch (error) {
+        console.error(`AdMob SSV: Failed to import key ${key.keyId}:`, error);
+      }
+    }
+
+    lastKeyFetch = now;
+    console.log(`AdMob SSV: Successfully cached ${cachedKeys.size} public keys`);
+    
+    return cachedKeys;
+  } catch (error) {
+    console.error('AdMob SSV: Failed to fetch public keys:', error);
+    
+    // Retourner le cache existant si disponible
+    if (cachedKeys.size > 0) {
+      console.log('AdMob SSV: Using stale cached keys due to fetch error');
+      return cachedKeys;
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Valide la signature cryptographique ECDSA du callback SSV
+ */
+async function validateSSVSignature(url: URL): Promise<boolean> {
+  try {
+    const params = url.searchParams;
+    const signature = params.get('signature');
+    const keyIdStr = params.get('key_id');
+    
+    if (!signature || !keyIdStr) {
+      console.error('AdMob SSV: Missing signature or key_id');
+      return false;
+    }
+
+    const keyId = parseInt(keyIdStr);
+    if (isNaN(keyId)) {
+      console.error('AdMob SSV: Invalid key_id');
+      return false;
+    }
+
+    // Récupérer les clés publiques
+    const publicKeys = await fetchAdMobPublicKeys();
+    const publicKey = publicKeys.get(keyId);
+    
+    if (!publicKey) {
+      console.error(`AdMob SSV: Public key not found for key_id: ${keyId}`);
+      return false;
+    }
+
+    // Construire le contenu à vérifier (tous les paramètres sauf signature et key_id)
+    const queryString = url.search.substring(1); // Enlever le '?'
+    const signatureIndex = queryString.indexOf('signature=');
+    
+    if (signatureIndex === -1) {
+      console.error('AdMob SSV: No signature parameter found');
+      return false;
+    }
+
+    // Le contenu à vérifier est tout ce qui précède '&signature='
+    const contentToVerify = queryString.substring(0, signatureIndex - 1);
+    const contentBytes = new TextEncoder().encode(contentToVerify);
+
+    // Décoder la signature base64url
+    const signatureBytes = base64UrlToArrayBuffer(signature);
+
+    // Vérifier la signature avec ECDSA-SHA256
+    const isValid = await crypto.subtle.verify(
+      {
+        name: 'ECDSA',
+        hash: 'SHA-256'
+      },
+      publicKey,
+      signatureBytes,
+      contentBytes
+    );
+
+    console.log(`AdMob SSV: Cryptographic signature validation result: ${isValid}`);
+    return isValid;
+    
+  } catch (error) {
+    console.error('AdMob SSV: Signature validation failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Utilitaires de conversion
+ */
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+function base64UrlToArrayBuffer(base64Url: string): ArrayBuffer {
+  // Convertir base64url vers base64 standard
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  return base64ToArrayBuffer(base64);
+}
+
 interface AdMobRewardPayload {
   user_id: string
   reward_type: string
@@ -44,8 +211,35 @@ Deno.serve(async (req) => {
     const searchParams = url.searchParams
     
     console.log('Edge Function: AdMob SSV raw URL:', req.url)
+    console.log('Edge Function: SSV Headers:', Object.fromEntries(req.headers.entries()))
     
-    // Extract AdMob SSV parameters
+    // AMÉLIORATION: Validation cryptographique complète (recommandation Google)
+    try {
+      const isValidSignature = await validateSSVSignature(url);
+      if (!isValidSignature) {
+        console.error('AdMob SSV: Cryptographic signature validation failed');
+        // Retourner 200 OK pour éviter les retries de Google, mais ne pas traiter la récompense
+        return new Response(
+          JSON.stringify({ 
+            message: 'AdMob SSV endpoint acknowledged - invalid signature',
+            warning: 'Reward not processed due to signature validation failure'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('AdMob SSV: Cryptographic signature validation passed');
+    } catch (error) {
+      console.error('AdMob SSV: Signature validation error:', error);
+      return new Response(
+        JSON.stringify({ 
+          message: 'AdMob SSV endpoint acknowledged - validation error',
+          error: (error as Error).message
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Extract AdMob SSV parameters avec décodage percent-encoding
     const adNetwork = searchParams.get('ad_network')
     const adUnit = searchParams.get('ad_unit')
     const rewardAmount = searchParams.get('reward_amount')
@@ -57,12 +251,19 @@ Deno.serve(async (req) => {
     let userId = searchParams.get('user_id')
     let customData = searchParams.get('custom_data')
     
-    console.log('Edge Function: AdMob SSV Request - Raw params:', {
+    // AMÉLIORATION: Décodage percent-encoding pour custom_data (recommandation Google)
+    if (customData) {
+      try {
+        customData = decodeURIComponent(customData);
+        console.log('AdMob SSV: Decoded custom_data:', customData);
+      } catch (error) {
+        console.warn('AdMob SSV: Failed to decode custom_data:', error);
+      }
+    }
+    
+    console.log('Edge Function: AdMob SSV Request - Processed params:', {
       adNetwork, adUnit, rewardAmount, rewardItem, timestamp, transactionId, signature, keyId, userId, customData
     })
-    
-    console.log('Edge Function: SSV Request URL:', req.url)
-    console.log('Edge Function: SSV Headers:', Object.fromEntries(req.headers.entries()))
     
     // Check for unreplaced placeholders and handle them
     if (userId === '{USER_ID}' || userId === 'USER_ID' || !userId) {
@@ -155,35 +356,63 @@ Deno.serve(async (req) => {
       
       if (result.success) {
         await updateAdCooldown(userId)
-        await logAdReward(userId, rewardType, adjustedAmount, 30)
+        await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId)
         
         console.log('AdMob SSV: Successfully processed reward for user:', userId)
+        
+        // AMÉLIORATION: Toujours retourner HTTP 200 OK (recommandation Google)
+        // Google attend ce code pour éviter les retries inutiles
         return new Response(
           JSON.stringify({ 
             success: true, 
             applied_amount: adjustedAmount,
             reward_type: rewardType,
-            user_id: userId
+            user_id: userId,
+            validation_method: 'server_side_verification',
+            timestamp: new Date().toISOString()
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         )
       } else {
         console.error('AdMob SSV: Failed to apply reward:', result.error)
+        
+        // AMÉLIORATION: Même en cas d'erreur, retourner 200 OK pour éviter les retries
         return new Response(
-          JSON.stringify({ error: result.error }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: false,
+            error: result.error,
+            user_id: userId,
+            timestamp: new Date().toISOString()
+          }),
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         )
       }
     } catch (error) {
       console.error('Error processing AdMob SSV:', error)
+      
+      // AMÉLIORATION: Toujours retourner 200 OK même en cas d'erreur système
       return new Response(
-        JSON.stringify({ error: 'Internal server error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false,
+          error: 'Internal server error',
+          details: (error as Error).message,
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       )
     }
   }
 
-  // Handle POST requests (from web/development)
+  // Handle POST requests (from client immediate reward ou development)
   try {
     const contentLength = req.headers.get('content-length')
     if (!contentLength || contentLength === '0') {
@@ -195,6 +424,12 @@ Deno.serve(async (req) => {
 
     const payload: AdMobRewardPayload = await req.json()
     console.log('AdMob reward validation request (POST):', payload)
+    
+    // AMÉLIORATION: Détecter si c'est une récompense immédiate côté client
+    const isClientImmediate = (payload as any).source === 'client_immediate';
+    if (isClientImmediate) {
+      console.log('AdMob: Processing immediate client reward for optimal UX');
+    }
 
     // Validate required fields
     if (!payload.user_id || !payload.reward_type || !payload.reward_amount) {
@@ -416,7 +651,7 @@ async function updateAdCooldown(userId: string): Promise<void> {
   console.log(`Edge Function: Ad watched ${newDailyCount}/5 today for user ${userId}`);
 }
 
-async function logAdReward(userId: string, rewardType: string, amount: number, adDuration: number): Promise<void> {
+async function logAdReward(userId: string, rewardType: string, amount: number, adDuration: number, transactionId?: string): Promise<void> {
   await supabase
     .from('ad_sessions')
     .insert({
@@ -426,7 +661,9 @@ async function logAdReward(userId: string, rewardType: string, amount: number, a
       reward_data: {
         ad_duration: adDuration,
         applied_at: new Date().toISOString(),
-        source: 'server_validation'
+        source: 'server_validation',
+        transaction_id: transactionId,
+        validation_method: 'cryptographic_ssv'
       }
     })
 }
