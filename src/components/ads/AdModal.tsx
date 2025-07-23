@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -25,12 +24,13 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { toast } = useToast();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
   const { data: gameData, refetch: refetchGameData } = useGameData();
-  const { adState } = useAdRewards();
+  const { adState, testConnectivity, debug } = useAdRewards();
   const [selectedReward, setSelectedReward] = useState<AdReward | null>(null);
   const [isWatching, setIsWatching] = useState(false);
   const [isWaitingForReward, setIsWaitingForReward] = useState(false);
   const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
   const [loadingRewards, setLoadingRewards] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   // Charger les récompenses disponibles
   useEffect(() => {
@@ -57,15 +57,16 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     loadRewards();
   }, [open, user?.id, gameData?.garden?.level, toast]);
 
-  // Précharger la publicité à l'ouverture
+  // Précharger la publicité à l'ouverture avec diagnostic
   useEffect(() => {
     if (open && user?.id) {
       const preloadAd = async () => {
+        console.log('AdMob: Preloading ad with debug info:', debug);
         await AdMobService.preloadAd(user.id, 'coins', 100);
       };
       preloadAd();
     }
-  }, [open, user?.id]);
+  }, [open, user?.id, debug]);
 
   const handleWatchAd = async () => {
     if (!selectedReward || !user?.id || adState.dailyCount >= adState.maxDaily) {
@@ -82,9 +83,22 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     try {
       setIsWatching(true);
       
+      // Test de connectivité avant d'essayer
+      const isConnected = await testConnectivity();
+      if (!isConnected) {
+        toast({
+          title: "Problème de connexion",
+          description: "Vérifiez votre connexion internet et réessayez",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Capturer les valeurs actuelles avant de regarder la pub
       const currentCoins = gameData?.garden?.coins || 0;
       const currentGems = gameData?.garden?.gems || 0;
+      
+      console.log('AdMob: Starting ad watch with production settings');
       
       const result = await AdMobService.showRewardedAd(
         user.id, 
@@ -93,8 +107,9 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       );
 
       if (!result.success) {
+        console.error('AdMob: Ad watch failed:', result.error);
         toast({
-          title: "Erreur",
+          title: "Erreur de publicité",
           description: result.error || "Impossible de regarder la publicité",
           variant: "destructive"
         });
@@ -105,7 +120,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       setIsWatching(false);
       setIsWaitingForReward(true);
 
-      console.log('AdMob: Pub regardée, attente de la validation SSV...');
+      console.log('AdMob: Production ad watched, waiting for SSV validation...');
 
       // Surveiller les changements dans la base de données pendant 30 secondes maximum
       let attempts = 0;
@@ -173,6 +188,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
 
     } catch (error) {
       console.error('Error watching ad:', error);
+      console.error('AdMob: Debug info on error:', debug);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la visualisation de la publicité",
@@ -182,6 +198,17 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
       setIsWatching(false);
       setIsWaitingForReward(false);
     }
+  };
+
+  const handleTestConnectivity = async () => {
+    const result = await testConnectivity();
+    toast({
+      title: result ? "Connexion OK" : "Connexion échouée",
+      description: result 
+        ? "La connexion aux serveurs publicitaires fonctionne" 
+        : "Impossible de se connecter aux serveurs publicitaires",
+      variant: result ? "default" : "destructive"
+    });
   };
 
   const getRewardIcon = (type: string) => {
@@ -204,10 +231,35 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           <DialogTitle className="flex items-center gap-2">
             <Play className="w-5 h-5" />
             Regarder une publicité
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDiagnostics(!showDiagnostics)}
+              className="ml-auto"
+            >
+              Debug
+            </Button>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {showDiagnostics && (
+            <div className="bg-muted p-3 rounded-lg text-xs">
+              <div className="font-medium mb-2">Diagnostics AdMob:</div>
+              <pre className="whitespace-pre-wrap overflow-x-auto">
+                {JSON.stringify(debug, null, 2)}
+              </pre>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestConnectivity}
+                className="mt-2"
+              >
+                Tester la connectivité
+              </Button>
+            </div>
+          )}
+
           <div className="space-y-2">
             <h3 className="font-medium">Choisissez votre récompense :</h3>
             

@@ -15,6 +15,7 @@ interface AdMobState {
   isAdLoaded: boolean;
   isAdLoading: boolean;
   lastError: string | null;
+  connectivityStatus: 'unknown' | 'connected' | 'disconnected';
 }
 
 interface AdWatchResult {
@@ -27,14 +28,15 @@ export class AdMobService {
   // Mode production pour AdMob (prêt pour publication)
   private static readonly IS_DEV = false;
   
-  // ID de l'annonce de récompense de production
-  private static readonly REWARDED_AD_ID = 'ca-app-pub-4824355487707598/9765834203';  // ID de production
+  // ID CORRECT de l'annonce de récompense de production
+  private static readonly REWARDED_AD_ID = 'ca-app-pub-4824355487707598/1680280074';  // ID fourni par Google
 
   private static state: AdMobState = {
     isInitialized: false,
     isAdLoaded: false,
     isAdLoading: false,
-    lastError: null
+    lastError: null,
+    connectivityStatus: 'unknown'
   };
 
   static async initialize(): Promise<boolean> {
@@ -44,7 +46,7 @@ export class AdMobService {
     }
 
     try {
-      console.log('AdMob: Initializing...');
+      console.log('AdMob: Initializing with production settings...');
       
       await AdMob.initialize({
         testingDevices: [], // Aucun appareil de test en production
@@ -53,11 +55,39 @@ export class AdMobService {
 
       this.state.isInitialized = true;
       this.state.lastError = null;
-      console.log('AdMob: Initialized successfully');
+      this.state.connectivityStatus = 'connected';
+      console.log('AdMob: Initialized successfully with production ad unit');
       return true;
     } catch (error) {
       console.error('AdMob: Failed to initialize:', error);
-      this.state.lastError = (error as Error).message;
+      this.state.lastError = this.getReadableError(error as Error);
+      this.state.connectivityStatus = 'disconnected';
+      return false;
+    }
+  }
+
+  static async testConnectivity(): Promise<boolean> {
+    try {
+      console.log('AdMob: Testing connectivity...');
+      
+      if (!navigator.onLine) {
+        console.log('AdMob: Device offline');
+        this.state.connectivityStatus = 'disconnected';
+        return false;
+      }
+
+      // Test de base de connectivité réseau
+      const testResponse = await fetch('https://www.google.com/ads/preferences', {
+        method: 'HEAD',
+        mode: 'no-cors'
+      });
+      
+      this.state.connectivityStatus = 'connected';
+      console.log('AdMob: Connectivity test passed');
+      return true;
+    } catch (error) {
+      console.error('AdMob: Connectivity test failed:', error);
+      this.state.connectivityStatus = 'disconnected';
       return false;
     }
   }
@@ -66,6 +96,13 @@ export class AdMobService {
     if (!Capacitor.isNativePlatform()) {
       console.log('AdMob: Not on native platform - ads not available');
       this.state.lastError = 'Publicités disponibles uniquement sur mobile';
+      return false;
+    }
+
+    // Test de connectivité avant de charger
+    const isConnected = await this.testConnectivity();
+    if (!isConnected) {
+      this.state.lastError = 'Connexion internet requise pour charger les publicités';
       return false;
     }
 
@@ -88,16 +125,17 @@ export class AdMobService {
       this.state.isAdLoading = true;
       this.state.lastError = null;
 
-      console.log(`AdMob: Loading rewarded ad (attempt ${retryCount + 1})...`);
+      console.log(`AdMob: Loading rewarded ad with correct unit ID (attempt ${retryCount + 1})...`);
+      console.log(`AdMob: Using ad unit: ${this.REWARDED_AD_ID}`);
       
-      // Simplified SSV configuration
+      // Configuration SSV simplifiée pour éviter les erreurs d'encodage
       const customData = JSON.stringify({
         user_id: userId,
         reward_type: rewardType,
-        reward_amount: rewardAmount
+        reward_amount: rewardAmount,
+        timestamp: Date.now()
       });
 
-      // Simplified SSV URL with essential parameters only
       const ssvUrl = `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`;
 
       const options: ExtendedRewardAdOptions = {
@@ -110,10 +148,11 @@ export class AdMobService {
         }
       };
 
-      console.log('AdMob: Loading with SSV options:', {
+      console.log('AdMob: Loading ad with production settings:', {
+        adUnitId: this.REWARDED_AD_ID,
         userId: options.serverSideVerificationOptions?.userId,
-        customDataParsed: JSON.parse(customData),
-        ssvUrl: ssvUrl
+        ssvUrl: ssvUrl,
+        isTesting: false
       });
 
       await AdMob.prepareRewardVideoAd(options);
@@ -121,10 +160,16 @@ export class AdMobService {
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
       
-      console.log('AdMob: Rewarded ad loaded successfully with SSV options');
+      console.log('AdMob: Production ad loaded successfully with SSV configuration');
       return true;
     } catch (error) {
       console.error('AdMob: Error loading rewarded ad:', error);
+      console.error('AdMob: Error details:', {
+        message: (error as Error).message,
+        adUnitId: this.REWARDED_AD_ID,
+        retryCount: retryCount
+      });
+      
       this.state.isAdLoading = false;
       this.state.lastError = this.getReadableError(error as Error);
       
@@ -144,8 +189,10 @@ export class AdMobService {
       'timeout',
       'no_fill',
       'internal',
-      'doubleclick.net', // Erreurs de connexion aux serveurs AdMob
-      'failed to connect'
+      'doubleclick.net',
+      'failed to connect',
+      'connection',
+      'request failed'
     ];
     
     const errorMessage = error.message.toLowerCase();
@@ -163,12 +210,16 @@ export class AdMobService {
       return 'Aucune publicité disponible pour le moment. Réessayez plus tard.';
     }
     
-    if (message.includes('network')) {
+    if (message.includes('network') || message.includes('connection')) {
       return 'Problème de réseau. Vérifiez votre connexion internet.';
     }
     
     if (message.includes('timeout')) {
       return 'Timeout lors du chargement de la publicité. Réessayez.';
+    }
+    
+    if (message.includes('ad unit') || message.includes('invalid')) {
+      return 'Configuration publicitaire incorrecte. Contactez le support.';
     }
     
     return 'Erreur lors du chargement de la publicité. Réessayez plus tard.';
@@ -197,17 +248,18 @@ export class AdMobService {
         }
       }
 
-      console.log('AdMob: Showing rewarded ad with SSV for user:', userId);
+      console.log('AdMob: Showing production rewarded ad with SSV for user:', userId);
+      console.log('AdMob: Ad unit ID:', this.REWARDED_AD_ID);
       
       const result = await AdMob.showRewardVideoAd();
       
-      console.log('AdMob: Ad watched successfully, SSV should handle validation:', result);
+      console.log('AdMob: Production ad watched successfully, SSV should handle validation:', result);
       console.log('AdMob: Expected SSV callback to:', `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`);
       
       // AdMob handles server validation automatically via SSV
       this.state.isAdLoaded = false;
       
-      // Preload next ad
+      // Preload next ad for better UX
       setTimeout(() => this.preloadAd(userId, rewardType, rewardAmount), 1000);
       
       return { success: true, rewarded: true };
@@ -226,14 +278,26 @@ export class AdMobService {
     return { ...this.state };
   }
 
+  static getDebugInfo(): object {
+    return {
+      adUnitId: this.REWARDED_AD_ID,
+      state: this.state,
+      isProduction: !this.IS_DEV,
+      platform: Capacitor.getPlatform(),
+      isNative: Capacitor.isNativePlatform()
+    };
+  }
+
   static async preloadAd(userId?: string, rewardType?: string, rewardAmount?: number): Promise<void> {
     if (!this.state.isAdLoaded && !this.state.isAdLoading && userId && rewardType && rewardAmount) {
-      console.log('AdMob: Preloading ad with SSV options...');
+      console.log('AdMob: Preloading production ad...');
       await this.loadRewardedAd(userId, rewardType, rewardAmount);
     }
   }
 
   static cleanup(): void {
     console.log('AdMob: Cleanup method called');
+    this.state.isAdLoaded = false;
+    this.state.isAdLoading = false;
   }
 }
