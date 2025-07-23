@@ -574,6 +574,15 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      increment_ad_count_atomic: {
+        Args: {
+          p_user_id: string
+          p_today: string
+          p_now: string
+          p_max_ads?: number
+        }
+        Returns: Json
+      }
       validate_robot_plant_level: {
         Args: { p_robot_level: number; p_plant_type_id: string }
         Returns: boolean
