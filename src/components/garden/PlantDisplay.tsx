@@ -3,6 +3,7 @@ import { useEffect, useState, memo } from 'react';
 import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
+import { Progress } from '@/components/ui/progress';
 
 interface PlantDisplayProps {
   plantType: PlantType;
@@ -31,17 +32,14 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
       const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds);
       const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
       
-      setProgress(currentProgress * 100);
+      setProgress(currentProgress);
       setIsReady(ready);
     };
 
     updateProgress();
     
-    // Optimisation : intervalles plus intelligents selon le temps de croissance
-    let updateInterval = 30000; // 30s par défaut
-    if (growthTimeSeconds < 300) updateInterval = 5000;   // 5s pour < 5min
-    else if (growthTimeSeconds < 1800) updateInterval = 15000; // 15s pour < 30min
-    
+    // Utiliser l'intervalle optimisé pour des mises à jour fluides
+    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
     const interval = setInterval(updateProgress, updateInterval);
 
     return () => clearInterval(interval);
@@ -60,8 +58,8 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
 
   return (
     <div className="text-center relative">
-      {/* Animation simplifiée basée sur le progrès */}
-      <div className={`text-xl mb-2 transition-all duration-700 ${
+      {/* Animation basée sur le progrès */}
+      <div className={`text-xl mb-2 transition-all duration-300 ${
         isReady 
           ? 'animate-bounce transform scale-110' 
           : progress > 75 
@@ -71,7 +69,7 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
         {isReady ? `${plantType.emoji || '🌱'}` : (plantType.emoji || '🌱')}
       </div>
       
-      <p className={`mobile-text-xs mb-2 font-medium transition-colors duration-500 ${
+      <p className={`mobile-text-xs mb-2 font-medium transition-colors duration-300 ${
         isReady 
           ? 'text-yellow-600' 
           : progress > 50 
@@ -81,27 +79,25 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
         {plantType.display_name || plantType.name || 'Plante inconnue'}
       </p>
 
-      {/* Barre de progression fluide et minimaliste */}
-      <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2 overflow-hidden">
-        <div 
-          className={`h-full rounded-full transition-all duration-1000 ease-out ${
+      {/* Vraie barre de progression avec shadcn/ui */}
+      <div className="mb-2">
+        <Progress 
+          value={progress} 
+          className={`h-2 transition-all duration-300 ${
             isReady 
-              ? 'bg-gradient-to-r from-yellow-400 to-orange-400' 
+              ? 'bg-yellow-100' 
               : progress > 75
-                ? 'bg-gradient-to-r from-green-400 to-emerald-400'
-                : progress > 50
-                  ? 'bg-gradient-to-r from-blue-400 to-green-400'
-                  : 'bg-gradient-to-r from-gray-300 to-blue-400'
+                ? 'bg-green-100'
+                : 'bg-gray-100'
           }`}
-          style={{ 
-            width: `${Math.max(2, Math.min(100, progress))}%`,
-            transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease'
-          }}
         />
+        <div className="text-xs text-gray-500 mt-1">
+          {progress.toFixed(0)}%
+        </div>
       </div>
 
       {isReady ? (
-        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-1 rounded-full mobile-text-xs font-medium">
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-1 rounded-full mobile-text-xs font-medium animate-pulse">
           Prête !
         </div>
       ) : (
@@ -116,7 +112,7 @@ export const PlantDisplay = memo(({ plantType, plantedAt, growthTimeSeconds }: P
         </div>
       )}
 
-      {/* Badge de rareté simplifié */}
+      {/* Badge de rareté */}
       {plantType.rarity && plantType.rarity !== 'common' && (
         <div className="mt-1">
           <span className={`mobile-text-xs px-2 py-0.5 rounded-full font-medium ${getRarityColor(plantType.rarity)}`}>

@@ -1,3 +1,4 @@
+
 import { PlantType } from "@/types/game";
 
 export class PlantGrowthService {
@@ -83,13 +84,28 @@ export class PlantGrowthService {
   // Aliases pour compatibilité avec le code existant
   static isPlantReady = this.isReadyToHarvest;
   static formatTimeRemaining = this.getTimeRemaining;
+  
   static calculateGrowthProgress(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
-    const timeRemaining = this.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
-    const totalTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
-    return Math.max(0, Math.min(100, ((totalTime - timeRemaining) / totalTime) * 100));
+    const plantedTime = new Date(plantedAt).getTime();
+    const now = Date.now();
+    
+    const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
+    const requiredTime = adjustedGrowthTime * 1000;
+    const elapsed = now - plantedTime;
+    
+    // Calcul précis du pourcentage de progression (0-100)
+    const progress = Math.min(100, Math.max(0, (elapsed / requiredTime) * 100));
+    return progress;
   }
 
-  static getOptimalUpdateInterval(): number {
-    return 1000; // 1 seconde
+  // Intervalle de mise à jour optimisé pour la progression en temps réel
+  static getOptimalUpdateInterval(growthTimeSeconds?: number): number {
+    if (!growthTimeSeconds) return 1000; // 1 seconde par défaut
+    
+    // Intervalles adaptatifs selon la durée de croissance
+    if (growthTimeSeconds < 60) return 250;   // 0.25s pour < 1min
+    if (growthTimeSeconds < 300) return 500;  // 0.5s pour < 5min
+    if (growthTimeSeconds < 900) return 1000; // 1s pour < 15min
+    return 2000; // 2s pour les longues croissances
   }
 }

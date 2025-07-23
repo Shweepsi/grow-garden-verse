@@ -152,8 +152,7 @@ export const useDirectPlanting = () => {
 
       console.log('🌱 Plante plantée avec succès');
 
-      // ❌ BUG FIX: NE PLUS synchroniser robot_last_collected lors de la plantation
-      // Cela efface l'accumulation du robot passif !!
+      // Mettre à jour les pièces sans affecter l'accumulation du robot
       const updateData: any = {
         coins: Math.max(0, currentCoins - cost),
         last_played: now
@@ -175,7 +174,6 @@ export const useDirectPlanting = () => {
       triggerCoinAnimation(-cost);
 
       console.log(`💰 Coût déduit: ${currentCoins} → ${Math.max(0, currentCoins - cost)}`);
-      console.log(`🤖 Accumulation robot préservée (pas de réinitialisation du timestamp)`);
 
       // Enregistrer la transaction
       try {
@@ -193,14 +191,16 @@ export const useDirectPlanting = () => {
       }
 
       console.log('✅ Plantation terminée avec succès');
+
+      return { plotNumber, plantTypeId, cost, adjustedGrowthTime };
     },
     onMutate: async ({ plotNumber, plantTypeId, cost }) => {
-      // Mise à jour optimiste pour une réactivité immédiate
+      // Mise à jour optimiste ciblée pour une réactivité immédiate
       await queryClient.cancelQueries({ queryKey: ['gameData'] });
       
       const previousData = queryClient.getQueryData(['gameData']);
       
-      // Mettre à jour le cache de façon optimiste
+      // Mettre à jour uniquement la parcelle spécifique dans le cache
       queryClient.setQueryData(['gameData'], (old: any) => {
         if (!old || !old.garden || !old.plots) return old;
         
@@ -213,7 +213,6 @@ export const useDirectPlanting = () => {
             ...old.garden,
             coins: newCoins,
             last_played: now,
-            // ❌ BUG FIX: Préserver robot_last_collected pour maintenir l'accumulation
             robot_last_collected: old.garden.robot_last_collected
           },
           plots: old.plots.map((plot: any) => 
@@ -232,10 +231,31 @@ export const useDirectPlanting = () => {
       
       return { previousData };
     },
-    onSuccess: () => {
-      // Revalider les données pour s'assurer de la cohérence
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
+    onSuccess: (data) => {
+      // Invalidation ciblée pour optimiser les performances
+      const { plotNumber } = data;
+      
+      // Invalider seulement les données nécessaires
+      queryClient.invalidateQueries({ 
+        queryKey: ['gameData'],
+        refetchType: 'active' // Ne refetch que les queries actives
+      });
+      
+      // Feedback visuel immédiat pour la parcelle plantée
+      const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`) as HTMLElement;
+      if (plotElement) {
+        plotElement.style.transform = 'scale(1.05)';
+        plotElement.style.transition = 'transform 0.2s ease-out';
+        setTimeout(() => {
+          plotElement.style.transform = 'scale(1)';
+          setTimeout(() => {
+            plotElement.style.transform = '';
+            plotElement.style.transition = '';
+          }, 200);
+        }, 200);
+      }
+      
+      console.log(`✅ Plantation réussie sur la parcelle ${plotNumber}`);
     },
     onError: (error: any, variables, context: any) => {
       // Restaurer les données précédentes en cas d'erreur
