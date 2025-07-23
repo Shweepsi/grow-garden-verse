@@ -43,35 +43,12 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split('T')[0]
     const MAX_DAILY_ADS = 5
 
-    // UPSERT pour éviter les conflits de clés
-    const { data: cooldownData, error: upsertError } = await supabaseClient
+    // Récupérer l'état actuel de façon thread-safe
+    const { data: cooldownData, error: selectError } = await supabaseClient
       .from('ad_cooldowns')
-      .upsert({
-        user_id: user.id,
-        daily_count: 0,
-        daily_reset_date: today,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id',
-        ignoreDuplicates: false
-      })
-      .select()
-      .single()
-
-    if (upsertError) {
-      console.error('Upsert error:', upsertError)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Database error' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Vérifier si c'est un nouveau jour et reset si nécessaire
-    const { data: currentData, error: selectError } = await supabaseClient
-      .from('ad_cooldowns') 
-      .select('*')
+      .select('daily_count, daily_reset_date')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (selectError) {
       console.error('Select error:', selectError)
@@ -81,36 +58,22 @@ Deno.serve(async (req) => {
       )
     }
 
-    let finalCount = currentData.daily_count
+    let currentCount = 0
 
-    // Reset le compteur si on est un nouveau jour
-    if (currentData.daily_reset_date !== today) {
-      const { error: resetError } = await supabaseClient
-        .from('ad_cooldowns')
-        .update({
-          daily_count: 0,
-          daily_reset_date: today,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-
-      if (resetError) {
-        console.error('Reset error:', resetError)
-        return new Response(
-          JSON.stringify({ success: false, error: 'Database error' }), 
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+    if (cooldownData) {
+      // Si c'est un nouveau jour, le compteur est effectivement à 0
+      if (cooldownData.daily_reset_date === today) {
+        currentCount = cooldownData.daily_count || 0
       }
-
-      finalCount = 0
+      // Sinon, nouveau jour = compteur à 0
     }
 
     // Vérifier la limite
-    if (finalCount >= MAX_DAILY_ADS) {
+    if (currentCount >= MAX_DAILY_ADS) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          current_count: finalCount,
+          current_count: currentCount,
           max_daily: MAX_DAILY_ADS,
           message: 'Daily ad limit reached' 
         }), 
@@ -121,7 +84,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        current_count: finalCount,
+        current_count: currentCount,
         max_daily: MAX_DAILY_ADS
       }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

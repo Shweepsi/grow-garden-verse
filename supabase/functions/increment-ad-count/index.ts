@@ -41,39 +41,39 @@ Deno.serve(async (req) => {
     }
 
     const today = new Date().toISOString().split('T')[0]
+    const now = new Date().toISOString()
     const MAX_DAILY_ADS = 5
 
-    // UPSERT pour éviter les conflits, puis incrémenter atomiquement
-    const { data: currentData, error: selectError } = await supabaseClient
-      .from('ad_cooldowns')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
+    // Incrémentation atomique avec UPSERT pour gérer les race conditions
+    // Cette requête gère à la fois la création et l'incrémentation de façon thread-safe
+    const { data: result, error: upsertError } = await supabaseClient
+      .rpc('increment_ad_count_atomic', {
+        p_user_id: user.id,
+        p_today: today,
+        p_now: now,
+        p_max_ads: MAX_DAILY_ADS
+      })
 
-    let newCount = 1
+    if (upsertError) {
+      console.error('Atomic increment error:', upsertError)
+      
+      // Fallback: essayer avec UPSERT classique
+      const { data: currentData } = await supabaseClient
+        .from('ad_cooldowns')
+        .select('daily_count, daily_reset_date')
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.error('Select error:', selectError)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Database error' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!selectError && currentData) {
-      // L'enregistrement existe, vérifier la date et incrémenter
-      if (currentData.daily_reset_date === today) {
-        newCount = currentData.daily_count + 1
-      } else {
-        newCount = 1 // Nouveau jour, reset à 1
+      let newCount = 1
+      if (currentData && currentData.daily_reset_date === today) {
+        newCount = (currentData.daily_count || 0) + 1
       }
 
-      // Vérifier la limite avant d'incrémenter
       if (newCount > MAX_DAILY_ADS) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            current_count: currentData.daily_count,
+            current_count: currentData?.daily_count || 0,
             max_daily: MAX_DAILY_ADS,
             message: 'Daily ad limit would be exceeded' 
           }), 
@@ -81,69 +81,60 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Mise à jour atomique
-      const { error: updateError } = await supabaseClient
-        .from('ad_cooldowns')
-        .update({
-          daily_count: newCount,
-          daily_reset_date: today,
-          last_ad_watched: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-
-      if (updateError) {
-        console.error('Update error:', updateError)
-        return new Response(
-          JSON.stringify({ success: false, error: 'Database error' }), 
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    } else {
-      // Nouvel enregistrement - UPSERT pour éviter les conflits de race condition
-      const { error: upsertError } = await supabaseClient
+      const { error: fallbackError } = await supabaseClient
         .from('ad_cooldowns')
         .upsert({
           user_id: user.id,
-          daily_count: 1,
+          daily_count: newCount,
           daily_reset_date: today,
-          last_ad_watched: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          last_ad_watched: now,
+          updated_at: now
         }, {
           onConflict: 'user_id',
           ignoreDuplicates: false
         })
 
-      if (upsertError) {
-        console.error('Upsert error:', upsertError)
-        // En cas de conflit, on peut essayer de refaire un update
-        const { error: fallbackError } = await supabaseClient
-          .from('ad_cooldowns')
-          .update({
-            daily_count: supabaseClient.raw('daily_count + 1'),
-            last_ad_watched: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-
-        if (fallbackError) {
-          console.error('Fallback update error:', fallbackError)
-          return new Response(
-            JSON.stringify({ success: false, error: 'Database error' }), 
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
+      if (fallbackError) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Database error' }), 
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
       }
+
+      console.log(`📈 Pub regardée (fallback): ${newCount}/${MAX_DAILY_ADS} aujourd'hui pour user ${user.id}`)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          new_count: newCount,
+          max_daily: MAX_DAILY_ADS,
+          message: `Ad count incremented to ${newCount}` 
+        }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    console.log(`📈 Pub regardée: ${newCount}/${MAX_DAILY_ADS} aujourd'hui pour user ${user.id}`)
+    // Vérifier le résultat de la fonction atomique
+    if (!result || result.success === false) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          current_count: result?.current_count || 0,
+          max_daily: MAX_DAILY_ADS,
+          message: result?.message || 'Daily ad limit exceeded' 
+        }), 
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`📈 Pub regardée: ${result.new_count}/${MAX_DAILY_ADS} aujourd'hui pour user ${user.id}`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        new_count: newCount,
+        new_count: result.new_count,
         max_daily: MAX_DAILY_ADS,
-        message: `Ad count incremented to ${newCount}` 
+        message: `Ad count incremented to ${result.new_count}` 
       }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
