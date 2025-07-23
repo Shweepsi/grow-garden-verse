@@ -92,13 +92,17 @@ async function fetchAdMobPublicKeys(): Promise<Map<number, CryptoKey>> {
 }
 
 /**
- * Valide la signature cryptographique ECDSA du callback SSV
+ * Valide la signature cryptographique d'un callback AdMob SSV
+ * Selon les spécifications Google AdMob
  */
 async function validateSSVSignature(url: URL): Promise<boolean> {
   try {
     const params = url.searchParams;
     const signature = params.get('signature');
     const keyIdStr = params.get('key_id');
+    
+    console.log('AdMob SSV: Full URL being validated:', url.toString());
+    console.log('AdMob SSV: Query parameters:', Object.fromEntries(params.entries()));
     
     if (!signature || !keyIdStr) {
       console.error('AdMob SSV: Missing signature or key_id');
@@ -120,21 +124,32 @@ async function validateSSVSignature(url: URL): Promise<boolean> {
       return false;
     }
 
-    // Construire le contenu à vérifier (tous les paramètres sauf signature et key_id)
+    // CORRECTION: Construire correctement le contenu à vérifier
+    // Google signe l'URL complète SANS les paramètres signature et key_id
     const queryString = url.search.substring(1); // Enlever le '?'
-    const signatureIndex = queryString.indexOf('signature=');
+    console.log('AdMob SSV: Original query string:', queryString);
     
-    if (signatureIndex === -1) {
-      console.error('AdMob SSV: No signature parameter found');
-      return false;
+    // Reconstruire l'URL sans signature et key_id
+    const paramsToSign = new URLSearchParams();
+    for (const [key, value] of params.entries()) {
+      if (key !== 'signature' && key !== 'key_id') {
+        paramsToSign.append(key, value);
+      }
     }
-
-    // Le contenu à vérifier est tout ce qui précède '&signature='
-    const contentToVerify = queryString.substring(0, signatureIndex - 1);
+    
+    // IMPORTANT: Google utilise l'ordre alphabétique des paramètres pour la signature
+    paramsToSign.sort();
+    const contentToVerify = paramsToSign.toString();
+    
+    console.log('AdMob SSV: Content to verify (without signature/key_id):', contentToVerify);
+    console.log('AdMob SSV: Signature to verify:', signature);
+    console.log('AdMob SSV: Key ID used:', keyId);
+    
     const contentBytes = new TextEncoder().encode(contentToVerify);
 
     // Décoder la signature base64url
     const signatureBytes = base64UrlToArrayBuffer(signature);
+    console.log('AdMob SSV: Signature bytes length:', signatureBytes.byteLength);
 
     // Vérifier la signature avec ECDSA-SHA256
     const isValid = await crypto.subtle.verify(
@@ -148,6 +163,16 @@ async function validateSSVSignature(url: URL): Promise<boolean> {
     );
 
     console.log(`AdMob SSV: Cryptographic signature validation result: ${isValid}`);
+    
+    if (!isValid) {
+      console.error('AdMob SSV: Signature validation failed. Details:', {
+        keyId,
+        contentToVerify,
+        signatureLength: signature.length,
+        originalQuery: queryString
+      });
+    }
+    
     return isValid;
     
   } catch (error) {
@@ -180,6 +205,7 @@ interface AdMobRewardPayload {
   reward_amount: number
   ad_duration: number
   signature?: string
+  source?: string // 'client_immediate', 'ssv', etc.
 }
 
 Deno.serve(async (req) => {
@@ -389,7 +415,7 @@ Deno.serve(async (req) => {
       
       if (result.success) {
         await updateAdCooldown(userId)
-        await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId)
+        await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId, 'ssv')
         
         console.log(`AdMob SSV: Successfully processed reward for user: ${userId} - Type: ${rewardType}, Amount: ${adjustedAmount}, Processing time: ${processingTime}ms`)
         
@@ -559,7 +585,7 @@ Deno.serve(async (req) => {
     await updateAdCooldown(payload.user_id)
 
     // Log transaction
-    await logAdReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes)
+    await logAdReward(payload.user_id, payload.reward_type, calculatedAmount, durationMinutes, payload.source || 'POST')
 
     console.log(`Successfully applied ${payload.reward_type} reward (${payload.reward_amount}) to user ${payload.user_id}`)
 
@@ -716,7 +742,7 @@ async function updateAdCooldown(userId: string): Promise<void> {
   console.log(`Edge Function: Ad watched ${newDailyCount}/5 today for user ${userId}`);
 }
 
-async function logAdReward(userId: string, rewardType: string, amount: number, adDuration: number, transactionId?: string): Promise<void> {
+async function logAdReward(userId: string, rewardType: string, amount: number, adDuration: number, transactionId?: string, source?: string): Promise<void> {
   await supabase
     .from('ad_sessions')
     .insert({
@@ -726,7 +752,7 @@ async function logAdReward(userId: string, rewardType: string, amount: number, a
       reward_data: {
         ad_duration: adDuration,
         applied_at: new Date().toISOString(),
-        source: 'server_validation',
+        source: source || 'server_validation',
         transaction_id: transactionId,
         validation_method: 'cryptographic_ssv'
       }
