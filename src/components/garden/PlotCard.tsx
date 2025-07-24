@@ -162,6 +162,7 @@ export const PlotCard = memo(({
                     plantType={plantType} 
                     plantedAt={plot.planted_at} 
                     growthTimeSeconds={plot.growth_time_seconds || 3600} 
+                    onHarvest={plantState === 'ready' ? () => onPlotClick(plot) : undefined}
                   />
                 ) : (
                   <div className="text-center">

@@ -3,15 +3,18 @@ import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
 import { Progress } from '@/components/ui/progress';
+import { PlantReadyIndicator } from './PlantReadyIndicator';
 interface PlantDisplayProps {
   plantType: PlantType;
   plantedAt: string | null;
   growthTimeSeconds: number;
+  onHarvest?: () => void;
 }
 export const PlantDisplay = memo(({
   plantType,
   plantedAt,
-  growthTimeSeconds
+  growthTimeSeconds,
+  onHarvest
 }: PlantDisplayProps) => {
   const [progress, setProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
@@ -56,7 +59,7 @@ export const PlantDisplay = memo(({
   };
   return <div className="text-center relative">
       {/* Animation basée sur le progrès - moins sautillante */}
-      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-bounce scale-110' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
+      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-bounce-slow scale-110' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
         {plantType.emoji || '🌱'}
       </div>
       
@@ -84,11 +87,19 @@ export const PlantDisplay = memo(({
         
       </div>
 
-      {isReady ? <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium animate-[pulse_2s_ease-in-out_infinite] shadow-lg">
-          ✨ Prête !
-        </div> : <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+      {isReady ? (
+        onHarvest ? (
+          <PlantReadyIndicator isReady={isReady} onHarvest={onHarvest} />
+        ) : (
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium animate-[pulse_2s_ease-in-out_infinite] shadow-lg">
+            ✨ Prête !
+          </div>
+        )
+      ) : (
+        <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}> 
           <PlantTimer plantedAt={plantedAt} growthTimeSeconds={growthTimeSeconds} className="mobile-text-xs" />
-        </div>}
+        </div>
+      )}
 
       {/* Badge de rareté */}
       {plantType.rarity && plantType.rarity !== 'common' && <div className="mt-1">
