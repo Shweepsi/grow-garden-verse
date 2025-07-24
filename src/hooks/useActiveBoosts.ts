@@ -83,18 +83,6 @@ export const useActiveBoosts = () => {
     }
   }
 
-  // Écouter les changements globaux pour rafraîchir après les récompenses
-  useEffect(() => {
-    const handleBoostUpdate = () => {
-      fetchActiveBoosts();
-    };
-
-    // Écouter les événements personnalisés si nécessaire
-    window.addEventListener('boostUpdated', handleBoostUpdate);
-    
-    return () => window.removeEventListener('boostUpdated', handleBoostUpdate);
-  }, [user?.id]);
-
   return {
     boosts,
     loading,

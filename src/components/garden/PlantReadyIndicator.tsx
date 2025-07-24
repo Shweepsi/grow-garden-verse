@@ -22,8 +22,8 @@ export const PlantReadyIndicator = memo(({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      {/* Indicateur principal de récolte - plus statique */}
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium shadow-lg">
+      {/* Indicateur principal de récolte - animation moins sautillante */}
+      <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium animate-[pulse_2s_ease-in-out_infinite] shadow-lg">
         ✨ Prête à récolter !
       </div>
       
