@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
@@ -56,8 +56,8 @@ export const PlantDisplay = memo(({
   };
   return <div className="text-center relative">
       {/* Animation basée sur le progrès - moins sautillante */}
-      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-[pulse_2s_ease-in-out_infinite] transform scale-110' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
-        {isReady ? `${plantType.emoji || '🌱'}` : plantType.emoji || '🌱'}
+      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-bounce scale-110' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
+        {plantType.emoji || '🌱'}
       </div>
       
       <p className={`mobile-text-xs mb-2 font-medium transition-colors duration-300 ${isReady ? 'text-yellow-600' : progress > 50 ? 'text-green-600' : 'text-gray-600'}`}>
