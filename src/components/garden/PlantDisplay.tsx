@@ -55,8 +55,8 @@ export const PlantDisplay = memo(({
     }
   };
   return <div className="text-center relative">
-      {/* Animation basée sur le progrès - moins sautillante */}
-      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-[pulse_2s_ease-in-out_infinite] transform scale-110' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
+      {/* Animation basée sur le progrès - plus statique */}
+      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'transform scale-110' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
         {isReady ? `${plantType.emoji || '🌱'}` : plantType.emoji || '🌱'}
       </div>
       
@@ -64,27 +64,27 @@ export const PlantDisplay = memo(({
         {plantType.display_name || plantType.name || 'Plante inconnue'}
       </p>
 
-      {/* Barre de progression avec couleurs bleu → vert → orange */}
+      {/* Barre de progression avec couleurs bleu → vert → orange (90%) */}
       <div className="mb-2 w-full">
         <div className="relative h-2 bg-white/30 backdrop-blur-sm rounded-full border border-white/40 overflow-hidden">
           <div className={`h-full transition-all duration-500 ease-out ${
             isReady ? 'bg-gradient-to-r from-yellow-400 to-orange-400 shadow-lg shadow-yellow-200/50' 
-            : progress > 66 ? 'bg-gradient-to-r from-orange-400 to-amber-400 shadow-lg shadow-orange-200/50' 
+            : progress >= 90 ? 'bg-gradient-to-r from-orange-400 to-amber-400 shadow-lg shadow-orange-200/50' 
             : progress > 33 ? 'bg-gradient-to-r from-green-400 to-emerald-400 shadow-lg shadow-green-200/50' 
             : 'bg-gradient-to-r from-blue-400 to-cyan-400 shadow-lg shadow-blue-200/50'
           }`} style={{
           width: `${progress}%`
         }} />
-          {/* Effet de brillance sur la barre */}
-          {progress > 0 && <div className="absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 animate-pulse" style={{
+          {/* Effet de brillance statique */}
+          {progress > 0 && <div className="absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12" style={{
           left: `${Math.max(0, progress - 15)}%`,
-          opacity: progress > 10 ? 0.8 : 0
+          opacity: progress > 10 ? 0.5 : 0
         }} />}
         </div>
         
       </div>
 
-      {isReady ? <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium animate-[pulse_2s_ease-in-out_infinite] shadow-lg">
+      {isReady ? <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium shadow-lg">
           ✨ Prête !
         </div> : <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
           <PlantTimer plantedAt={plantedAt} growthTimeSeconds={growthTimeSeconds} className="mobile-text-xs" />

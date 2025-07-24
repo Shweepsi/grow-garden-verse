@@ -132,7 +132,10 @@ export const useAdRewards = () => {
       const result = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
       
       if (result.success) {
-        await refreshAdState();
+        // Rafraîchir immédiatement avec un délai court pour permettre la propagation
+        setTimeout(() => {
+          refreshAdState();
+        }, 500);
         return { success: true };
       } else {
         console.error('AdMob: Ad watch failed:', result.error);
