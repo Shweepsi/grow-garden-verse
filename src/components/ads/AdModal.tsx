@@ -226,42 +226,49 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md glassmorphism border-white/20">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-green-800">
             <Play className="w-5 h-5" />
             Regarder une publicité
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowDiagnostics(!showDiagnostics)}
-              className="ml-auto"
-            >
-              Debug
-            </Button>
+            {/* Affichage de la progression des pubs */}
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm font-normal text-green-600">
+                {adState.dailyCount}/{adState.maxDaily}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDiagnostics(!showDiagnostics)}
+                className="opacity-50 hover:opacity-100"
+              >
+                🔧
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Diagnostics cachés par défaut */}
           {showDiagnostics && (
-            <div className="bg-muted p-3 rounded-lg text-xs">
-              <div className="font-medium mb-2">Diagnostics AdMob:</div>
-              <pre className="whitespace-pre-wrap overflow-x-auto">
+            <div className="glassmorphism p-3 rounded-lg text-xs border border-white/20">
+              <div className="font-medium mb-2 text-green-800">Diagnostics AdMob:</div>
+              <pre className="whitespace-pre-wrap overflow-x-auto text-green-700 bg-white/50 p-2 rounded">
                 {JSON.stringify(debug, null, 2)}
               </pre>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleTestConnectivity}
-                className="mt-2"
+                className="mt-2 glassmorphism border-white/20"
               >
                 Tester la connectivité
               </Button>
             </div>
           )}
 
-          <div className="space-y-2">
-            <h3 className="font-medium">Choisissez votre récompense :</h3>
+          <div className="space-y-3">
+            <h3 className="font-medium text-green-800">Choisissez votre récompense :</h3>
             
             {loadingRewards ? (
               <div className="text-center py-4">
@@ -273,18 +280,18 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
                 {availableRewards.map((reward) => (
                   <Card 
                     key={reward.type}
-                    className={`cursor-pointer transition-colors ${
+                    className={`cursor-pointer transition-all duration-200 glassmorphism border-white/20 ${
                       selectedReward?.type === reward.type 
-                        ? 'ring-2 ring-primary bg-primary/5' 
-                        : 'hover:bg-muted/50'
+                        ? 'ring-2 ring-green-400 bg-green-50/50 shadow-lg scale-105' 
+                        : 'hover:bg-white/30 hover:scale-102'
                     }`}
                     onClick={() => setSelectedReward(reward)}
                   >
                     <CardContent className="p-3 flex items-center gap-3">
                       {getRewardIcon(reward.type)}
                       <div className="flex-1">
-                        <div className="font-medium">{reward.description}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="font-medium text-green-800">{reward.description}</div>
+                        <div className="text-sm text-green-600">
                           {reward.emoji}
                         </div>
                       </div>
@@ -303,7 +310,12 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           )}
 
           <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1" disabled={isLoading}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              className="flex-1 glassmorphism border-white/20 hover:bg-white/20" 
+              disabled={isLoading}
+            >
               Annuler
             </Button>
             <Button 
@@ -314,7 +326,11 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
                 adState.dailyCount >= adState.maxDaily
               }
               variant={adState.dailyCount >= adState.maxDaily ? "destructive" : "default"}
-              className="flex-1 transition-all duration-200"
+              className={`flex-1 transition-all duration-200 ${
+                adState.dailyCount >= adState.maxDaily 
+                  ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                  : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'
+              }`}
             >
               {isWatching ? (
                 <>

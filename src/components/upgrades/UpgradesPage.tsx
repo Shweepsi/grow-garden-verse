@@ -114,8 +114,8 @@ export const UpgradesPage = () => {
         <GameHeader garden={gameData?.garden} />
       </div>
       
-      {/* Content with padding to avoid overlap */}
-      <div className="px-3 pb-4 space-y-4">
+      {/* Content with compact padding */}
+      <div className="px-3 pb-4 space-y-3">
         {/* Progression par catégorie */}
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {Object.entries(categoryProgress).map(([effectType, progress]) => (
@@ -125,8 +125,8 @@ export const UpgradesPage = () => {
           ))}
         </div>
 
-        {/* Cartes évolutives par catégorie */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Cartes évolutives par catégorie - plus compactes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.entries(upgradesByCategory).map(([categoryKey, upgrades]) => {
           const currentUpgrade = getCurrentUpgrade(upgrades);
           const currentLevel = getCurrentLevel(upgrades);
@@ -148,21 +148,20 @@ export const UpgradesPage = () => {
                   </div>
                 </div>
 
-                <CardHeader className="relative z-10">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl drop-shadow-lg">{currentUpgrade.emoji}</span>
+                <CardHeader className="relative z-10 pb-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl drop-shadow-lg">{currentUpgrade.emoji}</span>
                       <div>
-                        <CardTitle className="text-lg text-green-800 font-bold">
+                        <CardTitle className="text-base text-green-800 font-bold">
                           {displayName}
                         </CardTitle>
-                        
                       </div>
                     </div>
                   </div>
 
                   {/* Barre de progression des niveaux */}
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <div className="flex-1 bg-white/50 rounded-full h-2 overflow-hidden">
                       <div className={`h-full transition-all duration-700 ${maxLevel ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-blue-400 to-cyan-500'}`} style={{
                     width: `${(currentLevel - 1) / totalLevels * 100}%`
@@ -174,11 +173,11 @@ export const UpgradesPage = () => {
                   </div>
                 </CardHeader>
 
-                <CardContent className="relative z-10 pt-0">
+                <CardContent className="relative z-10 pt-0 pb-3">
                   {!maxLevel ? <>
                       {/* Titre du niveau actuel */}
-                      <div className="text-center mb-4">
-                        <h3 className="font-bold text-gray-800 mb-1">
+                      <div className="text-center mb-3">
+                        <h3 className="font-semibold text-gray-800 mb-1 text-sm">
                           {currentUpgrade.display_name}
                         </h3>
                         <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
@@ -187,7 +186,7 @@ export const UpgradesPage = () => {
                       </div>
 
                       {/* Coûts */}
-                      <div className="flex justify-center gap-4 mb-4">
+                      <div className="flex justify-center gap-3 mb-3">
                         {currentUpgrade.cost_coins > 0 && <div className="flex items-center gap-1">
                             <Coins className="h-4 w-4 text-yellow-600" />
                             <span className={`font-bold text-sm ${coins >= currentUpgrade.cost_coins + MINIMUM_COINS_RESERVE ? 'text-green-600' : 'text-red-500'}`}>
@@ -202,8 +201,8 @@ export const UpgradesPage = () => {
                           </div>}
                       </div>
 
-                      {/* Bouton d'achat */}
-                      <Button size="lg" disabled={!canBuy || isPurchased || isPurchasing} onClick={() => purchaseUpgrade(currentUpgrade.id, currentUpgrade.cost_coins, currentUpgrade.cost_gems)} className={`w-full font-bold text-sm py-2 transition-all duration-300 ${buttonState.style} ${canBuy ? 'hover:scale-105 hover:shadow-lg' : ''}`}>
+                      {/* Bouton d'achat compact */}
+                      <Button size="sm" disabled={!canBuy || isPurchased || isPurchasing} onClick={() => purchaseUpgrade(currentUpgrade.id, currentUpgrade.cost_coins, currentUpgrade.cost_gems)} className={`w-full font-semibold text-xs py-1.5 transition-all duration-300 ${buttonState.style} ${canBuy ? 'hover:scale-105 hover:shadow-lg' : ''}`}>
                         {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : isLocked ? <Lock className="h-4 w-4 mr-2" /> : null}
                         {buttonState.text}
                       </Button>
@@ -212,13 +211,13 @@ export const UpgradesPage = () => {
                       {!isPurchased && coins < currentUpgrade.cost_coins + MINIMUM_COINS_RESERVE && coins >= currentUpgrade.cost_coins && <p className="text-xs text-orange-600 mt-2 text-center animate-pulse">
                           💡 Gardez {MINIMUM_COINS_RESERVE} pièces de réserve
                         </p>}
-                    </> : (/* Carte niveau maximum */
-              <div className="text-center py-4">
-                      <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2 animate-bounce" />
-                      <h3 className="font-bold text-green-800 text-lg mb-1">
+                    </> : (/* Carte niveau maximum - plus compacte */
+              <div className="text-center py-3">
+                      <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-1 animate-[pulse_2s_ease-in-out_infinite]" />
+                      <h3 className="font-bold text-green-800 text-sm mb-1">
                         Niveau Maximum Atteint!
                       </h3>
-                      <p className="text-green-600 text-sm">
+                      <p className="text-green-600 text-xs">
                         Toutes les améliorations de cette catégorie sont débloquées
                       </p>
                     </div>)}
