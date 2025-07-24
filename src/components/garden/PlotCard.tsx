@@ -70,8 +70,7 @@ export const PlotCard = memo(({
     const baseClasses = "aspect-square cursor-pointer transition-all duration-200 relative group touch-target transform-gpu";
     
     if (isPlanting) {
-      // Suppression de l'opacité
-      return `${baseClasses} pointer-events-none`;
+      return `${baseClasses} pointer-events-none opacity-50`;
     }
     
     if (plot.unlocked && (plantState === 'ready' || isAutoHarvestPlot)) {
@@ -82,24 +81,23 @@ export const PlotCard = memo(({
   }, [isPlanting, plot.unlocked, plantState, isAutoHarvestPlot]);
 
   const cardClasses = useMemo(() => {
-    // Suppression des couleurs semi-transparentes et opacités
-    const baseClasses = "bg-white backdrop-blur-sm rounded-lg p-3 h-full flex flex-col items-center justify-center relative border transition-all duration-200 transform-gpu";
+    const baseClasses = "bg-white/80 backdrop-blur-sm rounded-lg p-3 h-full flex flex-col items-center justify-center relative border transition-all duration-200 transform-gpu";
     
     if (!plot.unlocked) {
-      return `${baseClasses} border-gray-200 bg-gray-100`;
+      return `${baseClasses} border-gray-200/50 opacity-60`;
     }
     
     if (isAutoHarvestPlot) {
       return `${baseClasses} ${robotAtCapacity ? 
-        'border-yellow-300 bg-yellow-100 shadow-yellow-100' : 
-        'border-blue-300 bg-blue-100 shadow-blue-100'} shadow-lg`;
+        'border-yellow-300/60 bg-yellow-50/40 shadow-yellow-100/50' : 
+        'border-blue-300/60 bg-blue-50/40 shadow-blue-100/50'} shadow-lg`;
     }
     
     if (plantState === 'ready') {
-      return `${baseClasses} border-yellow-300 bg-yellow-100 shadow-yellow-100 shadow-lg`;
+      return `${baseClasses} border-yellow-300/60 bg-yellow-50/40 shadow-yellow-100/50 shadow-lg`;
     }
     
-    return `${baseClasses} border-gray-200 hover:border-gray-300 hover:bg-white hover:shadow-md`;
+    return `${baseClasses} border-gray-200/50 hover:border-gray-300/60 hover:bg-white/90 hover:shadow-md`;
   }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState]);
 
   return (
@@ -162,7 +160,6 @@ export const PlotCard = memo(({
                     plantType={plantType} 
                     plantedAt={plot.planted_at} 
                     growthTimeSeconds={plot.growth_time_seconds || 3600} 
-                    onHarvest={plantState === 'ready' ? () => onPlotClick(plot) : undefined}
                   />
                 ) : (
                   <div className="text-center">
