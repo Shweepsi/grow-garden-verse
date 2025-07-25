@@ -268,7 +268,7 @@
   }
 
   .plot-ready {
-    animation: readyPulse 1s ease-in-out infinite;
+    animation: readyPulse 0.5s ease-in-out infinite;
   }
 
   .plot-growing {
