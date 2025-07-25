@@ -355,7 +355,7 @@
 }
 
 .plant-ready-bounce {
-  animation: slowBounce 4s ease-in-out infinite;
+  animation: slowBounce 2s ease-in-out infinite;
 }
 
 /* Scrollbar optimisé */
