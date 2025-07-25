@@ -166,15 +166,15 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               </Button>
             </div>
 
-            {/* Ligne 2: Barre d'XP compacte */}
-            <div className="relative premium-card rounded-lg p-1.5">
-              <div className="flex items-center justify-between mb-1">
-                <span className="mobile-text-xs text-blue-600 font-medium">XP</span>
-                <span className="mobile-text-xs text-blue-600 font-bold">
+            {/* Ligne 2: Barre d'XP ultra-compacte */}
+            <div className="relative premium-card rounded-lg px-2 py-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-600 font-medium">XP</span>
+                <span className="text-blue-600 font-bold">
                   {Math.floor(progressPercentage)}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden mt-0.5">
                 <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 relative" style={{
                 width: `${Math.max(0, Math.min(100, progressPercentage))}%`
               }}>

@@ -55,8 +55,8 @@ export const PlantDisplay = memo(({
     }
   };
   return <div className="text-center relative">
-      {/* Animation basée sur le progrès - plus statique */}
-      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'transform scale-110' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
+      {/* Animation basée sur le progrès - bounce quand prêt */}
+      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-bounce' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
         {isReady ? `${plantType.emoji || '🌱'}` : plantType.emoji || '🌱'}
       </div>
       
@@ -84,8 +84,8 @@ export const PlantDisplay = memo(({
         
       </div>
 
-      {isReady ? <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium shadow-lg">
-          ✨ Prête !
+      {isReady ? <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1.5 rounded-full mobile-text-xs font-medium shadow-lg">
+          Récolter
         </div> : <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
           <PlantTimer plantedAt={plantedAt} growthTimeSeconds={growthTimeSeconds} className="mobile-text-xs" />
         </div>}

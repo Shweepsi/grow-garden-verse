@@ -175,7 +175,7 @@ export const PlotCard = memo(({
         {/* Indicateur spécial pour l'auto-récolte */}
         {isAutoHarvestPlot && (
           <div className="absolute top-1.5 right-1.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${robotAtCapacity ? 'bg-yellow-400' : 'bg-blue-400'} animate-pulse`}></div>
+            <div className={`w-1.5 h-1.5 rounded-full ${robotAtCapacity ? 'bg-yellow-400' : 'bg-blue-400'}`}></div>
           </div>
         )}
 
