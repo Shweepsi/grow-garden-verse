@@ -268,7 +268,7 @@
   }
 
   .plot-ready {
-    animation: readyPulse 0.5s ease-in-out infinite;
+    animation: readyPulse 2s ease-in-out infinite;
   }
 
   .plot-growing {
@@ -355,7 +355,7 @@
 }
 
 .plant-ready-bounce {
-  animation: slowBounce 2s ease-in-out infinite;
+  animation: slowBounce 1s ease-in-out infinite;
 }
 
 /* Scrollbar optimisé */
