@@ -56,7 +56,7 @@ export const PlantDisplay = memo(({
   };
   return <div className="text-center relative">
       {/* Animation basée sur le progrès - bounce lent quand prêt */}
-      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-[bounce_2s_ease-in-out_infinite]' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
+      <div className={`text-xl mb-2 transition-all duration-300 ${isReady ? 'animate-[bounce_3s_ease-in-out_infinite]' : progress > 75 ? 'transform scale-105' : 'hover:scale-105'}`}>
         {isReady ? `${plantType.emoji || '🌱'}` : plantType.emoji || '🌱'}
       </div>
       
