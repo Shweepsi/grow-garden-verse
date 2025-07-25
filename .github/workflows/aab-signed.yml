@@ -16,22 +16,37 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Mise en place du cache pour npm (par exemple)
+      # Cache Node.js
       - name: Cache Node Modules
         uses: actions/cache@v3
         with:
-          path: ~/.npm
+          path: |
+            ~/.npm
+            **/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Cache Gradle
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       # Installation des dépendances
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      # Construction des assets web (si nécessaire)
+      # Construction des assets web
       - name: Build web assets
         run: npm run build
 
-      # Installation d'outils spécifiques à Capacitor & Android
+      # Installation Capacitor & Android
       - name: Install Capacitor & Android
         run: npm install @capacitor/cli@5.7.8 @capacitor/android@5.7.8 --legacy-peer-deps
 
@@ -39,13 +54,13 @@ jobs:
       - name: Capacitor sync
         run: npx cap sync
 
-      # Décodage de la keystore
+      # Décodage du keystore
       - name: Decode keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
 
-      # Construction du .aab signé
+      # Build AAB
       - name: Build signed AAB
         run: |
           cd android
@@ -55,7 +70,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      # Construction de l'APK signé (si besoin)
+      # Build APK
       - name: Build signed APK
         run: |
           cd android
@@ -65,22 +80,14 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      # Déplacement des artefacts générés dans un dossier dédié
+      # Déplacement des artefacts
       - name: Move AAB and APK to builds directory
         run: |
           mkdir -p builds
           mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
           mv android/app/build/outputs/apk/release/app-release.apk builds/IdleGrow.apk
 
-      # Vérification de la signature du build
-      # Exemple : vérification d'une signature GPG sur l'artefact .aab
-      - name: Verify AAB Signature
-        run: |
-          # Ici, on suppose que vous avez prévu de générer un fichier de signature (ex: IdleGrow.aab.sig)
-          gpg --import <(echo "${{ secrets.GPG_PUBLIC_KEY }}")
-          gpg --verify builds/IdleGrow.aab.sig builds/IdleGrow.aab
-
-      # Création d'un tag Git pour le build (optionnel)
+      # Tag commit
       - name: Tag commit
         run: |
           git config user.name "GitHub Actions"
@@ -88,7 +95,7 @@ jobs:
           git tag v${{ github.run_number }}
           git push origin v${{ github.run_number }}
 
-      # Téléversement des artefacts vers GitHub Release
+      # Upload vers GitHub Release
       - name: Upload AAB and APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
