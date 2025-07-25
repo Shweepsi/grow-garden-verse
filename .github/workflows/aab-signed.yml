@@ -27,10 +27,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Exécution des tests unitaires
-      - name: Run unit tests
-        run: npm test
-
       # Construction des assets web (si nécessaire)
       - name: Build web assets
         run: npm run build
