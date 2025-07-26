@@ -57,13 +57,17 @@ export function AdWatchButton({
   };
 
   const getButtonClassName = () => {
-    const baseClasses = "flex-1 transition-all duration-300 font-bold";
+    const baseClasses = "flex-1 transition-all duration-300 font-semibold shadow-lg transform-gpu";
     
     if (dailyLimitReached) {
-      return `${baseClasses} bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700`;
+      return `${baseClasses} bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 shadow-gray-400/30 text-white`;
     }
     
-    return `${baseClasses} bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/30`;
+    if (isLoading) {
+      return `${baseClasses} bg-gradient-to-r from-blue-400 to-blue-500 shadow-blue-400/30 text-white`;
+    }
+    
+    return `${baseClasses} bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:via-orange-700 hover:to-amber-700 shadow-orange-500/40 text-white hover:shadow-orange-500/50 hover:scale-105`;
   };
 
   return (

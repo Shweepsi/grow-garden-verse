@@ -114,13 +114,20 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md glassmorphism border-white/20 backdrop-blur-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white font-bold text-lg">
-            <div className="w-6 h-6 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full flex items-center justify-center">
-              <Play className="w-3 h-3 text-white" />
+      <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border border-orange-200/50 shadow-2xl shadow-orange-500/20 animate-in fade-in-0 zoom-in-95 duration-300">
+        <DialogHeader className="space-y-4 pb-6">
+          <DialogTitle className="text-center">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <Play className="w-5 h-5 text-white drop-shadow-sm" />
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-orange-400 to-amber-600 rounded-2xl opacity-30 blur-sm -z-10"></div>
+              </div>
             </div>
-            Récompenses Publicitaires
+            <h2 className="text-xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+              Récompenses Publicitaires
+            </h2>
           </DialogTitle>
           
           <AdProgressBar
@@ -130,7 +137,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           />
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Panel de diagnostics */}
           {showDiagnostics && (
             <AdDiagnosticsPanel
@@ -151,11 +158,11 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           <AdValidationProgress watchState={watchState} />
 
           {/* Boutons d'action */}
-          <div className="flex gap-3 pt-6">
+          <div className="flex gap-3 pt-4">
             <Button 
               variant="outline" 
               onClick={() => onOpenChange(false)} 
-              className="flex-1 premium-card border-white/30 hover:bg-white/10 text-white font-medium" 
+              className="flex-1 border-gray-200 hover:bg-gray-50 text-gray-700 font-medium transition-colors duration-200" 
               disabled={isLoading}
             >
               Annuler
