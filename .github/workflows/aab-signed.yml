@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write  # Donne les droits en écriture pour pouvoir pousser des tags
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -87,8 +90,9 @@ jobs:
           mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
           mv android/app/build/outputs/apk/release/app-release.apk builds/IdleGrow.apk
 
-      # Tag commit
+      # Tag commit (seulement si exécution manuelle)
       - name: Tag commit
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
