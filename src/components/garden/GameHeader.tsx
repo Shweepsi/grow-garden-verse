@@ -84,29 +84,11 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
             </div>
           </div>
 
-          {/* Boosts actifs */}
-          {boosts.length > 0 && (
-            <div className="mb-3">
-              <div className="flex flex-wrap gap-1">
-                {boosts.map((boost) => (
-                  <Badge 
-                    key={boost.id} 
-                    variant="outline" 
-                    className="text-xs bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 animate-pulse"
-                  >
-                    <span className="mr-1">{getBoostIcon(boost.effect_type)}</span>
-                    {getBoostLabel(boost.effect_type)}
-                    <Clock className="h-3 w-3 ml-1" />
-                    {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Boosts actifs - intégrés dans la ligne des stats */}
 
           {/* Statistiques */}
           <div className="space-y-2">
-            {/* Ligne 1: Coins, Gemmes et Niveau */}
+            {/* Ligne 1: Coins, Gemmes, Niveau et Boosts */}
             <div className="flex items-center justify-between space-x-2">
               {/* Coins avec zone d'animation */}
               <div className="relative group flex-1">
@@ -154,13 +136,29 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 </div>
               </div>
 
+              {/* Boosts compacts */}
+              {boosts.length > 0 && (
+                <div className="flex space-x-1">
+                  {boosts.slice(0, 2).map((boost) => (
+                    <div key={boost.id} className="w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center text-xs">
+                      {getBoostIcon(boost.effect_type)}
+                    </div>
+                  ))}
+                  {boosts.length > 2 && (
+                    <div className="w-6 h-6 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-xs text-white">
+                      +{boosts.length - 2}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Bouton Publicité */}
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
                 className={`h-8 px-2 border-0 transition-all duration-300 ${
                   adState.dailyCount < adState.maxDaily && adState.available
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-lg shadow-orange-400/50 animate-bounce-slow' 
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-lg shadow-orange-400/50' 
                     : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
                 }`}
               >
@@ -168,28 +166,20 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               </Button>
             </div>
 
-            {/* Ligne 2: Barre d'XP */}
-            <div className="relative premium-card rounded-lg p-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="mobile-text-xs text-blue-600 font-medium">Expérience</span>
-                <span className="mobile-text-xs text-blue-600 font-bold">
+            {/* Ligne 2: Barre d'XP ultra-compacte */}
+            <div className="relative premium-card rounded-lg px-2 py-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-600 font-medium">XP</span>
+                <span className="text-blue-600 font-bold">
                   {Math.floor(progressPercentage)}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden mt-0.5">
                 <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 relative" style={{
                 width: `${Math.max(0, Math.min(100, progressPercentage))}%`
               }}>
-                  <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                  <div className="absolute inset-0 bg-white/20"></div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="mobile-text-xs text-gray-500">
-                  {xpProgress.toLocaleString()} XP
-                </span>
-                <span className="mobile-text-xs text-gray-500">
-                  {xpNeeded.toLocaleString()} XP
-                </span>
               </div>
               
               {/* Zone d'animation pour l'XP */}

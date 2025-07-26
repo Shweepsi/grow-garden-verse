@@ -832,19 +832,48 @@ async function applyGemsReward(userId: string, amount: number): Promise<{ succes
 }
 
 async function applyBoostReward(userId: string, effectType: string, effectValue: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
-  const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000)
-
-  const { error } = await supabase
+  // Vérifier si un boost du même type existe déjà
+  const { data: existingBoost, error: checkError } = await supabase
     .from('active_effects')
-    .insert({
-      user_id: userId,
-      effect_type: effectType,
-      effect_value: effectValue,
-      expires_at: expiresAt.toISOString(),
-      source: 'ad_reward'
-    })
+    .select('*')
+    .eq('user_id', userId)
+    .eq('effect_type', effectType)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle()
+  
+  if (checkError && checkError.code !== 'PGRST116') {
+    return { success: false, error: 'Failed to check existing boost' }
+  }
+  
+  if (existingBoost) {
+    // Étendre la durée du boost existant (ajout additif)
+    const currentExpires = new Date(existingBoost.expires_at).getTime()
+    const newExpires = new Date(currentExpires + durationMinutes * 60 * 1000).toISOString()
+    
+    const { error: updateError } = await supabase
+      .from('active_effects')
+      .update({ expires_at: newExpires })
+      .eq('id', existingBoost.id)
+    
+    if (updateError) return { success: false, error: 'Failed to extend boost duration' }
+    
+    console.log(`Boost ${effectType} extended to ${newExpires}`)
+  } else {
+    // Créer un nouveau boost
+    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000)
+    
+    const { error } = await supabase
+      .from('active_effects')
+      .insert({
+        user_id: userId,
+        effect_type: effectType,
+        effect_value: effectValue,
+        expires_at: expiresAt.toISOString(),
+        source: 'ad_reward'
+      })
 
-  if (error) return { success: false, error: 'Failed to create boost effect' }
+    if (error) return { success: false, error: 'Failed to create boost effect' }
+  }
 
   return { success: true }
 }

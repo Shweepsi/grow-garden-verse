@@ -41,7 +41,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
   if (!plantedAt || isReady) return null;
 
   // Classes pour indiquer l'urgence du timer
-  const urgencyClass = timeRemaining < 30 ? 'text-orange-600 animate-pulse' : 
+  const urgencyClass = timeRemaining < 30 ? 'text-orange-600 font-semibold' : 
                      timeRemaining < 120 ? 'text-yellow-600' : 
                      'text-gray-600';
 

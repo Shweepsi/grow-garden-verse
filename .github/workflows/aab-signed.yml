@@ -5,38 +5,65 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write  # Donne les droits en écriture pour pouvoir pousser des tags
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # Récupération du dépôt
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.PERSONAL_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      # Cache Node.js
+      - name: Cache Node Modules
+        uses: actions/cache@v3
         with:
-          node-version: 18
+          path: |
+            ~/.npm
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
+      # Cache Gradle
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # Installation des dépendances
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
+      # Construction des assets web
       - name: Build web assets
         run: npm run build
 
+      # Installation Capacitor & Android
       - name: Install Capacitor & Android
         run: npm install @capacitor/cli@5.7.8 @capacitor/android@5.7.8 --legacy-peer-deps
 
+      # Synchronisation avec Capacitor
       - name: Capacitor sync
         run: npx cap sync
 
+      # Décodage du keystore
       - name: Decode keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.keystore
 
+      # Build AAB
       - name: Build signed AAB
         run: |
           cd android
@@ -46,6 +73,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
+      # Build APK
       - name: Build signed APK
         run: |
           cd android
@@ -55,19 +83,23 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Move AAB and APK to /builds
+      # Déplacement des artefacts
+      - name: Move AAB and APK to builds directory
         run: |
           mkdir -p builds
           mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
           mv android/app/build/outputs/apk/release/app-release.apk builds/IdleGrow.apk
 
+      # Tag commit (seulement si exécution manuelle)
       - name: Tag commit
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git tag v${{ github.run_number }}
-          git push https://${{ secrets.PERSONAL_TOKEN }}@github.com/${{ github.repository }} v${{ github.run_number }}
+          git push origin v${{ github.run_number }}
 
+      # Upload vers GitHub Release
       - name: Upload AAB and APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -77,4 +109,4 @@ jobs:
             builds/IdleGrow.aab
             builds/IdleGrow.apk
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
