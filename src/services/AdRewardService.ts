@@ -2,10 +2,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdReward, AdState } from "@/types/ads";
 import { AdCooldownService } from "./ads/AdCooldownService";
 import { AdSessionService } from "./ads/AdSessionService";
+import { AdCacheService } from "./ads/AdCacheService";
 
 export class AdRewardService {
   static async getAvailableRewards(playerLevel: number): Promise<AdReward[]> {
     try {
+      // Vérifier le cache d'abord
+      const cachedRewards = AdCacheService.getCachedRewards(playerLevel);
+      if (cachedRewards) {
+        console.log('AdRewardService: Using cached rewards for level', playerLevel);
+        return cachedRewards;
+      }
+
+      console.log('AdRewardService: Fetching rewards for level', playerLevel);
       const { data: configs, error } = await supabase
         .from('ad_reward_configs')
         .select('*')
@@ -15,7 +24,7 @@ export class AdRewardService {
 
       if (error) throw error;
 
-      return configs.map(config => {
+      const rewards = configs.map(config => {
         // Calculer le montant basé sur le niveau
         let amount = config.base_amount + (config.level_coefficient * (playerLevel - 1));
         
@@ -43,17 +52,27 @@ export class AdRewardService {
           duration: config.duration_minutes
         };
       });
+
+      // Mettre en cache les récompenses
+      AdCacheService.cacheRewards(playerLevel, rewards);
+      console.log('AdRewardService: Cached rewards for level', playerLevel);
+      
+      return rewards;
     } catch (error) {
       console.error('Error loading ad rewards:', error);
       // Fallback en cas d'erreur
-      return [
+      const fallbackRewards: AdReward[] = [
         {
-          type: 'coins',
+          type: 'coins' as const,
           amount: 1000 + (800 * (playerLevel - 1)),
           description: `${1000 + (800 * (playerLevel - 1))} pièces`,
           emoji: '🪙'
         }
       ];
+      
+      // Mettre en cache même les récompenses de fallback
+      AdCacheService.cacheRewards(playerLevel, fallbackRewards);
+      return fallbackRewards;
     }
   }
 
