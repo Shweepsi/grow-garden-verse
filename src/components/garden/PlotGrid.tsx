@@ -66,6 +66,8 @@ export const PlotGrid = ({
     }
     
     const hasPlant = !!plot.plant_type;
+    // Note: Cette vérification simple ne prend pas en compte les boosts
+    // La vérification complète avec boosts est faite dans PlotCard et PlantDisplay
     const isReady = hasPlant && plot.planted_at && plot.growth_time_seconds
       ? Date.now() - new Date(plot.planted_at).getTime() >= (plot.growth_time_seconds * 1000)
       : false;

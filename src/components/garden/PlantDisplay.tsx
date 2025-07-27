@@ -3,6 +3,7 @@ import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
 import { Progress } from '@/components/ui/progress';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 interface PlantDisplayProps {
   plantType: PlantType;
   plantedAt: string | null;
@@ -13,6 +14,7 @@ export const PlantDisplay = memo(({
   plantedAt,
   growthTimeSeconds
 }: PlantDisplayProps) => {
+  const { getBoostMultiplier } = useActiveBoosts();
   const [progress, setProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
@@ -26,8 +28,9 @@ export const PlantDisplay = memo(({
   useEffect(() => {
     if (!plantedAt) return;
     const updateProgress = () => {
-      const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds);
-      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
+      const boosts = { getBoostMultiplier };
+      const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds, boosts);
+      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts);
       setProgress(currentProgress);
       setIsReady(ready);
     };
@@ -37,7 +40,7 @@ export const PlantDisplay = memo(({
     const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
     const interval = setInterval(updateProgress, updateInterval);
     return () => clearInterval(interval);
-  }, [plantedAt, growthTimeSeconds]);
+  }, [plantedAt, growthTimeSeconds, getBoostMultiplier]);
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
       case 'mythic':

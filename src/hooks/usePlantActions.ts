@@ -8,12 +8,14 @@ import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { MAX_PLOTS } from '@/constants';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getCompleteMultipliers, applyAllBoosts } = useGameMultipliers();
+  const { getBoostMultiplier } = useActiveBoosts();
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
@@ -70,10 +72,11 @@ export const usePlantActions = () => {
       
       // Vérification robuste de la maturité
       const growthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
-      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime);
+      const boosts = { getBoostMultiplier };
+      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime, boosts);
       
       if (!isReady) {
-        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, growthTime);
+        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, growthTime, boosts);
         const timeString = timeRemaining > 60 
           ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
           : `${timeRemaining}s`;
