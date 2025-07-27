@@ -139,9 +139,9 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
-                className={`h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 ${
+                className={`h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
                   adState.dailyCount < adState.maxDaily && adState.available
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-lg shadow-orange-400/50' 
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 plant-ready-bounce hover:scale-105 active:scale-95' 
                     : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
                 }`}
               >
@@ -151,61 +151,75 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
 
             {/* Ligne 2: Boosts actifs (si présents) */}
             {boosts.length > 0 && (
-              <div className="premium-card rounded-lg px-2 py-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1.5">
-                    <Zap className="h-3 w-3 text-orange-600" />
-                    <span className="text-xs font-medium text-orange-700">Boosts actifs</span>
+              <div className="premium-card rounded-lg px-3 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
+                      <Zap className="h-2.5 w-2.5 text-white" />
+                    </div>
+                    <span className="mobile-text-sm font-semibold text-orange-700">Boosts actifs</span>
                   </div>
-                  
-                  <TooltipProvider>
-                    <div className="flex items-center space-x-1">
-                      {boosts.slice(0, 3).map((boost) => (
-                        <Tooltip key={boost.id}>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center space-x-1 bg-gradient-to-r from-orange-100 to-amber-100 px-2 py-0.5 rounded-full cursor-help hover:from-orange-200 hover:to-amber-200 transition-colors duration-200">
-                              <span className="text-xs">{getBoostIcon(boost.effect_type)}</span>
-                              <span className="text-xs font-semibold text-orange-700 hidden sm:inline">
+                  <span className="mobile-text-xs text-orange-600 font-medium">
+                    {boosts.length} actif{boosts.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+                
+                <TooltipProvider>
+                  <div className="flex flex-wrap gap-1.5">
+                    {boosts.slice(0, 2).map((boost) => (
+                      <Tooltip key={boost.id}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center space-x-1.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 px-2.5 py-1.5 rounded-lg cursor-help hover:from-orange-100 hover:to-amber-100 hover:border-orange-300 transition-all duration-200 min-w-0 flex-1">
+                            <span className="text-sm">{getBoostIcon(boost.effect_type)}</span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="mobile-text-xs font-semibold text-orange-700 truncate">
+                                {getBoostLabel(boost.effect_type)}
+                              </span>
+                              <span className="mobile-text-xs text-orange-600">
                                 {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
                               </span>
                             </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="text-center">
-                              <p className="font-semibold">{getBoostLabel(boost.effect_type)}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatTimeRemaining(getTimeRemaining(boost.expires_at))} restant
-                              </p>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                      {boosts.length > 3 && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center space-x-1 bg-gradient-to-r from-gray-100 to-slate-100 px-2 py-0.5 rounded-full cursor-help hover:from-gray-200 hover:to-slate-200 transition-colors duration-200">
-                              <span className="text-xs font-semibold text-gray-700">
-                                +{boosts.length - 3}
-                              </span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="space-y-1">
-                              {boosts.slice(3).map((boost) => (
-                                <div key={boost.id} className="text-xs">
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-center">
+                            <p className="font-semibold">{getBoostLabel(boost.effect_type)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatTimeRemaining(getTimeRemaining(boost.expires_at))} restant
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                    {boosts.length > 2 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center justify-center bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 px-2.5 py-1.5 rounded-lg cursor-help hover:from-gray-100 hover:to-slate-100 hover:border-gray-300 transition-all duration-200 min-w-[60px]">
+                            <span className="mobile-text-xs font-semibold text-gray-700">
+                              +{boosts.length - 2}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="space-y-2 max-w-48">
+                            <p className="font-semibold text-center">Autres boosts actifs</p>
+                            {boosts.slice(2).map((boost) => (
+                              <div key={boost.id} className="flex items-center justify-between text-xs border-b border-gray-100 pb-1 last:border-b-0">
+                                <div className="flex items-center space-x-1">
+                                  <span>{getBoostIcon(boost.effect_type)}</span>
                                   <span className="font-medium">{getBoostLabel(boost.effect_type)}</span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({formatTimeRemaining(getTimeRemaining(boost.expires_at))})
-                                  </span>
                                 </div>
-                              ))}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                  </TooltipProvider>
-                </div>
+                                <span className="text-muted-foreground">
+                                  {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </TooltipProvider>
               </div>
             )}
 

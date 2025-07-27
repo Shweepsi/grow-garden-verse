@@ -84,7 +84,7 @@ export const PlantDisplay = memo(({
         
       </div>
 
-      {isReady ? <div className="bg-gradient-to-r from-orange-400 to-orange-500 text-white px-2 py-1 rounded-full mobile-text-xs font-medium shadow-lg">
+      {isReady ? <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-2 py-1 rounded-full mobile-text-xs font-medium shadow-lg">
           Récolter
         </div> : <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
           <PlantTimer plantedAt={plantedAt} growthTimeSeconds={growthTimeSeconds} className="mobile-text-xs" />
