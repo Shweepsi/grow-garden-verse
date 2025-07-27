@@ -54,7 +54,9 @@ export class PlantGrowthService {
     if (!boosts) return baseTime;
     
     const growthBoostMultiplier = boosts.getBoostMultiplier('growth_boost');
-    const adjustedTime = Math.floor(baseTime * growthBoostMultiplier);
+    // FIXED: Growth multiplier should REDUCE time, not increase it
+    // growthBoostMultiplier of 1.15 means 15% faster growth = 15% less time
+    const adjustedTime = Math.floor(baseTime / growthBoostMultiplier);
     
     console.log(`Growth time: ${baseTime}s -> ${adjustedTime}s (boost: ${growthBoostMultiplier})`);
     return Math.max(adjustedTime, 5); // Minimum 5 secondes

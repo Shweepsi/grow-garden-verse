@@ -86,10 +86,10 @@ export const PlantSelector = ({
                       </div>
                     </div>}
                   
-                  {multipliers.growth < 1 && <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
+                  {multipliers.growth > 1 && <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-blue-700">
                         <Timer className="h-3 w-3" />
-                        <span className="text-xs font-bold">Vitesse +{Math.round((1 - multipliers.growth) * 100)}%</span>
+                        <span className="text-xs font-bold">Vitesse +{Math.round((multipliers.growth - 1) * 100)}%</span>
                       </div>
                     </div>}
 

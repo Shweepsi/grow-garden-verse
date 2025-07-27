@@ -143,23 +143,78 @@ export const usePlantActions = () => {
       const newGems = Math.max(0, (garden.gems || 0) + gemReward);
       const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
 
-      // Use a transaction to ensure both updates succeed or fail together
-      const { error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
-        p_user_id: user.id,
-        p_plot_number: plotNumber,
-        p_new_coins: newCoins,
-        p_new_gems: newGems,
-        p_new_exp: newExp,
-        p_new_level: newLevel,
-        p_new_harvests: newHarvests
-      });
+      // Fallback to original approach if transaction function is not available
+      try {
+        // Try the transaction first
+        const { error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
+          p_user_id: user.id,
+          p_plot_number: plotNumber,
+          p_new_coins: newCoins,
+          p_new_gems: newGems,
+          p_new_exp: newExp,
+          p_new_level: newLevel,
+          p_new_harvests: newHarvests
+        });
 
-      if (transactionError) {
-        console.error('❌ Erreur transaction récolte:', transactionError);
-        throw new Error(`Erreur lors de la récolte: ${transactionError.message}`);
+        if (transactionError) {
+          console.warn('⚠️ Transaction function not available, using fallback approach');
+          throw new Error('Transaction function not available');
+        }
+
+        console.log('✅ Récolte effectuée avec succès via transaction');
+      } catch (error) {
+        // Fallback to original approach
+        console.log('🔄 Utilisation de l\'approche de fallback pour la récolte');
+        
+        // Update garden first (more critical)
+        const { error: updateGardenError } = await supabase
+          .from('player_gardens')
+          .update({
+            coins: newCoins,
+            gems: newGems,
+            experience: newExp,
+            level: newLevel,
+            total_harvests: newHarvests,
+            last_played: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (updateGardenError) {
+          console.error('❌ Erreur mise à jour jardin:', updateGardenError);
+          throw new Error(`Erreur lors de la mise à jour du jardin: ${updateGardenError.message}`);
+        }
+
+        // Then clear the plot
+        const { error: updatePlotError } = await supabase
+          .from('garden_plots')
+          .update({
+            plant_type: null,
+            planted_at: null,
+            growth_time_seconds: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .eq('plot_number', plotNumber);
+
+        if (updatePlotError) {
+          console.error('❌ Erreur mise à jour parcelle:', updatePlotError);
+          // Try to revert the garden update if plot update fails
+          await supabase
+            .from('player_gardens')
+            .update({
+              coins: garden.coins,
+              gems: garden.gems,
+              experience: garden.experience,
+              level: garden.level,
+              total_harvests: garden.total_harvests,
+              last_played: garden.last_played
+            })
+            .eq('user_id', user.id);
+          throw new Error(`Erreur lors de la vidange de la parcelle: ${updatePlotError.message}`);
+        }
+
+        console.log('✅ Récolte effectuée avec succès via fallback');
       }
-
-      console.log('✅ Récolte effectuée avec succès');
 
       console.log('🏡 Jardin mis à jour avec succès');
 
