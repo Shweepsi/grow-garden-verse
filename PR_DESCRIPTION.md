@@ -1,64 +1,78 @@
-# 🐛 Fix: Les boosts de croissance n'ont aucun effet
+# 🐛 Fix: Correction du bug d'affichage post-refactoring + Suppression notification redondante
 
-## 📋 Description du problème
+## 📋 Résumé
 
-Les boosts de croissance (améliorations temporaires) n'avaient aucun effet sur le temps de croissance des plantes. Le problème était que les composants qui calculent le temps de croissance n'utilisaient pas les boosts actifs.
+Cette PR corrige un bug critique qui empêchait l'affichage correct des temps de croissance depuis le refactoring du système de croissance, et supprime une notification redondante pour améliorer l'UX.
 
-## 🔍 Cause racine
+## 🐛 Problèmes résolus
 
-Les appels aux méthodes de `PlantGrowthService` ne passaient pas les boosts en paramètre :
-- `PlantGrowthService.isPlantReady()`
-- `PlantGrowthService.getTimeRemaining()`
-- `PlantGrowthService.calculateGrowthProgress()`
+### 1. Bug d'affichage des temps de croissance
+- **Problème** : Après le refactoring du système de croissance (PR #5), la méthode `formatTimeRemaining` du `PlantGrowthService` ne retournait plus une chaîne formatée mais un nombre
+- **Cause** : L'alias pointait vers `getTimeRemaining()` qui retourne des secondes (number) au lieu d'une chaîne formatée
+- **Impact** : Les composants `PlantTimer`, `PlantDisplay` tentaient d'afficher des nombres au lieu de temps formatés (ex: "120" au lieu de "2m 0s")
 
-## ✅ Corrections apportées
+### 2. Notification redondante
+- **Problème** : Toast "Plante plantée avec succès !" apparaissait à chaque plantation
+- **Impact** : Expérience utilisateur dégradée avec des notifications trop fréquentes
 
-### 1. **Hook `usePlantActions.ts`**
-- ✅ Ajout de l'import `useActiveBoosts`
-- ✅ Utilisation de `getBoostMultiplier` pour passer les boosts aux méthodes de `PlantGrowthService`
-- ✅ Correction des appels à `isPlantReady` et `getTimeRemaining`
+## ✅ Solutions implémentées
 
-### 2. **Composant `PlotCard.tsx`**
-- ✅ Ajout de l'import `useActiveBoosts`
-- ✅ Utilisation des boosts dans le calcul de l'état de la plante (`plantState`)
+### 1. Correction de `formatTimeRemaining`
+```typescript
+// Avant (bugué)
+static formatTimeRemaining = PlantGrowthService.getTimeRemaining;
 
-### 3. **Composant `PlantDisplay.tsx`**
-- ✅ Ajout de l'import `useActiveBoosts`
-- ✅ Passage des boosts aux méthodes `calculateGrowthProgress` et `isPlantReady`
-- ✅ Mise à jour des dépendances du `useEffect`
+// Après (corrigé)
+static formatTimeRemaining(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): string {
+  const seconds = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
+  return GrowthService.formatTimeRemaining(seconds);
+}
+```
 
-### 4. **Composant `PlantTimer.tsx`**
-- ✅ Ajout de l'import `useActiveBoosts`
-- ✅ Passage des boosts aux méthodes `getTimeRemaining` et `isPlantReady`
-- ✅ Optimisation de l'affichage du temps restant
+### 2. Suppression de la notification
+```typescript
+// Supprimé du hook useDirectPlanting
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['gameData'] });
+  // toast.success('Plante plantée avec succès !'); // ← SUPPRIMÉ
+},
+```
 
-## 🎯 Résultat
+## 🔄 Rétrocompatibilité
 
-Maintenant, quand un boost de croissance est actif :
-- ⚡ Le temps de croissance des plantes est correctement réduit
-- ⏰ L'affichage du temps restant prend en compte le boost
-- 📊 La progression de croissance est mise à jour en temps réel avec le boost
-- 🌱 Les plantes sont marquées comme "prêtes" au bon moment
+- ✅ Tous les composants existants continuent de fonctionner sans modification
+- ✅ Le `PlantGrowthService` reste un facade compatible pour l'ancien code
+- ✅ Les notifications d'erreur sont conservées pour le feedback utilisateur
+- ✅ Pas de breaking changes
 
 ## 🧪 Tests
 
-- [x] Vérification que les boosts sont correctement récupérés via `useActiveBoosts`
-- [x] Validation que les boosts sont passés aux méthodes de `PlantGrowthService`
-- [x] Confirmation que le temps de croissance est réduit selon le multiplicateur du boost
+- ✅ Compilation réussie (`npm run build`)
+- ✅ Application démarre sans erreurs (`npm run dev`)
+- ✅ Pas d'erreurs TypeScript (`npx tsc --noEmit`)
+- ✅ Tous les composants de croissance fonctionnent correctement
 
 ## 📁 Fichiers modifiés
 
-- `src/hooks/usePlantActions.ts`
-- `src/components/garden/PlotCard.tsx`
-- `src/components/garden/PlantDisplay.tsx`
-- `src/components/garden/PlantTimer.tsx`
-- `src/components/garden/PlotGrid.tsx` (commentaire ajouté)
+- `src/services/PlantGrowthService.ts` - Correction de la méthode `formatTimeRemaining`
+- `src/hooks/useDirectPlanting.ts` - Suppression de la notification redondante
 
-## 🔗 Issue liée
+## 🚀 Impact
 
-Fixes: #58 (Les boosts de croissance n'ont aucun effet)
+- 🐛 **Bug critique corrigé** : Les temps de croissance s'affichent à nouveau correctement
+- 🎯 **UX améliorée** : Moins de notifications parasites
+- 🔧 **Stabilité** : Le refactoring du système de croissance est maintenant pleinement fonctionnel
+- ⚡ **Performance** : Pas d'impact négatif sur les performances
+
+## 🏷️ Type de changement
+
+- [x] Bug fix (changement non-breaking qui corrige un problème)
+- [x] Amélioration UX (suppression notification redondante)
+- [ ] Nouvelle fonctionnalité
+- [ ] Breaking change
+- [ ] Documentation
 
 ---
 
-**Type de changement:** 🐛 Bug fix
-**Impact:** ⚡ Améliore l'expérience utilisateur en rendant les boosts de croissance fonctionnels
+### ⚠️ Note importante
+Ce fix est critique pour la fonctionnalité principale du jeu (affichage des temps de croissance). Il devrait être mergé en priorité.
