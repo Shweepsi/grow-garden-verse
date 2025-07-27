@@ -33,7 +33,9 @@ export const useGameMultipliers = () => {
     return {
       // Multiplicateurs combinés permanents + temporaires
       harvest: permanentMultipliers.harvest * coinBoost,
-      growth: permanentMultipliers.growth * growthBoost,
+      // FIXED: Les boosts temporaires s'additionnent aux améliorations permanentes
+      // Cela évite l'effet exponentiel qui rendait les plantes trop rapides
+      growth: permanentMultipliers.growth + (growthBoost - 1),
       exp: permanentMultipliers.exp, // Pas de boost temporaire XP pour l'instant
       plantCostReduction: permanentMultipliers.plantCostReduction,
       gemChance: permanentMultipliers.gemChance,

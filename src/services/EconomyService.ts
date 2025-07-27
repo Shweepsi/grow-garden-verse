@@ -133,7 +133,9 @@ export class EconomyService {
           multipliers.harvest *= levelUpgrade.effect_value;
           break;
         case 'growth_speed':
-          multipliers.growth *= levelUpgrade.effect_value;
+          // FIXED: Les améliorations de croissance s'additionnent au lieu de se multiplier
+          // Cela évite l'effet exponentiel qui rendait les plantes trop rapides
+          multipliers.growth += (levelUpgrade.effect_value - 1);
           break;
         case 'exp_multiplier':
           multipliers.exp *= levelUpgrade.effect_value;
