@@ -1,52 +1,67 @@
 
-import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
-import { MINIMUM_COINS_RESERVE, INITIAL_COINS } from '@/constants';
+import { PlantType, PlayerUpgrade } from "@/types/game";
+import { GrowthService } from "./growth/GrowthService";
 
 export class EconomyService {
-  // Pièces minimum à conserver pour pouvoir continuer à jouer
-  static readonly MINIMUM_COINS = MINIMUM_COINS_RESERVE;
-
-  // Système de coût progressif équilibré
-  static getPlantDirectCost(plantLevel: number): number {
-    if (!plantLevel || plantLevel < 1) return INITIAL_COINS;
-    // Progression douce : 100 * 1.5^(niveau-1)
-    return Math.floor(100 * Math.pow(1.5, plantLevel - 1));
+  // Prix de base des plantes selon leur rareté
+  static getPlantPrice(plantType: PlantType): number {
+    switch (plantType.rarity) {
+      case 'common': return 10;
+      case 'uncommon': return 50;
+      case 'rare': return 200;
+      case 'epic': return 1000;
+      case 'legendary': return 5000;
+      default: return 10;
+    }
   }
 
-  // Vérifier si l'achat d'une plante est possible (sans restriction)
-  static canAffordPlant(currentCoins: number, plantCost: number): boolean {
-    return currentCoins >= plantCost;
-  }
-
-  // Vérifier si l'achat d'une amélioration est possible avec protection des 100 pièces
-  static canAffordUpgrade(currentCoins: number, upgradeCost: number): boolean {
-    return currentCoins >= (upgradeCost + this.MINIMUM_COINS);
-  }
-
-  // Calculer les récompenses avec multiplicateurs d'améliorations
+  // Récompenses de récolte avec multiplicateur d'amélioration et boost
   static getHarvestReward(
-    plantLevel: number, 
-    growthTimeSeconds: number,
-    playerLevel: number = 1,
+    plantLevel: number,
     harvestMultiplier: number = 1,
-    plantCostReduction: number = 1,
+    coinBoostMultiplier: number = 1,
+    growthTimeSeconds: number,
     permanentMultiplier: number = 1
   ): number {
     // Validation des paramètres
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
-    if (!growthTimeSeconds || growthTimeSeconds < 1) growthTimeSeconds = 60;
-    if (!playerLevel || playerLevel < 1) playerLevel = 1;
     if (!harvestMultiplier || harvestMultiplier < 0.1) harvestMultiplier = 1;
+    if (!coinBoostMultiplier || coinBoostMultiplier < 0.1) coinBoostMultiplier = 1;
+    if (!permanentMultiplier || permanentMultiplier < 0.1) permanentMultiplier = 1;
+    if (!growthTimeSeconds || growthTimeSeconds < 1) growthTimeSeconds = 60;
+
+    // Récompense de base selon le niveau
+    const baseReward = 10 + (plantLevel * 5);
     
-    const baseCost = this.getPlantDirectCost(plantLevel) * plantCostReduction;
-    
-    // Profit de base de 70% + bonus pour temps long + bonus niveau
-    const baseProfit = baseCost * 1.7; // 70% de profit de base
+    // Bonus basé sur le temps de croissance
+    // Les plantes qui prennent plus de temps donnent plus de récompenses
     const timeBonus = Math.max(1, Math.floor(growthTimeSeconds / 600)) * 0.1; // 10% par 10min (600s)
-    const levelBonus = 1 + (playerLevel * 0.02); // 2% par niveau du joueur
+    const timeBonusMultiplier = 1 + timeBonus;
     
-    const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
-    return Math.floor(finalReward * harvestMultiplier * permanentMultiplier);
+    // Application des multiplicateurs
+    const reward = baseReward * harvestMultiplier * coinBoostMultiplier * timeBonusMultiplier * permanentMultiplier;
+    
+    return Math.floor(reward);
+  }
+
+  // Gemmes avec chance et multiplicateur de boost
+  static getGemReward(
+    plantLevel: number,
+    gemChance: number = 0,
+    gemBoostMultiplier: number = 1
+  ): number {
+    if (!plantLevel || plantLevel < 1) plantLevel = 1;
+    if (!gemChance || gemChance < 0) gemChance = 0;
+    if (!gemBoostMultiplier || gemBoostMultiplier < 0.1) gemBoostMultiplier = 1;
+    
+    const random = Math.random();
+    const effectiveChance = Math.min(1, gemChance); // Cap à 100%
+    
+    if (random < effectiveChance) {
+      const baseGems = Math.max(1, Math.floor(plantLevel / 5));
+      return Math.floor(baseGems * gemBoostMultiplier);
+    }
+    return 0;
   }
 
   // Expérience avec multiplicateur d'amélioration
@@ -66,11 +81,12 @@ export class EconomyService {
     if (!baseGrowthSeconds || baseGrowthSeconds < 1) baseGrowthSeconds = 60;
     if (!growthMultiplier || growthMultiplier <= 0) growthMultiplier = 1;
     
-    // FIXED: Growth multiplier should REDUCE time, not increase it
-    // growthMultiplier of 1.15 means 15% faster growth = 15% less time
-    const adjustedTime = baseGrowthSeconds / growthMultiplier;
+    // Use the new GrowthService for consistent calculation
+    const calculation = GrowthService.calculateGrowthTime(baseGrowthSeconds, {
+      upgrades: growthMultiplier
+    });
     
-    return Math.max(1, Math.floor(adjustedTime));
+    return calculation.finalTimeSeconds;
   }
 
   // Vérification d'accès aux plantes
@@ -133,9 +149,9 @@ export class EconomyService {
           multipliers.harvest *= levelUpgrade.effect_value;
           break;
         case 'growth_speed':
-          // FIXED: Les améliorations de croissance s'additionnent au lieu de se multiplier
-          // Cela évite l'effet exponentiel qui rendait les plantes trop rapides
-          multipliers.growth += (levelUpgrade.effect_value - 1);
+          // Growth speed upgrades should multiply together for cumulative effect
+          // e.g., two 1.15x upgrades = 1.15 * 1.15 = 1.3225x faster
+          multipliers.growth *= levelUpgrade.effect_value;
           break;
         case 'exp_multiplier':
           multipliers.exp *= levelUpgrade.effect_value;
@@ -152,18 +168,20 @@ export class EconomyService {
     return multipliers;
   }
 
-  // Méthodes pour les récompenses publicitaires
-  static getAdCoinReward(baseAmount: number, playerLevel: number, permanentMultiplier: number): number {
-    const levelBonus = 1 + (Math.max(0, playerLevel - 1) * 0.05); // 5% par niveau après le niveau 1
-    return Math.floor(baseAmount * levelBonus * permanentMultiplier);
-  }
-
-  static getAdGemReward(playerLevel: number): number {
-    // 5 gemmes de base + 1 par niveau (max 20)
-    return Math.min(5 + Math.floor(playerLevel / 2), 20);
-  }
-
-  static applyPermanentMultiplier(baseAmount: number, permanentMultiplier: number): number {
-    return Math.floor(baseAmount * permanentMultiplier);
+  // Calculer le revenu total par minute (robot + récoltes manuelles estimées)
+  static calculateIncomePerMinute(
+    robotLevel: number,
+    playerLevel: number,
+    harvestMultiplier: number = 1,
+    permanentMultiplier: number = 1
+  ): number {
+    // Revenu du robot
+    const robotIncome = this.getRobotPassiveIncome(robotLevel, harvestMultiplier, permanentMultiplier);
+    
+    // Estimation des récoltes manuelles (basé sur le niveau du joueur)
+    // On estime 2 récoltes par minute en moyenne
+    const manualHarvestEstimate = this.getHarvestReward(playerLevel, harvestMultiplier, 1, 60, permanentMultiplier) * 2;
+    
+    return robotIncome + manualHarvestEstimate;
   }
 }
