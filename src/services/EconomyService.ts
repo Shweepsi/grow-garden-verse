@@ -66,7 +66,11 @@ export class EconomyService {
     if (!baseGrowthSeconds || baseGrowthSeconds < 1) baseGrowthSeconds = 60;
     if (!growthMultiplier || growthMultiplier <= 0) growthMultiplier = 1;
     
-    return Math.max(1, Math.floor(baseGrowthSeconds * growthMultiplier));
+    // FIXED: Growth multiplier should REDUCE time, not increase it
+    // growthMultiplier of 1.15 means 15% faster growth = 15% less time
+    const adjustedTime = baseGrowthSeconds / growthMultiplier;
+    
+    return Math.max(1, Math.floor(adjustedTime));
   }
 
   // Vérification d'accès aux plantes
