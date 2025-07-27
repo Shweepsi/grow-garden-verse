@@ -85,12 +85,10 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
             </div>
           </div>
 
-          {/* Boosts actifs - intégrés dans la ligne des stats */}
-
           {/* Statistiques */}
           <div className="space-y-2">
-            {/* Ligne 1: Coins, Gemmes, Niveau et Boosts */}
-            <div className="flex items-center justify-between space-x-2">
+            {/* Ligne 1: Coins, Gemmes, Niveau */}
+            <div className="flex items-center space-x-2">
               {/* Coins avec zone d'animation */}
               <div className="relative group flex-1">
                 <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
@@ -137,57 +135,11 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 </div>
               </div>
 
-              {/* Boosts compacts avec tooltips */}
-              {boosts.length > 0 && (
-                <TooltipProvider>
-                  <div className="flex space-x-1">
-                    {boosts.slice(0, 2).map((boost) => (
-                      <Tooltip key={boost.id}>
-                        <TooltipTrigger asChild>
-                          <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center text-xs cursor-help hover:scale-110 transition-transform duration-200">
-                            {getBoostIcon(boost.effect_type)}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="text-center">
-                            <p className="font-semibold">{getBoostLabel(boost.effect_type)}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatTimeRemaining(getTimeRemaining(boost.expires_at))} restant
-                            </p>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
-                    {boosts.length > 2 && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="w-6 h-6 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-xs text-white cursor-help hover:scale-110 transition-transform duration-200">
-                            +{boosts.length - 2}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="space-y-1">
-                            {boosts.slice(2).map((boost) => (
-                              <div key={boost.id} className="text-xs">
-                                <span className="font-medium">{getBoostLabel(boost.effect_type)}</span>
-                                <span className="text-muted-foreground ml-1">
-                                  ({formatTimeRemaining(getTimeRemaining(boost.expires_at))})
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                </TooltipProvider>
-              )}
-
               {/* Bouton Publicité */}
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
-                className={`h-8 px-2 border-0 transition-all duration-300 ${
+                className={`h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 ${
                   adState.dailyCount < adState.maxDaily && adState.available
                     ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-lg shadow-orange-400/50' 
                     : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
@@ -197,7 +149,67 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               </Button>
             </div>
 
-            {/* Ligne 2: Barre d'XP ultra-compacte */}
+            {/* Ligne 2: Boosts actifs (si présents) */}
+            {boosts.length > 0 && (
+              <div className="premium-card rounded-lg px-2 py-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5">
+                    <Zap className="h-3 w-3 text-orange-600" />
+                    <span className="text-xs font-medium text-orange-700">Boosts actifs</span>
+                  </div>
+                  
+                  <TooltipProvider>
+                    <div className="flex items-center space-x-1">
+                      {boosts.slice(0, 3).map((boost) => (
+                        <Tooltip key={boost.id}>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center space-x-1 bg-gradient-to-r from-orange-100 to-amber-100 px-2 py-0.5 rounded-full cursor-help hover:from-orange-200 hover:to-amber-200 transition-colors duration-200">
+                              <span className="text-xs">{getBoostIcon(boost.effect_type)}</span>
+                              <span className="text-xs font-semibold text-orange-700 hidden sm:inline">
+                                {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-center">
+                              <p className="font-semibold">{getBoostLabel(boost.effect_type)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatTimeRemaining(getTimeRemaining(boost.expires_at))} restant
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                      {boosts.length > 3 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center space-x-1 bg-gradient-to-r from-gray-100 to-slate-100 px-2 py-0.5 rounded-full cursor-help hover:from-gray-200 hover:to-slate-200 transition-colors duration-200">
+                              <span className="text-xs font-semibold text-gray-700">
+                                +{boosts.length - 3}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="space-y-1">
+                              {boosts.slice(3).map((boost) => (
+                                <div key={boost.id} className="text-xs">
+                                  <span className="font-medium">{getBoostLabel(boost.effect_type)}</span>
+                                  <span className="text-muted-foreground ml-1">
+                                    ({formatTimeRemaining(getTimeRemaining(boost.expires_at))})
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </TooltipProvider>
+                </div>
+              </div>
+            )}
+
+            {/* Ligne 3: Barre d'XP ultra-compacte */}
             <div className="relative premium-card rounded-lg px-2 py-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-blue-600 font-medium">XP</span>
