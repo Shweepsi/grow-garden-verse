@@ -36,7 +36,7 @@ export const AuthPage = () => {
           <div className="flex justify-center mb-4">
             <div className="relative">
               <img 
-                src={require('../../assets/ic_launcher.png')} 
+                src="/ic_launcher.png" 
                 alt="Idle Grow Logo" 
                 className="h-16 w-16 object-contain"
               />

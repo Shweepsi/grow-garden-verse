@@ -72,7 +72,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
             <div className="flex items-center space-x-2">
               <div className="relative">
                 <img 
-                  src={require('../../assets/ic_launcher.png')} 
+                  src="/ic_launcher.png" 
                   alt="Idle Grow Logo" 
                   className="h-8 w-8 object-contain rounded-lg"
                 />

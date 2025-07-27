@@ -66,7 +66,7 @@ export class EconomyService {
     if (!baseGrowthSeconds || baseGrowthSeconds < 1) baseGrowthSeconds = 60;
     if (!growthMultiplier || growthMultiplier <= 0) growthMultiplier = 1;
     
-    return Math.max(1, Math.floor(baseGrowthSeconds / growthMultiplier));
+    return Math.max(1, Math.floor(baseGrowthSeconds * growthMultiplier));
   }
 
   // Vérification d'accès aux plantes
