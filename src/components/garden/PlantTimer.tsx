@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { Clock } from 'lucide-react';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 
 interface PlantTimerProps {
   plantedAt: string | null;
@@ -10,6 +11,7 @@ interface PlantTimerProps {
 }
 
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: PlantTimerProps) => {
+  const { getBoostMultiplier } = useActiveBoosts();
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
@@ -23,8 +25,9 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
     if (!plantedAt) return;
 
     const updateTimer = () => {
-      const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds);
-      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds);
+      const boosts = { getBoostMultiplier };
+      const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
+      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts);
       
       setTimeRemaining(remaining);
       setIsReady(ready);
@@ -36,7 +39,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
     const interval = setInterval(updateTimer, updateInterval);
 
     return () => clearInterval(interval);
-  }, [plantedAt, growthTimeSeconds, updateInterval]);
+  }, [plantedAt, growthTimeSeconds, updateInterval, getBoostMultiplier]);
 
   if (!plantedAt || isReady) return null;
 
@@ -48,8 +51,8 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
   return (
     <div className={`flex items-center gap-1 text-xs transition-colors duration-300 ${urgencyClass} ${className}`}>
       <Clock className="h-3 w-3" />
-      <span className="font-medium">{PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds) > 0 
-        ? `${Math.floor(PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds) / 60)}m ${PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds) % 60}s`
+      <span className="font-medium">{timeRemaining > 0 
+        ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
         : 'Prêt !'}</span>
     </div>
   );
