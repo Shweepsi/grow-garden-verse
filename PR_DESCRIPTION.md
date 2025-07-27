@@ -1,61 +1,64 @@
-# Fix 4 critical bugs for improved stability and performance
+# 🐛 Fix: Les boosts de croissance n'ont aucun effet
 
-## 🐛 Bug Fixes
+## 📋 Description du problème
 
-This PR addresses 4 critical bugs that were affecting application stability, performance, and functionality.
+Les boosts de croissance (améliorations temporaires) n'avaient aucun effet sur le temps de croissance des plantes. Le problème était que les composants qui calculent le temps de croissance n'utilisaient pas les boosts actifs.
 
-### **Bug 1: Memory Leak in useGameData Hook**
-- **Problem**: Realtime subscriptions were creating duplicate channels and not properly cleaning up
-- **Fix**: Added unique channel names, removed unnecessary dependencies, improved cleanup logic
-- **Impact**: Prevents memory leaks and multiple active subscriptions
+## 🔍 Cause racine
 
-### **Bug 2: Race Condition in Plant Harvesting**
-- **Problem**: Plant was cleared before garden update, causing data loss if garden update failed
-- **Fix**: Added fallback mechanism with proper error handling and rollback capability
-- **Impact**: Maintains data consistency and prevents plant loss
+Les appels aux méthodes de `PlantGrowthService` ne passaient pas les boosts en paramètre :
+- `PlantGrowthService.isPlantReady()`
+- `PlantGrowthService.getTimeRemaining()`
+- `PlantGrowthService.calculateGrowthProgress()`
 
-### **Bug 3: Performance Issue in Plant Growth Service**
-- **Problem**: Time calculations were inefficient and recalculated frequently without caching
-- **Fix**: Added caching mechanisms for growth time calculations and update intervals
-- **Impact**: Significantly improves performance and reduces CPU usage
+## ✅ Corrections apportées
 
-### **Bug 4: Growth Speed Multiplier Logic Error - CRITICAL**
-- **Problem**: Growth speed upgrades were INCREASING growth time instead of decreasing it
-- **Fix**: Corrected calculation logic from `baseTime * multiplier` to `baseTime / multiplier`
-- **Impact**: Growth speed upgrades now work as intended (plants grow faster)
+### 1. **Hook `usePlantActions.ts`**
+- ✅ Ajout de l'import `useActiveBoosts`
+- ✅ Utilisation de `getBoostMultiplier` pour passer les boosts aux méthodes de `PlantGrowthService`
+- ✅ Correction des appels à `isPlantReady` et `getTimeRemaining`
 
-## 🔧 Technical Details
+### 2. **Composant `PlotCard.tsx`**
+- ✅ Ajout de l'import `useActiveBoosts`
+- ✅ Utilisation des boosts dans le calcul de l'état de la plante (`plantState`)
 
-### Files Modified:
-- `src/hooks/useGameData.ts` - Fixed realtime subscription memory leaks
-- `src/hooks/usePlantActions.ts` - Added fallback for harvest transactions
-- `src/services/PlantGrowthService.ts` - Added caching and fixed growth speed logic
-- `src/services/EconomyService.ts` - Fixed growth speed multiplier calculation
-- `src/components/garden/PlantSelector.tsx` - Fixed growth speed display logic
-- `supabase/migrations/20241201000000_add_harvest_transaction.sql` - Added database transaction function
+### 3. **Composant `PlantDisplay.tsx`**
+- ✅ Ajout de l'import `useActiveBoosts`
+- ✅ Passage des boosts aux méthodes `calculateGrowthProgress` et `isPlantReady`
+- ✅ Mise à jour des dépendances du `useEffect`
 
-### Database Changes:
-- Added `harvest_plant_transaction` function for atomic plant harvesting operations
+### 4. **Composant `PlantTimer.tsx`**
+- ✅ Ajout de l'import `useActiveBoosts`
+- ✅ Passage des boosts aux méthodes `getTimeRemaining` et `isPlantReady`
+- ✅ Optimisation de l'affichage du temps restant
 
-## ✅ Testing
+## 🎯 Résultat
 
-All fixes maintain backward compatibility and include:
-- Graceful fallback mechanisms
-- Proper error handling
-- Performance optimizations
-- Memory leak prevention
+Maintenant, quand un boost de croissance est actif :
+- ⚡ Le temps de croissance des plantes est correctement réduit
+- ⏰ L'affichage du temps restant prend en compte le boost
+- 📊 La progression de croissance est mise à jour en temps réel avec le boost
+- 🌱 Les plantes sont marquées comme "prêtes" au bon moment
 
-## 🚀 Impact
+## 🧪 Tests
 
-- **Stability**: Eliminates memory leaks and race conditions
-- **Performance**: Reduces CPU usage and improves responsiveness
-- **Functionality**: Growth speed upgrades now work correctly
-- **User Experience**: More reliable and faster application
+- [x] Vérification que les boosts sont correctement récupérés via `useActiveBoosts`
+- [x] Validation que les boosts sont passés aux méthodes de `PlantGrowthService`
+- [x] Confirmation que le temps de croissance est réduit selon le multiplicateur du boost
 
-## 🔗 Related Issues
+## 📁 Fichiers modifiés
 
-Fixes critical bugs affecting:
-- Memory management
-- Data consistency
-- Performance optimization
-- Growth speed functionality
+- `src/hooks/usePlantActions.ts`
+- `src/components/garden/PlotCard.tsx`
+- `src/components/garden/PlantDisplay.tsx`
+- `src/components/garden/PlantTimer.tsx`
+- `src/components/garden/PlotGrid.tsx` (commentaire ajouté)
+
+## 🔗 Issue liée
+
+Fixes: #58 (Les boosts de croissance n'ont aucun effet)
+
+---
+
+**Type de changement:** 🐛 Bug fix
+**Impact:** ⚡ Améliore l'expérience utilisateur en rendant les boosts de croissance fonctionnels
