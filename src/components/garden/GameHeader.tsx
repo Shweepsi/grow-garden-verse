@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Zap, Clock } from 'lucide-react';
 
 interface GameHeaderProps {
@@ -84,12 +85,10 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
             </div>
           </div>
 
-          {/* Boosts actifs - intégrés dans la ligne des stats */}
-
           {/* Statistiques */}
           <div className="space-y-2">
-            {/* Ligne 1: Coins, Gemmes, Niveau et Boosts */}
-            <div className="flex items-center justify-between space-x-2">
+            {/* Ligne 1: Coins, Gemmes, Niveau */}
+            <div className="flex items-center space-x-2">
               {/* Coins avec zone d'animation */}
               <div className="relative group flex-1">
                 <div className="premium-card rounded-lg px-2 py-1.5 flex items-center space-x-1.5 shimmer">
@@ -136,29 +135,13 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 </div>
               </div>
 
-              {/* Boosts compacts */}
-              {boosts.length > 0 && (
-                <div className="flex space-x-1">
-                  {boosts.slice(0, 2).map((boost) => (
-                    <div key={boost.id} className="w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center text-xs">
-                      {getBoostIcon(boost.effect_type)}
-                    </div>
-                  ))}
-                  {boosts.length > 2 && (
-                    <div className="w-6 h-6 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-xs text-white">
-                      +{boosts.length - 2}
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Bouton Publicité */}
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
-                className={`h-8 px-2 border-0 transition-all duration-300 ${
+                className={`h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
                   adState.dailyCount < adState.maxDaily && adState.available
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 shadow-lg shadow-orange-400/50' 
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 plant-ready-bounce hover:scale-105 active:scale-95' 
                     : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
                 }`}
               >
@@ -166,7 +149,81 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               </Button>
             </div>
 
-            {/* Ligne 2: Barre d'XP ultra-compacte */}
+            {/* Ligne 2: Boosts actifs (si présents) */}
+            {boosts.length > 0 && (
+              <div className="premium-card rounded-lg px-3 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
+                      <Zap className="h-2.5 w-2.5 text-white" />
+                    </div>
+                    <span className="mobile-text-sm font-semibold text-orange-700">Boosts actifs</span>
+                  </div>
+                  <span className="mobile-text-xs text-orange-600 font-medium">
+                    {boosts.length} actif{boosts.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+                
+                <TooltipProvider>
+                  <div className="flex flex-wrap gap-1.5">
+                    {boosts.slice(0, 2).map((boost) => (
+                      <Tooltip key={boost.id}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center space-x-1.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 px-2.5 py-1.5 rounded-lg cursor-help hover:from-orange-100 hover:to-amber-100 hover:border-orange-300 transition-all duration-200 min-w-0 flex-1">
+                            <span className="text-sm">{getBoostIcon(boost.effect_type)}</span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="mobile-text-xs font-semibold text-orange-700 truncate">
+                                {getBoostLabel(boost.effect_type)}
+                              </span>
+                              <span className="mobile-text-xs text-orange-600">
+                                {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                              </span>
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-center">
+                            <p className="font-semibold">{getBoostLabel(boost.effect_type)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatTimeRemaining(getTimeRemaining(boost.expires_at))} restant
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                    {boosts.length > 2 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center justify-center bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 px-2.5 py-1.5 rounded-lg cursor-help hover:from-gray-100 hover:to-slate-100 hover:border-gray-300 transition-all duration-200 min-w-[60px]">
+                            <span className="mobile-text-xs font-semibold text-gray-700">
+                              +{boosts.length - 2}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="space-y-2 max-w-48">
+                            <p className="font-semibold text-center">Autres boosts actifs</p>
+                            {boosts.slice(2).map((boost) => (
+                              <div key={boost.id} className="flex items-center justify-between text-xs border-b border-gray-100 pb-1 last:border-b-0">
+                                <div className="flex items-center space-x-1">
+                                  <span>{getBoostIcon(boost.effect_type)}</span>
+                                  <span className="font-medium">{getBoostLabel(boost.effect_type)}</span>
+                                </div>
+                                <span className="text-muted-foreground">
+                                  {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* Ligne 3: Barre d'XP ultra-compacte */}
             <div className="relative premium-card rounded-lg px-2 py-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-blue-600 font-medium">XP</span>

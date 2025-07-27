@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins, TrendingUp, Clock, Percent, Timer, Award } from 'lucide-react';
 import { EconomyService } from '@/services/EconomyService';
 import { useGameData } from '@/hooks/useGameData';
-import { useUpgrades } from '@/hooks/useUpgrades';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 interface PlantSelectorProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,13 +27,13 @@ export const PlantSelector = ({
     data: gameData
   } = useGameData();
   const {
-    getActiveMultipliers
-  } = useUpgrades();
+    getCompleteMultipliers
+  } = useGameMultipliers();
   const playerLevel = gameData?.garden?.level || 1;
   const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
 
-  // Obtenir les multiplicateurs actifs
-  const multipliers = getActiveMultipliers();
+  // Obtenir les multiplicateurs complets (permanent + boosts)
+  const multipliers = getCompleteMultipliers();
   const getPlantCost = (plantType: PlantType): number => {
     const baseCost = EconomyService.getPlantDirectCost(plantType.level_required || 1);
     return EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction);
