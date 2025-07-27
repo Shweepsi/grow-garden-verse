@@ -7,12 +7,13 @@ import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useAnimations } from '@/contexts/AnimationContext';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { MAX_PLOTS } from '@/constants';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { getActiveMultipliers } = useUpgrades();
+  const { getCompleteMultipliers, applyAllBoosts } = useGameMultipliers();
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
@@ -26,14 +27,14 @@ export const usePlantActions = () => {
 
       console.log(`🌾 Début de la récolte pour la parcelle ${plotNumber}`);
 
-      // Obtenir les multiplicateurs actifs de manière sécurisée
+      // Obtenir les multiplicateurs complets (permanents + boosts temporaires)
       let multipliers;
       try {
-        multipliers = getActiveMultipliers();
-        console.log('💪 Multiplicateurs actifs:', multipliers);
+        multipliers = getCompleteMultipliers();
+        console.log('💪 Multiplicateurs complets (permanent + boosts):', multipliers);
       } catch (error) {
         console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
-        multipliers = { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0 };
+        multipliers = { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0, coins: 1, gems: 1 };
       }
 
       // Obtenir les infos de la parcelle avec jointure
@@ -181,11 +182,14 @@ export const usePlantActions = () => {
 
       console.log('🏡 Jardin mis à jour avec succès');
 
-      // Déclencher les animations de récompense
-      triggerCoinAnimation(harvestReward);
+      // Appliquer les boosts aux récompenses pour les animations
+      const boostedRewards = applyAllBoosts(harvestReward, gemReward);
+      
+      // Déclencher les animations de récompense avec les montants boostés
+      triggerCoinAnimation(boostedRewards.coins);
       triggerXpAnimation(expReward);
-      if (gemReward > 0) {
-        triggerGemAnimation(gemReward);
+      if (boostedRewards.gems > 0) {
+        triggerGemAnimation(boostedRewards.gems);
       }
 
       // Enregistrer la transaction

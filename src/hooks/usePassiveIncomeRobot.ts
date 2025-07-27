@@ -1,8 +1,7 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useUpgrades } from '@/hooks/useUpgrades';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameData } from '@/hooks/useGameData';
 import { EconomyService } from '@/services/EconomyService';
@@ -12,10 +11,31 @@ import { useEffect, useRef } from 'react';
 export const usePassiveIncomeRobot = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { getCompleteMultipliers } = useGameMultipliers();
   const { data: gameData } = useGameData();
-  const { playerUpgrades, getActiveMultipliers } = useUpgrades();
   const { triggerCoinAnimation } = useAnimations();
   const accumulationIntervalRef = useRef<number | null>(null);
+
+  // Récupérer les améliorations du joueur
+  const { data: playerUpgrades = [] } = useQuery({
+    queryKey: ['playerUpgrades', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('player_upgrades')
+        .select(`
+          *,
+          level_upgrades(*)
+        `)
+        .eq('user_id', user.id)
+        .eq('active', true);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
 
   // Vérifier si l'amélioration robot passif est débloquée
   const hasPassiveRobot = playerUpgrades.some(upgrade => 
@@ -66,7 +86,7 @@ export const usePassiveIncomeRobot = () => {
   const getCoinsPerMinute = () => {
     if (!hasPassiveRobot || !robotPlantType) return 0;
     
-    const multipliers = getActiveMultipliers();
+    const multipliers = getCompleteMultipliers();
     const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
     
     return EconomyService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier);
