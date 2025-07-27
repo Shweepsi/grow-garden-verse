@@ -94,7 +94,11 @@ export class PlantGrowthService {
 
   // Aliases pour compatibilité avec le code existant
   static isPlantReady = PlantGrowthService.isReadyToHarvest;
-  static formatTimeRemaining = PlantGrowthService.getTimeRemaining;
+  
+  static formatTimeRemaining(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): string {
+    const seconds = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
+    return GrowthService.formatTimeRemaining(seconds);
+  }
   
   static calculateGrowthProgress(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
     // Convert old boost interface to new GrowthModifiers
