@@ -86,10 +86,10 @@ export const PlantSelector = ({
                       </div>
                     </div>}
                   
-                  {multipliers.growth > 1 && <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
+                  {multipliers.growth < 1 && <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded px-2 py-1">
                       <div className="flex items-center gap-1 text-blue-700">
                         <Timer className="h-3 w-3" />
-                        <span className="text-xs font-bold">Vitesse +{Math.round((multipliers.growth - 1) * 100)}%</span>
+                        <span className="text-xs font-bold">Vitesse +{Math.round((1 - multipliers.growth) * 100)}%</span>
                       </div>
                     </div>}
 
@@ -138,7 +138,7 @@ export const PlantSelector = ({
                 const adjustedGrowthTime = getAdjustedGrowthTime(plantType.base_growth_seconds);
                 const canAfford = EconomyService.canAffordPlant(coins, adjustedCost);
                 const hasCostReduction = multipliers.plantCostReduction < 1;
-                const hasGrowthBonus = multipliers.growth > 1;
+                const hasGrowthBonus = multipliers.growth < 1;
                 return <Card key={plantType.id} className={`cursor-pointer transition-all duration-300 border-2 ${canAfford ? 'bg-gradient-to-br from-white to-green-50 hover:from-green-50 hover:to-green-100 border-green-300 hover:border-green-400 hover:shadow-lg hover:scale-105' : 'bg-gradient-to-br from-gray-50 to-gray-100 opacity-60 border-gray-200'}`} onClick={() => canAfford ? handlePlantClick(plantType.id, adjustedCost) : null}>
                         <CardContent className="p-3">
                           <div className="space-y-2">
