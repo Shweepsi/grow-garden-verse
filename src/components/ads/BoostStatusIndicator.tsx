@@ -25,9 +25,11 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
 
   const getBoostLabel = (effectType: string, effectValue: number) => {
     switch (effectType) {
-      case 'coin_boost': return `Pièces ×${effectValue}`;
-      case 'gem_boost': return `Gemmes ×${effectValue}`;
-      case 'growth_boost': return `Croissance -${Math.round((1 - (1/effectValue)) * 100)}%`;
+      case 'coin_boost': return `Pièces ×${effectValue.toFixed(1)}`;
+      case 'gem_boost': return `Gemmes ×${effectValue.toFixed(1)}`;
+      case 'growth_boost': 
+        const reductionPercentage = Math.round((1 - effectValue) * 100);
+        return `Croissance -${reductionPercentage}%`;
       default: return 'Boost actif';
     }
   };

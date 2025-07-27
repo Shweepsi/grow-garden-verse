@@ -44,11 +44,18 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
     }
   };
 
-  const getBoostLabel = (effectType: string) => {
+  const getBoostLabel = (effectType: string, effectValue?: number) => {
     switch (effectType) {
-      case 'coin_boost': return 'Pièces ×2';
-      case 'gem_boost': return 'Gemmes ×1.5';
-      case 'growth_boost': return 'Croissance -50%';
+      case 'coin_boost': 
+        return effectValue ? `Pièces ×${effectValue.toFixed(1)}` : 'Pièces ×2';
+      case 'gem_boost': 
+        return effectValue ? `Gemmes ×${effectValue.toFixed(1)}` : 'Gemmes ×1.5';
+      case 'growth_boost': 
+        if (effectValue) {
+          const reductionPercentage = Math.round((1 - effectValue) * 100);
+          return `Croissance -${reductionPercentage}%`;
+        }
+        return 'Croissance -50%';
       default: return 'Boost';
     }
   };
@@ -173,7 +180,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                             <span className="text-sm">{getBoostIcon(boost.effect_type)}</span>
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="mobile-text-xs font-semibold text-orange-700 truncate">
-                                {getBoostLabel(boost.effect_type)}
+                                {getBoostLabel(boost.effect_type, boost.effect_value)}
                               </span>
                               <span className="mobile-text-xs text-orange-600">
                                 {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
@@ -183,7 +190,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                         </TooltipTrigger>
                         <TooltipContent>
                           <div className="text-center">
-                            <p className="font-semibold">{getBoostLabel(boost.effect_type)}</p>
+                            <p className="font-semibold">{getBoostLabel(boost.effect_type, boost.effect_value)}</p>
                             <p className="text-xs text-muted-foreground">
                               {formatTimeRemaining(getTimeRemaining(boost.expires_at))} restant
                             </p>
@@ -207,7 +214,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                               <div key={boost.id} className="flex items-center justify-between text-xs border-b border-gray-100 pb-1 last:border-b-0">
                                 <div className="flex items-center space-x-1">
                                   <span>{getBoostIcon(boost.effect_type)}</span>
-                                  <span className="font-medium">{getBoostLabel(boost.effect_type)}</span>
+                                  <span className="font-medium">{getBoostLabel(boost.effect_type, boost.effect_value)}</span>
                                 </div>
                                 <span className="text-muted-foreground">
                                   {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
