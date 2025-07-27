@@ -70,11 +70,34 @@ export class PlantGrowthService {
     return (now - plantedTime) >= requiredTime;
   }
 
+  // Cache for growth time calculations to avoid repeated computations
+  private static growthTimeCache = new Map<string, number>();
+  private static updateIntervalCache = new Map<number, number>();
+
+  private static getCacheKey(plantedAt: string, growthTimeSeconds: number, boostMultiplier?: number): string {
+    return `${plantedAt}_${growthTimeSeconds}_${boostMultiplier || 1}`;
+  }
+
   static getTimeRemaining(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
+    const boostMultiplier = boosts?.getBoostMultiplier('growth_boost') || 1;
+    const cacheKey = this.getCacheKey(plantedAt, growthTimeSeconds, boostMultiplier);
+    
+    // Check cache first
+    if (this.growthTimeCache.has(cacheKey)) {
+      const adjustedGrowthTime = this.growthTimeCache.get(cacheKey)!;
+      const plantedTime = new Date(plantedAt).getTime();
+      const now = Date.now();
+      const requiredTime = adjustedGrowthTime * 1000;
+      const elapsed = now - plantedTime;
+      return Math.max(0, Math.ceil((requiredTime - elapsed) / 1000));
+    }
+    
+    // Calculate and cache
+    const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
+    this.growthTimeCache.set(cacheKey, adjustedGrowthTime);
+    
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
-    
-    const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
     const requiredTime = adjustedGrowthTime * 1000;
     const elapsed = now - plantedTime;
     
@@ -86,10 +109,28 @@ export class PlantGrowthService {
   static formatTimeRemaining = this.getTimeRemaining;
   
   static calculateGrowthProgress(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
+    const boostMultiplier = boosts?.getBoostMultiplier('growth_boost') || 1;
+    const cacheKey = this.getCacheKey(plantedAt, growthTimeSeconds, boostMultiplier);
+    
+    // Check cache first
+    if (this.growthTimeCache.has(cacheKey)) {
+      const adjustedGrowthTime = this.growthTimeCache.get(cacheKey)!;
+      const plantedTime = new Date(plantedAt).getTime();
+      const now = Date.now();
+      const requiredTime = adjustedGrowthTime * 1000;
+      const elapsed = now - plantedTime;
+      
+      // Calcul précis du pourcentage de progression (0-100)
+      const progress = Math.min(100, Math.max(0, (elapsed / requiredTime) * 100));
+      return progress;
+    }
+    
+    // Calculate and cache
+    const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
+    this.growthTimeCache.set(cacheKey, adjustedGrowthTime);
+    
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
-    
-    const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
     const requiredTime = adjustedGrowthTime * 1000;
     const elapsed = now - plantedTime;
     
@@ -102,10 +143,39 @@ export class PlantGrowthService {
   static getOptimalUpdateInterval(growthTimeSeconds?: number): number {
     if (!growthTimeSeconds) return 1000; // 1 seconde par défaut
     
-    // Intervalles adaptatifs selon la durée de croissance
-    if (growthTimeSeconds < 60) return 250;   // 0.25s pour < 1min
-    if (growthTimeSeconds < 300) return 500;  // 0.5s pour < 5min
-    if (growthTimeSeconds < 900) return 1000; // 1s pour < 15min
-    return 2000; // 2s pour les longues croissances
+    // Check cache first
+    if (this.updateIntervalCache.has(growthTimeSeconds)) {
+      return this.updateIntervalCache.get(growthTimeSeconds)!;
+    }
+    
+    // Calculate optimal interval
+    let interval: number;
+    if (growthTimeSeconds < 60) interval = 250;      // 0.25s pour < 1min
+    else if (growthTimeSeconds < 300) interval = 500; // 0.5s pour < 5min
+    else if (growthTimeSeconds < 900) interval = 1000; // 1s pour < 15min
+    else interval = 2000; // 2s pour les longues croissances
+    
+    // Cache the result
+    this.updateIntervalCache.set(growthTimeSeconds, interval);
+    return interval;
+  }
+
+  // Clear cache when needed (call this periodically or when memory usage is high)
+  static clearCache(): void {
+    this.growthTimeCache.clear();
+    this.updateIntervalCache.clear();
+  }
+
+  // Clean up old cache entries to prevent memory leaks
+  static cleanupCache(maxAge: number = 300000): void { // 5 minutes default
+    const now = Date.now();
+    
+    // Clean up growth time cache entries older than maxAge
+    for (const [key, value] of this.growthTimeCache.entries()) {
+      const timestamp = parseInt(key.split('_')[0]);
+      if (now - timestamp > maxAge) {
+        this.growthTimeCache.delete(key);
+      }
+    }
   }
 }

@@ -143,42 +143,23 @@ export const usePlantActions = () => {
       const newGems = Math.max(0, (garden.gems || 0) + gemReward);
       const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
 
-      // Vider la parcelle en premier
-      const { error: updatePlotError } = await supabase
-        .from('garden_plots')
-        .update({
-          plant_type: null,
-          planted_at: null,
-          growth_time_seconds: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber);
+      // Use a transaction to ensure both updates succeed or fail together
+      const { error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
+        p_user_id: user.id,
+        p_plot_number: plotNumber,
+        p_new_coins: newCoins,
+        p_new_gems: newGems,
+        p_new_exp: newExp,
+        p_new_level: newLevel,
+        p_new_harvests: newHarvests
+      });
 
-      if (updatePlotError) {
-        console.error('❌ Erreur mise à jour parcelle:', updatePlotError);
-        throw new Error(`Erreur lors de la vidange de la parcelle: ${updatePlotError.message}`);
+      if (transactionError) {
+        console.error('❌ Erreur transaction récolte:', transactionError);
+        throw new Error(`Erreur lors de la récolte: ${transactionError.message}`);
       }
 
-      console.log('🧹 Parcelle vidée avec succès');
-
-      // Mettre à jour les stats du jardin avec les gemmes
-      const { error: updateGardenError } = await supabase
-        .from('player_gardens')
-        .update({
-          coins: newCoins,
-          gems: newGems,
-          experience: newExp,
-          level: newLevel,
-          total_harvests: newHarvests,
-          last_played: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (updateGardenError) {
-        console.error('❌ Erreur mise à jour jardin:', updateGardenError);
-        throw new Error(`Erreur lors de la mise à jour du jardin: ${updateGardenError.message}`);
-      }
+      console.log('✅ Récolte effectuée avec succès');
 
       console.log('🏡 Jardin mis à jour avec succès');
 
