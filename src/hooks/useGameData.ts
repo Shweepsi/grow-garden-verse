@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
 
 export const useGameData = () => {
   const { user } = useAuth();
@@ -12,8 +13,11 @@ export const useGameData = () => {
   useEffect(() => {
     if (!user?.id) return;
 
+    // Create a unique channel name to prevent conflicts
+    const channelName = `garden_realtime_${user.id}`;
+    
     const channel = supabase
-      .channel('garden_realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -43,9 +47,21 @@ export const useGameData = () => {
       .subscribe();
 
     return () => {
+      // Ensure proper cleanup of the channel
       supabase.removeChannel(channel);
     };
-  }, [user?.id, queryClient]);
+  }, [user?.id]); // Remove queryClient from dependencies as it's stable
+
+  // Periodic cache cleanup to prevent memory leaks
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      PlantGrowthService.cleanupCache();
+    }, 300000); // Clean up every 5 minutes
+
+    return () => {
+      clearInterval(cleanupInterval);
+    };
+  }, []);
 
   return useQuery({
     queryKey: ['gameData', user?.id],
