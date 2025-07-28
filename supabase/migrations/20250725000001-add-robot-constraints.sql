@@ -23,8 +23,8 @@ BEGIN
   END IF;
   
   -- Calculer le revenu par minute basé sur le niveau du robot
-  -- Base: 50 + (niveau * 60) = 110 pour niveau 1, 650 pour niveau 10
-  v_coins_per_minute := 50 + (NEW.robot_level * 60);
+  -- Base: 50 * niveau^1.5 = 50 pour niveau 1, ~1580 pour niveau 10
+  v_coins_per_minute := FLOOR(50 * POWER(NEW.robot_level, 1.5));
   
   -- Maximum 24h d'accumulation
   v_max_accumulation := v_coins_per_minute * 24 * 60;
