@@ -25,9 +25,12 @@ export class AdRewardService {
       if (error) throw error;
 
       const rewards = configs.map(config => {
+        // Normaliser le type : growth_boost -> growth_speed (alias)
+        const normalizedType = config.reward_type === 'growth_boost' ? 'growth_speed' : config.reward_type;
+
         // Calculer le montant basé sur le niveau
         let amount = config.base_amount + (config.level_coefficient * (playerLevel - 1));
-        
+
         // Appliquer le maximum si défini
         if (config.max_amount && amount > config.max_amount) {
           amount = config.max_amount;
@@ -35,18 +38,19 @@ export class AdRewardService {
 
         // Formater la description selon le type
         let description = config.description;
-        if (config.reward_type === 'coins' || config.reward_type === 'gems') {
+        if (normalizedType === 'coins' || normalizedType === 'gems') {
           description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
-        } else if (config.reward_type === 'growth_speed') {
+        } else if (normalizedType === 'growth_speed') {
           // Afficher la réduction de temps en pourcentage pour plus de clarté
           const reductionPercent = Math.round((1 - (1 / amount)) * 100);
           description = `Boost Croissance -${reductionPercent}% (${config.duration_minutes}min)`;
-        } else if (config.reward_type.includes('boost')) {
+        } else if (normalizedType.includes('boost')) {
           description = `${config.display_name} x${amount} (${config.duration_minutes}min)`;
         }
 
         return {
-          type: config.reward_type as AdReward['type'],
+          // Cast sûr grâce à l'extension du type dans src/types/ads.ts
+          type: normalizedType as AdReward['type'],
           amount: Math.floor(amount * 100) / 100, // Arrondir à 2 décimales
           description,
           emoji: config.emoji || '🎁',

@@ -138,7 +138,9 @@ export const PlantSelector = ({
                 const adjustedGrowthTime = getAdjustedGrowthTime(plantType.base_growth_seconds);
                 const canAfford = EconomyService.canAffordPlant(coins, adjustedCost);
                 const hasCostReduction = multipliers.plantCostReduction < 1;
-                const hasGrowthBonus = multipliers.growth < 1;
+                // Un multiplicateur de croissance > 1 signifie une croissance plus rapide (temps réduit),
+                // donc on considère qu'il y a un bonus si la valeur est STRICTEMENT supérieure à 1.
+                const hasGrowthBonus = multipliers.growth > 1;
                 return <Card key={plantType.id} className={`cursor-pointer transition-all duration-300 border-2 ${canAfford ? 'bg-gradient-to-br from-white to-green-50 hover:from-green-50 hover:to-green-100 border-green-300 hover:border-green-400 hover:shadow-lg hover:scale-105' : 'bg-gradient-to-br from-gray-50 to-gray-100 opacity-60 border-gray-200'}`} onClick={() => canAfford ? handlePlantClick(plantType.id, adjustedCost) : null}>
                         <CardContent className="p-3">
                           <div className="space-y-2">
