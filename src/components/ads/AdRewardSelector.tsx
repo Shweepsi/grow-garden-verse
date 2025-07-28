@@ -17,15 +17,8 @@ export function AdRewardSelector({
   onSelectReward
 }: AdRewardSelectorProps) {
 
-  // Utilise l'emoji de la base de données ou fallback par type
-  const getRewardIcon = (reward: AdReward) => {
-    // Priorité à l'emoji de la base de données
-    if (reward.emoji && reward.emoji.trim()) {
-      return reward.emoji;
-    }
-    
-    // Fallback basé sur le type si pas d'emoji en base
-    switch (reward.type) {
+  const getRewardIcon = (type: string) => {
+    switch (type) {
       case 'coins': return '🪙';
       case 'gems': return '💎';
       case 'coin_boost': return '⚡';
@@ -101,7 +94,7 @@ export function AdRewardSelector({
                     ? 'bg-white/80 shadow-md' 
                     : 'bg-white/60'
                 } transition-all duration-300`}>
-                  {getRewardIcon(reward)}
+                  {getRewardIcon(reward.type)}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
@@ -115,12 +108,11 @@ export function AdRewardSelector({
                     )}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
-                    {/* Affichage dynamique selon le type de récompense */}
-                    {(reward.type === 'coins' || reward.type === 'gems') && (
-                      <span className="font-medium">+{Math.floor(reward.amount).toLocaleString()}</span>
+                    {reward.amount > 1 && (
+                      <span className="font-medium">+{reward.amount.toLocaleString()}</span>
                     )}
-                    {(reward.type.includes('boost') || reward.type === 'growth_speed') && (
-                      <span className="font-medium">×{reward.amount}</span>
+                    {reward.multiplier && (
+                      <span className="font-medium">×{reward.multiplier}</span>
                     )}
                     {reward.duration && (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">

@@ -27,15 +27,19 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: gameData } = useGameData();
-  const { adState, availableRewards, isLoadingRewards, refreshRewards } = useAdRewards();
+  const { adState } = useAdRewards();
   const mounted = useRef(true);
   
   // Hooks refactorisés
   const { watchState, watchAd } = useAdWatcher();
   const { showDiagnostics, toggleDiagnostics, runConnectivityTest, debugInfo } = useAdDiagnostics();
   const { 
-    selectedReward,
+    selectedReward, 
+    availableRewards, 
+    loadingRewards,
     setSelectedReward,
+    setAvailableRewards,
+    setLoadingRewards,
     reset
   } = useAdModalState();
 
@@ -47,12 +51,44 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     };
   }, []);
 
-  // Forcer le rafraîchissement des récompenses à l'ouverture pour les données les plus récentes
+  // Charger les récompenses disponibles - FIXED: removed hook functions from dependencies
   useEffect(() => {
-    if (open && user?.id && gameData?.garden?.level) {
-      refreshRewards();
-    }
-  }, [open, user?.id, gameData?.garden?.level, refreshRewards]);
+    let cancelled = false;
+    
+    const loadRewards = async () => {
+      if (!open || !user?.id || !mounted.current) return;
+
+      try {
+        setLoadingRewards(true);
+        const playerLevel = gameData?.garden?.level || 1;
+        const rewards = await AdRewardService.getAvailableRewards(playerLevel);
+        
+        // Check if component is still mounted and request wasn't cancelled
+        if (!cancelled && mounted.current) {
+          setAvailableRewards(rewards);
+        }
+      } catch (error) {
+        console.error('Error loading rewards:', error);
+        if (!cancelled && mounted.current) {
+          toast({
+            title: "Erreur",
+            description: "Erreur lors du chargement des récompenses",
+            variant: "destructive"
+          });
+        }
+      } finally {
+        if (!cancelled && mounted.current) {
+          setLoadingRewards(false);
+        }
+      }
+    };
+
+    loadRewards();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.id, gameData?.garden?.level]); // FIXED: removed toast and setter functions
 
   // Précharger la publicité à l'ouverture - FIXED: removed debugInfo from dependencies
   useEffect(() => {
@@ -141,19 +177,6 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
             maxDaily={adState.maxDaily}
             onToggleDiagnostics={toggleDiagnostics}
           />
-          
-          {/* Bouton pour rafraîchir les récompenses en temps réel */}
-          <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refreshRewards}
-              disabled={isLoadingRewards}
-              className="text-xs text-gray-500 hover:text-gray-700"
-            >
-              {isLoadingRewards ? 'Actualisation...' : '🔄 Actualiser les récompenses'}
-            </Button>
-          </div>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -169,7 +192,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           <AdRewardSelector
             availableRewards={availableRewards}
             selectedReward={selectedReward}
-            loadingRewards={isLoadingRewards}
+            loadingRewards={loadingRewards}
             onSelectReward={setSelectedReward}
           />
 

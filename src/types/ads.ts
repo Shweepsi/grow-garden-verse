@@ -5,10 +5,6 @@ export interface AdReward {
   multiplier?: number;
   description: string;
   emoji: string;
-  // Nouvelles propriétés pour l'affichage dynamique
-  displayName?: string;
-  baseAmount?: number;
-  levelCoefficient?: number;
 }
 
 export interface AdSession {
