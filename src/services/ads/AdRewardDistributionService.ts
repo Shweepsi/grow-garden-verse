@@ -78,7 +78,19 @@ export class AdRewardDistributionService {
       return { success: false, error: 'Erreur lors de la récupération du jardin' };
     }
 
-    const newGems = (garden.gems || 0) + amount;
+    // Vérifier s'il existe un boost gemmes actif
+    const { data: activeBoost } = await supabase
+      .from('active_effects')
+      .select('effect_value')
+      .eq('user_id', userId)
+      .eq('effect_type', 'gem_boost')
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    const multiplier = activeBoost?.effect_value ?? 1;
+    const finalAmount = Math.floor(amount * multiplier);
+
+    const newGems = (garden.gems || 0) + finalAmount;
 
     const { error: updateError } = await supabase
       .from('player_gardens')
@@ -89,7 +101,7 @@ export class AdRewardDistributionService {
       return { success: false, error: 'Erreur lors de la mise à jour des gemmes' };
     }
 
-    console.log(`AdMob: Distributed ${amount} gems to user ${userId}. New total: ${newGems}`);
+    console.log(`AdMob: Distributed ${finalAmount} gems to user ${userId} (base ${amount}, x${multiplier}). New total: ${newGems}`);
     return { success: true };
   }
 
