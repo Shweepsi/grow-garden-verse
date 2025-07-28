@@ -5,18 +5,34 @@ import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AdRewardService } from '@/services/AdRewardService';
+import { useGameData } from './useGameData';
 
 export const useAdRewards = () => {
   const { user } = useAuth();
   const mounted = useRef(true);
-  const [adState, setAdState] = useState<AdState>({
-    available: false,
-    cooldownEnds: null,
-    dailyCount: 0,
-    maxDaily: 5,
-    currentReward: null,
-    timeUntilNext: 0
+  const { data: gameData } = useGameData();
+  const queryClient = useQueryClient();
+
+  // Requête pour l'état des publicités (cooldown, limite quotidienne, etc.)
+  const adStateQuery = useQuery({
+    queryKey: ['adState', user?.id],
+    queryFn: () => user?.id ? AdRewardService.getAdState(user.id) : Promise.reject('No user'),
+    enabled: !!user?.id,
+    staleTime: 30 * 1000, // 30 secondes
+    refetchInterval: 60 * 1000, // 1 minute
   });
+
+  // Requête pour les récompenses disponibles (dynamique depuis Supabase)
+  const availableRewardsQuery = useQuery({
+    queryKey: ['adRewards', gameData?.garden?.level],
+    queryFn: () => AdRewardService.getAvailableRewards(gameData?.garden?.level || 1),
+    enabled: !!gameData?.garden?.level,
+    staleTime: 1 * 60 * 1000, // 1 minute pour changements rapides
+    refetchInterval: 30 * 1000, // 30 secondes pour changements en temps réel
+  });
+
   const [loading, setLoading] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
 
@@ -53,84 +69,24 @@ export const useAdRewards = () => {
     };
   }, []);
 
-  // Actualiser l'état des publicités avec gestion d'erreur améliorée - FIXED: stable function
+  // Fonction pour forcer le rechargement des récompenses depuis Supabase
+  const refreshRewards = async () => {
+    if (gameData?.garden?.level) {
+      await AdRewardService.forceReloadRewards(gameData.garden.level);
+      queryClient.invalidateQueries({ queryKey: ['adRewards', gameData.garden.level] });
+    }
+  };
+
+  // Fonction pour vider tout le cache des récompenses
+  const clearRewardsCache = () => {
+    AdRewardService.clearAllRewardsCache();
+    queryClient.invalidateQueries({ queryKey: ['adRewards'] });
+  };
+
+  // Actualiser l'état des publicités avec gestion d'erreur améliorée
   const refreshAdState = useCallback(async (force = false) => {
-    if (!user?.id || !mounted.current) return;
-
-    try {
-      // Éviter les rechargements trop fréquents sauf si forcé
-      if (!force && loading) return;
-      
-      if (mounted.current) {
-        setLoading(true);
-      }
-      
-      const cooldownInfo = await AdCooldownService.getCooldownInfo(user.id);
-      
-      if (!mounted.current) return;
-      
-      // Seulement mettre à jour si les données ont réellement changé
-      setAdState(prev => {
-        const hasChanged = 
-          prev.available !== cooldownInfo.available ||
-          prev.dailyCount !== cooldownInfo.dailyCount ||
-          prev.maxDaily !== cooldownInfo.maxDaily ||
-          prev.timeUntilNext !== cooldownInfo.timeUntilNext;
-        
-        if (!hasChanged) return prev;
-        
-        return {
-          ...prev,
-          available: cooldownInfo.available,
-          cooldownEnds: cooldownInfo.cooldownEnds,
-          timeUntilNext: cooldownInfo.timeUntilNext,
-          dailyCount: cooldownInfo.dailyCount,
-          maxDaily: cooldownInfo.maxDaily
-        };
-      });
-
-      // Mettre à jour les diagnostics seulement si nécessaire
-      if (Capacitor.isNativePlatform() && mounted.current) {
-        const debugInfo = AdMobService.getDebugInfo();
-        setDiagnostics(prev => {
-          if (JSON.stringify(prev) !== JSON.stringify(debugInfo)) {
-            return debugInfo;
-          }
-          return prev;
-        });
-      }
-      
-    } catch (error) {
-      console.error('Error refreshing ad state:', error);
-    } finally {
-      if (mounted.current) {
-        setLoading(false);
-      }
-    }
-  }, [user?.id]); // FIXED: removed loading from dependencies to prevent loops
-
-  // Timer pour actualiser le cooldown
-  useEffect(() => {
-    if (adState.timeUntilNext > 0) {
-      const interval = setInterval(() => {
-        if (mounted.current) {
-          setAdState(prev => ({
-            ...prev,
-            timeUntilNext: Math.max(0, prev.timeUntilNext - 1)
-          }));
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [adState.timeUntilNext]);
-
-  // Actualiser quand l'utilisateur change - FIXED: only when user changes
-  useEffect(() => {
-    if (user?.id) {
-      refreshAdState();
-    }
-  }, [user?.id]); // FIXED: removed refreshAdState from dependencies
+    queryClient.invalidateQueries({ queryKey: ['adState', user?.id] });
+  }, [user?.id, queryClient]);
 
   // Formater le temps restant
   const formatTimeUntilNext = useCallback((seconds: number): string => {
@@ -150,6 +106,16 @@ export const useAdRewards = () => {
       return `${secs}s`;
     }
   }, []);
+
+  // Obtenir l'état des publicités avec fallback
+  const adState = adStateQuery.data || {
+    available: false,
+    cooldownEnds: null,
+    dailyCount: 0,
+    maxDaily: 999,
+    currentReward: null,
+    timeUntilNext: 0
+  };
 
   // Formater le message d'état des publicités  
   const getAdStatusMessage = useCallback((): string => {
@@ -180,7 +146,7 @@ export const useAdRewards = () => {
         // Rafraîchir immédiatement avec un délai court pour permettre la propagation
         setTimeout(() => {
           if (mounted.current) {
-            refreshAdState(true); // Force le rafraîchissement après succès
+            refreshAdState(true);
           }
         }, 500);
         return { success: true };
@@ -222,17 +188,36 @@ export const useAdRewards = () => {
   }, []);
 
   return {
+    // État des publicités (avec données React Query)
     adState,
+    
+    // Récompenses disponibles (dynamiques depuis Supabase)
+    availableRewards: availableRewardsQuery.data || [],
+    
+    // États de chargement
+    isLoadingAdState: adStateQuery.isLoading,
+    isLoadingRewards: availableRewardsQuery.isLoading,
     loading,
+    
+    // Gestion d'erreurs
+    isError: adStateQuery.isError || availableRewardsQuery.isError,
+    error: adStateQuery.error || availableRewardsQuery.error,
+    
+    // Fonctions pour forcer le rafraîchissement
+    refreshRewards,
+    clearRewardsCache,
     refreshAdState,
+    
+    // Fonctions utilitaires
     formatTimeUntilNext,
     getAdStatusMessage,
     watchAd,
     testConnectivity,
+    
+    // Informations de debug
     debug: { 
       adMobState: AdMobService.getState(),
       diagnostics: diagnostics
-    },
-    availableRewards: []
+    }
   };
 };
