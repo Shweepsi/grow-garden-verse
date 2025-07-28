@@ -13,7 +13,7 @@ import { MAX_PLOTS } from '@/constants';
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { getCompleteMultipliers, applyAllBoosts, getCombinedBoostMultiplier } = useGameMultipliers();
+  const { getCompleteMultipliers, applyGemsBoost, getCombinedBoostMultiplier } = useGameMultipliers();
   // getCombinedBoostMultiplier already includes permanent + active boosts
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
@@ -207,14 +207,13 @@ export const usePlantActions = () => {
 
       console.log('🏡 Jardin mis à jour avec succès');
 
-      // Appliquer les boosts aux récompenses pour les animations
-      const boostedRewards = applyAllBoosts(harvestReward, gemReward);
-      
-      // Déclencher les animations de récompense avec les montants boostés
-      triggerCoinAnimation(boostedRewards.coins);
+      // Déclencher les animations de récompense
+      // Les pièces ont déjà le boost appliqué via harvestReward
+      triggerCoinAnimation(harvestReward);
       triggerXpAnimation(expReward);
-      if (boostedRewards.gems > 0) {
-        triggerGemAnimation(boostedRewards.gems);
+      const boostedGems = applyGemsBoost(gemReward);
+      if (boostedGems > 0) {
+        triggerGemAnimation(boostedGems);
       }
 
       // Enregistrer la transaction
