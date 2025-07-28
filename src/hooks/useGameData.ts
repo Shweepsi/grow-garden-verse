@@ -4,10 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 
 export const useGameData = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { getBoostMultiplier } = useActiveBoosts();
 
   // Configuration du realtime pour garden_plots et player_gardens
   useEffect(() => {
@@ -86,40 +88,49 @@ export const useGameData = () => {
       const data = query.state.data;
       if (!data?.plots) return 5000; // 5 secondes par défaut
       
-      // Vérifier s'il y a des plantes qui poussent
-      const growingPlants = data.plots.filter(plot => 
-        plot.planted_at && 
-        plot.plant_type &&
-        plot.growth_time_seconds &&
-        Date.now() - new Date(plot.planted_at).getTime() < (plot.growth_time_seconds * 1000)
-      );
+      // Créer un objet boosts pour PlantGrowthService
+      const boosts = { getBoostMultiplier };
       
-      // Vérifier s'il y a des plantes prêtes à être récoltées
-      const hasReadyPlants = data.plots.some(plot => 
-        plot.planted_at && 
-        plot.plant_type &&
-        plot.growth_time_seconds &&
-        Date.now() - new Date(plot.planted_at).getTime() >= (plot.growth_time_seconds * 1000)
-      );
+      // Vérifier s'il y a des plantes qui poussent (en tenant compte des boosts)
+      const growingPlants = data.plots.filter(plot => {
+        if (!plot.planted_at || !plot.plant_type) return false;
+        
+        const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
+        if (!plantType) return false;
+        
+        const baseGrowthTime = plantType.base_growth_seconds || 60;
+        return !PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
+      });
+      
+      // Vérifier s'il y a des plantes prêtes à être récoltées (en tenant compte des boosts)
+      const hasReadyPlants = data.plots.some(plot => {
+        if (!plot.planted_at || !plot.plant_type) return false;
+        
+        const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
+        if (!plantType) return false;
+        
+        const baseGrowthTime = plantType.base_growth_seconds || 60;
+        return PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
+      });
       
       // Intervalles adaptatifs basés sur l'état des plantes
       if (hasReadyPlants && growingPlants.length === 0) return 10000; // 10 secondes si toutes sont prêtes
       
       if (growingPlants.length > 0) {
-        const shortestGrowthTime = Math.min(
-          ...growingPlants.map(plot => plot.growth_time_seconds!)
-        );
-        
+        // Calculer le temps restant le plus court en tenant compte des boosts
         const shortestTimeRemaining = Math.min(
           ...growingPlants.map(plot => {
-            const elapsed = (Date.now() - new Date(plot.planted_at!).getTime()) / 1000;
-            return Math.max(0, plot.growth_time_seconds! - elapsed);
-          })
+            const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
+            if (!plantType) return Infinity;
+            
+            const baseGrowthTime = plantType.base_growth_seconds || 60;
+            return PlantGrowthService.getTimeRemaining(plot.planted_at!, baseGrowthTime, boosts);
+          }).filter(time => time !== Infinity)
         );
         
         // Intervalles optimisés pour la réactivité
-        if (shortestGrowthTime < 60 || shortestTimeRemaining < 10) return 1000;   // 1s pour < 1min ou < 10s restantes
-        if (shortestGrowthTime < 300 || shortestTimeRemaining < 60) return 2000;  // 2s pour < 5min ou < 1min restantes
+        if (shortestTimeRemaining < 10) return 1000;   // 1s pour < 10s restantes
+        if (shortestTimeRemaining < 60) return 2000;  // 2s pour < 1min restantes
         if (shortestTimeRemaining < 300) return 5000; // 5s pour < 5min restantes
         return 10000; // 10s pour le reste
       }

@@ -7,6 +7,8 @@ import { PassiveIncomeRobot } from './PassiveIncomeRobot';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { toast } from 'sonner';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -28,6 +30,7 @@ export const PlotGrid = ({
   const [showRobotInterface, setShowRobotInterface] = useState(false);
   
   const { plantDirect, isPlantingPlot } = useDirectPlanting();
+  const { getBoostMultiplier } = useActiveBoosts();
   const { 
     hasPassiveRobot, 
     robotPlantType,
@@ -66,11 +69,17 @@ export const PlotGrid = ({
     }
     
     const hasPlant = !!plot.plant_type;
-    // Note: Cette vérification simple ne prend pas en compte les boosts
-    // La vérification complète avec boosts est faite dans PlotCard et PlantDisplay
-    const isReady = hasPlant && plot.planted_at && plot.growth_time_seconds
-      ? Date.now() - new Date(plot.planted_at).getTime() >= (plot.growth_time_seconds * 1000)
-      : false;
+    
+    // Utiliser PlantGrowthService avec les boosts pour vérifier si la plante est prête
+    let isReady = false;
+    if (hasPlant && plot.planted_at) {
+      const plantType = plantTypeMap.get(plot.plant_type || '');
+      if (plantType) {
+        const boosts = { getBoostMultiplier };
+        const baseGrowthTime = plantType.base_growth_seconds || 60;
+        isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
+      }
+    }
     
     if (!hasPlant) {
       setSelectedPlot(plot.plot_number);
@@ -79,7 +88,7 @@ export const PlotGrid = ({
       // Feedback immédiat optimiste
       onHarvestPlant(plot.plot_number);
     }
-  }, [hasPassiveRobot, onHarvestPlant]);
+  }, [hasPassiveRobot, onHarvestPlant, plantTypeMap, getBoostMultiplier]);
 
   // Optimiser les handlers de sélection
   const handlePlantSelection = useCallback((plotNumber: number, plantTypeId: string, cost: number) => {
