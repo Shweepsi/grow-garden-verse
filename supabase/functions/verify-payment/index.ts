@@ -83,13 +83,30 @@ serve(async (req) => {
     const { error: updateGemsError } = await supabaseService
       .from("player_gardens")
       .update({ 
-        gems: supabaseService.sql`gems + ${rewardGems}` 
+        gems: supabaseService.sql`gems + ${rewardGems}`,
+        early_access_multiplier: 2.0
       })
       .eq("user_id", purchase.user_id);
 
     if (updateGemsError) {
       console.error("❌ Erreur attribution gemmes:", updateGemsError);
       throw new Error("Erreur lors de l'attribution des gemmes");
+    }
+
+    // Attribuer le multiplicateur Early Access permanent
+    const { error: perkError } = await supabaseService
+      .from("user_perks")
+      .insert({
+        user_id: purchase.user_id,
+        perk_type: "early_access_coins_multiplier",
+        perk_name: "Early Access Pack - Multiplicateur X2 Pièces",
+        multiplier_value: 2.0,
+        is_active: true
+      });
+
+    if (perkError) {
+      console.error("❌ Erreur attribution multiplicateur Early Access:", perkError);
+      // Ne pas faire échouer le paiement pour ça, mais log l'erreur
     }
 
     // Marquer l'achat comme terminé
@@ -105,12 +122,13 @@ serve(async (req) => {
       console.error("❌ Erreur mise à jour achat:", updatePurchaseError);
     }
 
-    console.log(`🎉 Paiement vérifié et gemmes attribuées: ${rewardGems} gemmes pour ${purchase.user_id}`);
+    console.log(`🎉 Paiement vérifié, gemmes attribuées et multiplicateur Early Access activé: ${rewardGems} gemmes + Multiplicateur X2 pièces pour ${purchase.user_id}`);
 
     return new Response(
       JSON.stringify({ 
         verified: true,
         gemsAwarded: rewardGems,
+        earlyAccessMultiplier: 2.0,
         alreadyProcessed: false
       }),
       {

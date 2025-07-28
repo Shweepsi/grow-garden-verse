@@ -30,7 +30,8 @@ export class EconomyService {
     playerLevel: number = 1,
     harvestMultiplier: number = 1,
     plantCostReduction: number = 1,
-    permanentMultiplier: number = 1
+    permanentMultiplier: number = 1,
+    earlyAccessMultiplier: number = 1
   ): number {
     // Validation des paramètres
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
@@ -46,7 +47,7 @@ export class EconomyService {
     const levelBonus = 1 + (playerLevel * 0.02); // 2% par niveau du joueur
     
     const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
-    return Math.floor(finalReward * harvestMultiplier * permanentMultiplier);
+    return Math.floor(finalReward * harvestMultiplier * permanentMultiplier * earlyAccessMultiplier);
   }
 
   // Expérience avec multiplicateur d'amélioration
@@ -90,14 +91,14 @@ export class EconomyService {
   }
 
   // Calculer le revenu passif du robot basé sur son niveau
-  static getRobotPassiveIncome(robotLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
+  static getRobotPassiveIncome(robotLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1, earlyAccessMultiplier: number = 1): number {
     const plantLevel = this.getRobotPlantLevel(robotLevel);
     
     // Progression exponentielle douce : plus le niveau est élevé, plus c'est rentable
     const baseIncome = 50; // Revenu de base par minute
     const levelMultiplier = Math.pow(plantLevel, 1.5); // Progression exponentielle douce
     
-    return Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
+    return Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier * earlyAccessMultiplier);
   }
 
   // Calculer le niveau de robot maximum basé sur les améliorations
@@ -151,9 +152,9 @@ export class EconomyService {
   }
 
   // Méthodes pour les récompenses publicitaires
-  static getAdCoinReward(baseAmount: number, playerLevel: number, permanentMultiplier: number): number {
+  static getAdCoinReward(baseAmount: number, playerLevel: number, permanentMultiplier: number, earlyAccessMultiplier: number = 1): number {
     const levelBonus = 1 + (Math.max(0, playerLevel - 1) * 0.05); // 5% par niveau après le niveau 1
-    return Math.floor(baseAmount * levelBonus * permanentMultiplier);
+    return Math.floor(baseAmount * levelBonus * permanentMultiplier * earlyAccessMultiplier);
   }
 
   static getAdGemReward(playerLevel: number): number {
@@ -161,8 +162,8 @@ export class EconomyService {
     return Math.min(5 + Math.floor(playerLevel / 2), 20);
   }
 
-  static applyPermanentMultiplier(baseAmount: number, permanentMultiplier: number): number {
-    return Math.floor(baseAmount * permanentMultiplier);
+  static applyPermanentMultiplier(baseAmount: number, permanentMultiplier: number, earlyAccessMultiplier: number = 1): number {
+    return Math.floor(baseAmount * permanentMultiplier * earlyAccessMultiplier);
   }
 
   // Calculate gem rewards for harvesting based on plant rarity and gem chance

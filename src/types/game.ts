@@ -37,6 +37,7 @@ export interface PlayerGarden {
   created_at: string;
   prestige_level: number;
   permanent_multiplier: number;
+  early_access_multiplier: number;
 }
 
 export interface PlayerAchievement {
@@ -51,6 +52,17 @@ export interface PlayerAchievement {
   reward_coins: number;
   reward_gems: number;
   unlocked_at: string | null;
+  created_at: string;
+}
+
+export interface UserPerk {
+  id: string;
+  user_id: string;
+  perk_type: string;
+  perk_name: string;
+  is_active: boolean;
+  multiplier_value: number;
+  granted_at: string;
   created_at: string;
 }
 

@@ -12,6 +12,7 @@ import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Zap, Clock } from 'lucide-react';
+import { EarlyAccessBadge } from '@/components/ui/EarlyAccessBadge';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
@@ -109,11 +110,12 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                   style={{ imageRendering: 'crisp-edges' }}
                 />
               </div>
-              <div>
-                <h1 className="mobile-text-lg font-bold bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent">
-                  Idle Grow
-                </h1>
-              </div>
+                          <div className="flex items-center space-x-2">
+              <h1 className="mobile-text-lg font-bold bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent">
+                Idle Grow
+              </h1>
+              <EarlyAccessBadge />
+            </div>
             </div>
           </div>
 

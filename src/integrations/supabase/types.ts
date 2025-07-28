@@ -429,6 +429,7 @@ export type Database = {
           last_played: string
           level: number | null
           permanent_multiplier: number | null
+          early_access_multiplier: number | null
           prestige_level: number | null
           prestige_points: number | null
           robot_accumulated_coins: number | null
@@ -448,6 +449,7 @@ export type Database = {
           last_played?: string
           level?: number | null
           permanent_multiplier?: number | null
+          early_access_multiplier?: number | null
           prestige_level?: number | null
           prestige_points?: number | null
           robot_accumulated_coins?: number | null
@@ -467,6 +469,7 @@ export type Database = {
           last_played?: string
           level?: number | null
           permanent_multiplier?: number | null
+          early_access_multiplier?: number | null
           prestige_level?: number | null
           prestige_points?: number | null
           robot_accumulated_coins?: number | null
@@ -574,6 +577,47 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_perks: {
+        Row: {
+          id: string
+          user_id: string
+          perk_type: string
+          perk_name: string
+          is_active: boolean
+          multiplier_value: number
+          granted_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          perk_type: string
+          perk_name: string
+          is_active?: boolean
+          multiplier_value?: number
+          granted_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          perk_type?: string
+          perk_name?: string
+          is_active?: boolean
+          multiplier_value?: number
+          granted_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_perks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

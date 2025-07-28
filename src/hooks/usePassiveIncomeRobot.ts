@@ -89,7 +89,7 @@ export const usePassiveIncomeRobot = () => {
     const multipliers = getCompleteMultipliers();
     const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
     
-    return EconomyService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier);
+    return EconomyService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier, multipliers.earlyAccess || 1);
   };
 
   // Gestion de l'accumulation en temps réel

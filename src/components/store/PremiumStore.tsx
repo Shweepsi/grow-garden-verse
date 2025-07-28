@@ -105,6 +105,16 @@ export const PremiumStore = () => {
             <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
               <Zap className="h-5 w-5 text-yellow-400" />
               <div className="flex-1">
+                <div className="font-medium">Multiplicateur X2 Pièces Permanent</div>
+                <div className="text-sm text-muted-foreground">
+                  Double tous vos gains de pièces de manière permanente
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
+              <Sparkles className="h-5 w-5 text-blue-400" />
+              <div className="flex-1">
                 <div className="font-medium">Accès anticipé</div>
                 <div className="text-sm text-muted-foreground">
                   Débloquez des fonctionnalités avant tout le monde

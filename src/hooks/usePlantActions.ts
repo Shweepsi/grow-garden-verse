@@ -114,10 +114,12 @@ export const usePlantActions = () => {
       
       const harvestReward = EconomyService.getHarvestReward(
         plantType.level_required,
-        plantType.rarity,
+        plantType.base_growth_seconds || 60,
         playerLevel,
         harvestMultiplier,
-        garden.permanent_multiplier || 1
+        plantCostReduction,
+        garden.permanent_multiplier || 1,
+        multipliers.earlyAccess || 1
       );
       
       const expReward = EconomyService.calculateExpReward(
