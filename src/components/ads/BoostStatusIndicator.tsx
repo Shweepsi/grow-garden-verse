@@ -18,7 +18,7 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
     switch (effectType) {
       case 'coin_boost': return '🪙';
       case 'gem_boost': return '💎';
-      case 'growth_boost': return '⚡';
+      case 'growth_speed': return '⚡';
       default: return '🎁';
     }
   };
@@ -27,7 +27,7 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
     switch (effectType) {
       case 'coin_boost': return `Pièces ×${effectValue}`;
       case 'gem_boost': return `Gemmes ×${effectValue}`;
-      case 'growth_boost': return `Croissance -${Math.round((1 - (1/effectValue)) * 100)}%`;
+      case 'growth_speed': return `Croissance -${Math.round((1 - (1/effectValue)) * 100)}%`;
       default: return 'Boost actif';
     }
   };
@@ -36,7 +36,7 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
     switch (effectType) {
       case 'coin_boost': return 'from-orange-100 to-amber-100 border-orange-300 text-orange-700';
       case 'gem_boost': return 'from-purple-100 to-indigo-100 border-purple-300 text-purple-700';
-      case 'growth_boost': return 'from-green-100 to-emerald-100 border-green-300 text-green-700';
+      case 'growth_speed': return 'from-green-100 to-emerald-100 border-green-300 text-green-700';
       default: return 'from-gray-100 to-slate-100 border-gray-300 text-gray-700';
     }
   };

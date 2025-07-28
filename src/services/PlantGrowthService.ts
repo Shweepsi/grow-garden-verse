@@ -53,7 +53,7 @@ export class PlantGrowthService {
   static calculateGrowthTime(baseTime: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
     if (!boosts) return baseTime;
     
-    const growthBoostMultiplier = boosts.getBoostMultiplier('growth_boost');
+    const growthBoostMultiplier = boosts.getBoostMultiplier('growth_speed');
     // CORRECTED: Growth multiplier should REDUCE time for faster growth
     // A multiplier of 1.15 = 15% faster = time reduced by factor of 1.15
     // A multiplier of 2.0 = 100% faster = time reduced by factor of 2.0
@@ -82,7 +82,7 @@ export class PlantGrowthService {
   }
 
   static getTimeRemaining(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
-    const boostMultiplier = boosts?.getBoostMultiplier('growth_boost') || 1;
+    const boostMultiplier = boosts?.getBoostMultiplier('growth_speed') || 1;
     const cacheKey = this.getCacheKey(plantedAt, growthTimeSeconds, boostMultiplier);
     
     // Check cache first
@@ -112,7 +112,7 @@ export class PlantGrowthService {
   static formatTimeRemaining = this.getTimeRemaining;
   
   static calculateGrowthProgress(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
-    const boostMultiplier = boosts?.getBoostMultiplier('growth_boost') || 1;
+    const boostMultiplier = boosts?.getBoostMultiplier('growth_speed') || 1;
     const cacheKey = this.getCacheKey(plantedAt, growthTimeSeconds, boostMultiplier);
     
     // Check cache first

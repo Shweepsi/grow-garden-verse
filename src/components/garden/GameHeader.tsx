@@ -39,7 +39,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
     switch (effectType) {
       case 'coin_boost': return '🪙';
       case 'gem_boost': return '💎';
-      case 'growth_boost': return '⚡';
+      case 'growth_speed': return '⚡';
       default: return '🎁';
     }
   };
@@ -48,7 +48,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
     switch (effectType) {
       case 'coin_boost': return 'Pièces ×2';
       case 'gem_boost': return 'Gemmes ×1.5';
-      case 'growth_boost': return 'Croissance -50%';
+      case 'growth_speed': return 'Croissance -50%';
       default: return 'Boost';
     }
   };

@@ -28,7 +28,7 @@ export const useGameMultipliers = () => {
     // Récupérer les boosts temporaires
     const coinBoost = getBoostMultiplier('coin_boost');
     const gemBoost = getBoostMultiplier('gem_boost');
-    const growthBoost = getBoostMultiplier('growth_boost');
+    const growthBoost = getBoostMultiplier('growth_speed');
     
     console.log('🔧 Game Multipliers:', {
       permanent: permanentMultipliers,

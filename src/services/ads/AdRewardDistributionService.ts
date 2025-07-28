@@ -19,7 +19,7 @@ export class AdRewardDistributionService {
         case 'gem_boost':
           return await this.distributeGemBoost(userId, reward.amount, reward.duration || 30);
         
-        case 'growth_boost':
+        case 'growth_speed':
           return await this.distributeGrowthBoost(userId, reward.amount, reward.duration || 30);
         
         default:
@@ -143,7 +143,7 @@ export class AdRewardDistributionService {
       .from('active_effects')
       .insert({
         user_id: userId,
-        effect_type: 'growth_boost',
+        effect_type: 'growth_speed',
         effect_value: effectValue,
         expires_at: expiresAt.toISOString(),
         source: 'ad_reward'

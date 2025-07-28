@@ -23,7 +23,7 @@ export function AdRewardSelector({
       case 'gems': return '💎';
       case 'coin_boost': return '⚡';
       case 'gem_boost': return '✨';
-      case 'growth_boost': return '🌱';
+      case 'growth_speed': return '🌱';
       default: return '🎁';
     }
   };
@@ -34,7 +34,7 @@ export function AdRewardSelector({
       case 'gems': return 'from-purple-100 to-pink-100 border-purple-200';
       case 'coin_boost': return 'from-orange-100 to-red-100 border-orange-200';
       case 'gem_boost': return 'from-indigo-100 to-purple-100 border-indigo-200';
-      case 'growth_boost': return 'from-green-100 to-emerald-100 border-green-200';
+      case 'growth_speed': return 'from-green-100 to-emerald-100 border-green-200';
       default: return 'from-gray-100 to-slate-100 border-gray-200';
     }
   };
@@ -45,7 +45,7 @@ export function AdRewardSelector({
       case 'gems': return 'from-purple-200 to-pink-200 border-purple-400 shadow-purple-400/30';
       case 'coin_boost': return 'from-orange-200 to-red-200 border-orange-400 shadow-orange-400/30';
       case 'gem_boost': return 'from-indigo-200 to-purple-200 border-indigo-400 shadow-indigo-400/30';
-      case 'growth_boost': return 'from-green-200 to-emerald-200 border-green-400 shadow-green-400/30';
+      case 'growth_speed': return 'from-green-200 to-emerald-200 border-green-400 shadow-green-400/30';
       default: return 'from-gray-200 to-slate-200 border-gray-400 shadow-gray-400/30';
     }
   };
