@@ -358,6 +358,23 @@
   animation: slowBounce 1s ease-in-out infinite;
 }
 
+/* Animation douce pour le bouton publicitaire */
+@keyframes adButtonPulse {
+  0%, 100% { 
+    transform: scale(1) translateZ(0); 
+    box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3);
+  }
+  50% { 
+    transform: scale(1.05) translateZ(0); 
+    box-shadow: 0 6px 16px rgba(251, 146, 60, 0.4);
+  }
+}
+
+.ad-button-pulse {
+  animation: adButtonPulse 2s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
 /* Scrollbar optimisé */
 ::-webkit-scrollbar {
   width: 4px;
@@ -403,10 +420,27 @@
   .plot-growing::after {
     animation: none;
   }
+  
+  /* Réduire l'animation du bouton publicitaire sur mobile */
+  .ad-button-pulse {
+    animation-duration: 3s;
+    animation-iteration-count: 3;
+  }
+}
+
+/* Optimisation du logo et des images */
+img[alt*="Logo"] {
+  will-change: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 /* Optimisation pour les appareils moins performants */
 @media (prefers-reduced-motion: reduce) {
+  .ad-button-pulse {
+    animation: none !important;
+  }
+  
   .garden-background,
   .floating-number,
   .premium-card,

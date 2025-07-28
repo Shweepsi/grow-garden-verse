@@ -5,7 +5,7 @@ import { useAnimations } from '@/contexts/AnimationContext';
 import { FloatingNumber } from '@/components/animations/FloatingNumber';
 import { AdRewardCard } from '@/components/ads/AdRewardCard';
 import { AdModal } from '@/components/ads/AdModal';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
@@ -27,13 +27,32 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
   };
-  const currentLevel = garden?.level || 1;
-  const currentXp = garden?.experience || 0;
-  const xpForCurrentLevel = getXpForLevel(currentLevel - 1);
-  const xpForNextLevel = getXpForLevel(currentLevel);
-  const xpProgress = currentXp - xpForCurrentLevel;
-  const xpNeeded = xpForNextLevel - xpForCurrentLevel;
-  const progressPercentage = Math.min(xpProgress / xpNeeded * 100, 100);
+
+  // Mémoisé pour éviter les recalculs inutiles
+  const xpStats = useMemo(() => {
+    const currentLevel = garden?.level || 1;
+    const currentXp = garden?.experience || 0;
+    const xpForCurrentLevel = getXpForLevel(currentLevel - 1);
+    const xpForNextLevel = getXpForLevel(currentLevel);
+    const xpProgress = currentXp - xpForCurrentLevel;
+    const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+    const progressPercentage = Math.min(xpProgress / xpNeeded * 100, 100);
+    
+    return { currentLevel, currentXp, progressPercentage };
+  }, [garden?.level, garden?.experience]);
+
+  // Mémoisé pour stabiliser l'état du bouton
+  const adButtonState = useMemo(() => {
+    const shouldAnimate = adState.dailyCount < adState.maxDaily && adState.available;
+    return {
+      shouldAnimate,
+      className: `h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
+        shouldAnimate
+          ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 hover:scale-105 active:scale-95' 
+          : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
+      }`
+    };
+  }, [adState.dailyCount, adState.maxDaily, adState.available]);
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
@@ -56,14 +75,6 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
       default: return 'Boost actif';
     }
   };
-  useEffect(() => {
-    console.log('🎁 AdState Debug:', { 
-      dailyCount: adState.dailyCount, 
-      maxDaily: adState.maxDaily, 
-      available: adState.available,
-      shouldAnimate: adState.dailyCount < adState.maxDaily && adState.available
-    });
-  }, [adState]);
 
   return (
     <div className="relative z-20">
@@ -77,6 +88,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                   src="/ic_launcher.png" 
                   alt="Idle Grow Logo" 
                   className="h-8 w-8 object-contain rounded-lg"
+                  style={{ imageRendering: 'crisp-edges' }}
                 />
               </div>
               <div>
@@ -132,19 +144,17 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                     <Star className="h-2.5 w-2.5 text-white" />
                   </div>
                   <span className="font-bold text-blue-700 mobile-text-sm">
-                    Niv. {currentLevel}
+                    Niv. {xpStats.currentLevel}
                   </span>
                 </div>
               </div>
 
-              {/* Bouton Publicité */}
+              {/* Bouton Publicité avec animation conditionnelle */}
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
-                className={`h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
-                  adState.dailyCount < adState.maxDaily && adState.available
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 plant-ready-bounce hover:scale-105 active:scale-95' 
-                    : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
+                className={`${adButtonState.className} ${
+                  adButtonState.shouldAnimate ? 'ad-button-pulse' : ''
                 }`}
               >
                 <Gift className="h-3 w-3 text-white" />
@@ -230,12 +240,12 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-blue-600 font-medium">XP</span>
                 <span className="text-blue-600 font-bold">
-                  {Math.floor(progressPercentage)}%
+                  {Math.floor(xpStats.progressPercentage)}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden mt-0.5">
                 <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 relative" style={{
-                width: `${Math.max(0, Math.min(100, progressPercentage))}%`
+                width: `${Math.max(0, Math.min(100, xpStats.progressPercentage))}%`
               }}>
                   <div className="absolute inset-0 bg-white/20"></div>
                 </div>
