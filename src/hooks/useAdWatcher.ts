@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { AdReward } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
-import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { AdPollingService } from '@/services/ads/AdPollingService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,7 +19,8 @@ export function useAdWatcher() {
   const { toast } = useToast();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
   const { data: gameData, refetch: refetchGameData } = useGameData();
-  const { testConnectivity } = useAdRewards();
+  // Added refreshAdState to update UI after successful reward without incrementing count twice
+  const { testConnectivity, refreshAdState } = useAdRewards();
 
   const [watchState, setWatchState] = useState<AdWatchState>({
     isWatching: false,
@@ -116,7 +116,8 @@ export function useAdWatcher() {
           description: selectedReward.description
         });
         
-        await AdCooldownService.updateAfterAdWatch(user.id);
+        // Refresh ad state to reflect updated daily count (already incremented server-side)
+        refreshAdState?.(true);
         onSuccess?.();
       } else {
         console.log('AdMob: Timeout - récompense non reçue via SSV');
@@ -141,7 +142,7 @@ export function useAdWatcher() {
         validationProgress: 0
       });
     }
-  }, [user?.id, gameData, testConnectivity, refetchGameData, triggerCoinAnimation, triggerGemAnimation, toast]);
+  }, [user?.id, gameData, testConnectivity, refetchGameData, triggerCoinAnimation, triggerGemAnimation, toast, refreshAdState]);
 
   return {
     watchState,

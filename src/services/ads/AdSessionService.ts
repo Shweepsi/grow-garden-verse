@@ -89,8 +89,7 @@ export class AdSessionService {
 
       if (updateError) throw updateError;
 
-      // Update cooldown - 2 heures fixes
-      await AdCooldownService.updateAfterAdWatch(userId);
+      // Cooldown already updated server-side during immediate reward processing.
 
       // Distribute reward to player
       const sessionRewardData = session.reward_data as any;
