@@ -208,7 +208,14 @@ export const PlantSelector = ({
                               </div>
 
                               {/* Profit net */}
-                              
+                              <div
+                                className={`rounded p-1.5 border flex items-center justify-center gap-1 ${profit >= 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}
+                              >
+                                <Award className="h-2.5 w-2.5" />
+                                <div className="text-xs font-bold">
+                                  {profit >= 0 ? '+' : ''}{profit.toLocaleString()}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </CardContent>
