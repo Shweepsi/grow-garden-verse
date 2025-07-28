@@ -625,6 +625,18 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      harvest_plant_transaction: {
+        Args: {
+          p_user_id: string
+          p_plot_number: number
+          p_new_coins: number
+          p_new_gems: number
+          p_new_exp: number
+          p_new_level: number
+          p_new_harvests: number
+        }
+        Returns: undefined
+      }
       increment_ad_count_atomic: {
         Args: {
           p_user_id: string

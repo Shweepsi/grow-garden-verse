@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { EconomyService } from '@/services/EconomyService';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
 
@@ -92,7 +93,7 @@ export const useDirectPlanting = () => {
         console.log('💪 Multiplicateurs complets (permanent + boosts):', multipliers);
       } catch (error) {
         console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
-        multipliers = { harvest: 1, growth: 1 };
+        multipliers = { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0, coins: 1, gems: 1 };
       }
 
       // Calculer le coût avec multiplicateurs
@@ -112,11 +113,12 @@ export const useDirectPlanting = () => {
 
       console.log(`💰 Coût de plantation: ${actualCost} pièces`);
 
-      // Calculer le temps de croissance ajusté
+      // Calculer le temps de croissance avec les boosts (utilisation de PlantGrowthService pour cohérence)
       const baseGrowthSeconds = plantType.base_growth_seconds || 60;
-      const adjustedGrowthTime = EconomyService.getAdjustedGrowthTime(baseGrowthSeconds, multipliers.growth || 1);
+      const growthBoosts = { getBoostMultiplier: () => multipliers.growth };
+      const adjustedGrowthTime = PlantGrowthService.calculateGrowthTime(baseGrowthSeconds, growthBoosts);
 
-      console.log(`⏰ Temps de croissance: ${adjustedGrowthTime}s (base: ${baseGrowthSeconds}s)`);
+      console.log(`⏰ Direct planting growth time: ${baseGrowthSeconds}s -> ${adjustedGrowthTime}s (growth boost: x${multipliers.growth})`);
 
       const now = new Date().toISOString();
 
