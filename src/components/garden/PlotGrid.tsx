@@ -8,7 +8,7 @@ import { useDirectPlanting } from '@/hooks/useDirectPlanting';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
-import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -30,7 +30,7 @@ export const PlotGrid = ({
   const [showRobotInterface, setShowRobotInterface] = useState(false);
   
   const { plantDirect, isPlantingPlot } = useDirectPlanting();
-  const { getBoostMultiplier } = useActiveBoosts();
+  const { getCombinedBoostMultiplier } = useGameMultipliers();
   const { 
     hasPassiveRobot, 
     robotPlantType,
@@ -75,7 +75,7 @@ export const PlotGrid = ({
     if (hasPlant && plot.planted_at) {
       const plantType = plantTypeMap.get(plot.plant_type || '');
       if (plantType) {
-        const boosts = { getBoostMultiplier };
+        const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
         const baseGrowthTime = plantType.base_growth_seconds || 60;
         
         isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
@@ -89,7 +89,7 @@ export const PlotGrid = ({
       // Feedback immédiat optimiste
       onHarvestPlant(plot.plot_number);
     }
-  }, [hasPassiveRobot, onHarvestPlant, plantTypeMap, getBoostMultiplier]);
+  }, [hasPassiveRobot, onHarvestPlant, plantTypeMap, getCombinedBoostMultiplier]);
 
   // Optimiser les handlers de sélection
   const handlePlantSelection = useCallback((plotNumber: number, plantTypeId: string, cost: number) => {

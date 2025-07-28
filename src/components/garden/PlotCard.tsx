@@ -6,7 +6,7 @@ import { Lock, Sprout, Gift } from 'lucide-react';
 import { PlantDisplay } from './PlantDisplay';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
-import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 interface PlotCardProps {
   plot: GardenPlot;
@@ -31,18 +31,18 @@ export const PlotCard = memo(({
   onPlotClick,
   onUnlockPlot
 }: PlotCardProps) => {
-  const { getBoostMultiplier } = useActiveBoosts();
+  const { getCombinedBoostMultiplier } = useGameMultipliers();
   
   // Memoiser le calcul de l'état de la plante pour éviter les recalculs
   const plantState = useMemo(() => {
     if (!plot.plant_type || !plantType) return 'empty';
-    const boosts = { getBoostMultiplier };
+    const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
     
     // CRITICAL: Utiliser le temps de base de la plante pour que les boosts s'appliquent
     const baseGrowthTime = plantType.base_growth_seconds || 60;
     const isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
     return isReady ? 'ready' : 'growing';
-  }, [plot.plant_type, plot.planted_at, plantType?.base_growth_seconds, getBoostMultiplier]);
+  }, [plot.plant_type, plot.planted_at, plantType?.base_growth_seconds, getCombinedBoostMultiplier]);
 
   // Memoiser le calcul du coût de déblocage
   const unlockCost = useMemo(() => {

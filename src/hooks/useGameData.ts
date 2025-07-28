@@ -4,12 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
-import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 export const useGameData = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { getBoostMultiplier } = useActiveBoosts();
+  const { getCombinedBoostMultiplier } = useGameMultipliers();
 
   // Configuration du realtime pour garden_plots et player_gardens
   useEffect(() => {
@@ -89,7 +89,7 @@ export const useGameData = () => {
       if (!data?.plots) return 5000; // 5 secondes par défaut
       
       // Créer un objet boosts pour PlantGrowthService
-      const boosts = { getBoostMultiplier };
+      const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
       
       // Vérifier s'il y a des plantes qui poussent (en tenant compte des boosts)
       const growingPlants = data.plots.filter(plot => {
