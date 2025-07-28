@@ -48,7 +48,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
       shouldAnimate,
       className: `h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
         shouldAnimate
-          ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 hover:scale-105 active:scale-95' 
+          ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 plant-ready-bounce hover:scale-105 active:scale-95' 
           : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
       }`
     };
@@ -149,13 +149,11 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 </div>
               </div>
 
-              {/* Bouton Publicité avec animation conditionnelle */}
+              {/* Bouton Publicité */}
               <Button
                 size="sm"
                 onClick={() => setShowAdModal(true)}
-                className={`${adButtonState.className} ${
-                  adButtonState.shouldAnimate ? 'ad-button-pulse' : ''
-                }`}
+                className={adButtonState.className}
               >
                 <Gift className="h-3 w-3 text-white" />
               </Button>
