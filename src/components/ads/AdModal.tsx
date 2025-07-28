@@ -77,11 +77,8 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     }
 
     try {
-      const result = await watchAd(
-        selectedReward.type, 
-        selectedReward.amount,
-        selectedReward.duration
-      );
+      // Fonctionnalité temporairement désactivée
+      const result = { success: false, error: 'Fonctionnalité en maintenance' };
 
       if (result.success) {
         toast({
@@ -145,32 +142,10 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
             onSelectReward={handleSelectReward}
           />
 
-          {/* Bouton de visionnage ou état de chargement */}
-          {watchState.watching ? (
-            <div className="space-y-4">
-              <AdProgressBar progress={watchState.progress} />
-              <AdValidationProgress 
-                validationState={watchState.validationState}
-                progress={watchState.validationProgress}
-              />
-            </div>
-          ) : (
-            <AdWatchButton
-              disabled={!selectedReward || !adState.available || watchState.watching}
-              loading={watchState.loading}
-              onClick={handleWatchAd}
-              selectedReward={selectedReward}
-            />
-          )}
-
-          {/* Panel de diagnostics pour le débogage */}
-          {showDiagnostics && (
-            <AdDiagnosticsPanel
-              debugInfo={debugInfo}
-              onRunConnectivityTest={runConnectivityTest}
-              onToggleDiagnostics={toggleDiagnostics}
-            />
-          )}
+          {/* Fonctionnalité temporairement désactivée */}
+          <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <p className="text-yellow-700">Fonctionnalité en cours de maintenance</p>
+          </div>
 
           {/* Bouton de diagnostics (en mode développement) */}
           {process.env.NODE_ENV === 'development' && (

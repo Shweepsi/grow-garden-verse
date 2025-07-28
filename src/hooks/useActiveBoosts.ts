@@ -2,7 +2,7 @@
 import { useCallback, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 
 export interface ActiveBoost {
   id: string
@@ -46,7 +46,7 @@ export const useActiveBoosts = () => {
     staleTime: 30000, // Considérer frais pendant 30s
     refetchInterval: 30000, // Rafraîchir toutes les 30s
     refetchOnWindowFocus: false,
-    keepPreviousData: true // Conserve les données précédentes pendant le refetch → plus de clignotement
+    placeholderData: keepPreviousData // Conserve les données précédentes pendant le refetch → plus de clignotement
   })
 
   // Fonction pour forcer un rafraîchissement manuel (ex: après avoir reçu un événement custom)

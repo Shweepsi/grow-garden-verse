@@ -48,7 +48,8 @@ export const GardenPage = () => {
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}
-          onHarvest={harvestPlant}
+          coins={gameState.garden?.coins || 0}
+          onHarvestPlant={harvestPlant}
           onUnlockPlot={unlockPlot}
         />
       </div>

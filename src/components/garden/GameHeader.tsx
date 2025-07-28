@@ -9,11 +9,13 @@ import { useAdRewards } from '@/hooks/useAdRewards';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 export function GameHeader() {
-  const { data: gameData, loading } = useGameData();
+  const { data: gameData, isLoading } = useGameData();
   const { availableRewards, adState, loadingRewards } = useAdRewards();
-  const { multipliers } = useGameMultipliers();
+  const { getCompleteMultipliers } = useGameMultipliers();
+  
+  const multipliers = getCompleteMultipliers();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="mb-6">
         <CardContent className="p-6">
@@ -82,9 +84,9 @@ export function GameHeader() {
                 <div className="text-sm text-muted-foreground">Pièces</div>
                 <div className="text-xl font-bold">
                   {formatNumber(gameData?.garden?.coins || 0)}
-                  {multipliers.coin > 1 && (
+                  {multipliers.coins > 1 && (
                     <Badge variant="secondary" className="ml-2 text-xs">
-                      x{multipliers.coin.toFixed(1)}
+                      x{multipliers.coins.toFixed(1)}
                     </Badge>
                   )}
                 </div>
@@ -100,9 +102,9 @@ export function GameHeader() {
                 <div className="text-sm text-muted-foreground">Gemmes</div>
                 <div className="text-xl font-bold">
                   {gameData?.garden?.gems || 0}
-                  {multipliers.gem > 1 && (
+                  {multipliers.gems > 1 && (
                     <Badge variant="secondary" className="ml-2 text-xs">
-                      x{multipliers.gem.toFixed(1)}
+                      x{multipliers.gems.toFixed(1)}
                     </Badge>
                   )}
                 </div>

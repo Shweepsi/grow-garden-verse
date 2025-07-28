@@ -8,7 +8,9 @@ import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 export function BoostStatusIndicator() {
   const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
-  const { multipliers } = useGameMultipliers();
+  const { getCompleteMultipliers } = useGameMultipliers();
+  
+  const multipliers = getCompleteMultipliers();
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
@@ -107,10 +109,10 @@ export function BoostStatusIndicator() {
           <div className="text-center">
             <div className="text-xs text-gray-600 dark:text-gray-400">Pièces</div>
             <div className="font-bold text-yellow-700 dark:text-yellow-400 flex items-center justify-center gap-1">
-              {multipliers.coin > 1 ? (
+              {multipliers.coins > 1 ? (
                 <>
                   <TrendingUp className="w-3 h-3" />
-                  ×{multipliers.coin.toFixed(1)}
+                  ×{multipliers.coins.toFixed(1)}
                 </>
               ) : (
                 <span className="text-gray-500">×1.0</span>
@@ -120,10 +122,10 @@ export function BoostStatusIndicator() {
           <div className="text-center">
             <div className="text-xs text-gray-600 dark:text-gray-400">Gemmes</div>
             <div className="font-bold text-purple-700 dark:text-purple-400 flex items-center justify-center gap-1">
-              {multipliers.gem > 1 ? (
+              {multipliers.gems > 1 ? (
                 <>
                   <TrendingUp className="w-3 h-3" />
-                  ×{multipliers.gem.toFixed(1)}
+                  ×{multipliers.gems.toFixed(1)}
                 </>
               ) : (
                 <span className="text-gray-500">×1.0</span>
@@ -149,7 +151,9 @@ export function BoostStatusIndicator() {
         <div className="space-y-3">
           {boosts.map((boost) => {
             const timeRemaining = getTimeRemaining(boost.expires_at);
-            const maxDuration = boost.duration_minutes ? boost.duration_minutes * 60 : 3600; // Fallback: 1 heure
+            // Calculer la durée basée sur la différence entre création et expiration
+            const totalDuration = Math.max(3600, Math.floor((new Date(boost.expires_at).getTime() - new Date(boost.created_at).getTime()) / 1000));
+            const maxDuration = totalDuration;
             const progressPercentage = Math.max(0, (timeRemaining / maxDuration) * 100);
             
             return (
