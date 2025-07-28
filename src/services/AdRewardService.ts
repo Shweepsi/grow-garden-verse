@@ -38,8 +38,9 @@ export class AdRewardService {
         if (config.reward_type === 'coins' || config.reward_type === 'gems') {
           description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
         } else if (config.reward_type === 'growth_speed') {
-          const speedMultiplier = 1 / amount;
-          description = `Boost Croissance x${speedMultiplier} (${config.duration_minutes}min)`;
+          // Afficher la réduction de temps en pourcentage pour plus de clarté
+          const reductionPercent = Math.round((1 - (1 / amount)) * 100);
+          description = `Boost Croissance -${reductionPercent}% (${config.duration_minutes}min)`;
         } else if (config.reward_type.includes('boost')) {
           description = `${config.display_name} x${amount} (${config.duration_minutes}min)`;
         }

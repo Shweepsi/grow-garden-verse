@@ -775,7 +775,7 @@ async function applyReward(userId: string, rewardType: string, amount: number, d
         return await applyGemsReward(userId, Math.floor(amount))
       case 'coin_boost':
       case 'gem_boost':
-      case 'growth_boost':
+      case 'growth_speed':
         return await applyBoostReward(userId, rewardType, amount, durationMinutes || 30)
       default:
         return { success: false, error: 'Unknown reward type' }
@@ -893,7 +893,7 @@ async function revokeReward(userId: string, rewardType: string, amount: number):
         return await revokeGemsReward(userId, Math.floor(amount))
       case 'coin_boost':
       case 'gem_boost':  
-      case 'growth_boost':
+      case 'growth_speed':
         return await revokeBoostReward(userId, rewardType)
       default:
         return { success: false, error: 'Unknown reward type for revocation' }
