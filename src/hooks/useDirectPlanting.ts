@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { EconomyService } from '@/services/EconomyService';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { PlotIndividualizationService, PlotTraits } from '@/services/PlotIndividualizationService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
 
@@ -122,13 +123,23 @@ export const useDirectPlanting = () => {
 
       const now = new Date().toISOString();
 
-      // Planter sur la parcelle
+      // Générer des traits aléatoires pour individualiser la parcelle
+      const plotTraits = PlotIndividualizationService.generateRandomTraits();
+      
+      // Appliquer le multiplicateur de croissance des traits de la parcelle
+      const finalGrowthTime = Math.max(1, Math.floor(adjustedGrowthTime / plotTraits.growthMultiplier));
+      
+      console.log(`🎲 Traits de parcelle générés:`, plotTraits);
+      console.log(`⏱️ Temps de croissance final: ${adjustedGrowthTime}s -> ${finalGrowthTime}s (trait multiplier: x${plotTraits.growthMultiplier})`);
+
+      // Planter sur la parcelle avec les métadonnées des traits
       const { error: updatePlotError } = await supabase
         .from('garden_plots')
         .update({
           plant_type: plantTypeId,
           planted_at: now,
-          growth_time_seconds: adjustedGrowthTime,
+          growth_time_seconds: finalGrowthTime,
+          plant_metadata: plotTraits, // Stocker les traits dans les métadonnées
           updated_at: now
         })
         .eq('user_id', user.id)

@@ -7,6 +7,8 @@ import { PlantDisplay } from './PlantDisplay';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { EconomyService } from '@/services/EconomyService';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { PlotTraitsDisplay } from './PlotTraitsDisplay';
+import { PlotTraits } from '@/services/PlotIndividualizationService';
 
 interface PlotCardProps {
   plot: GardenPlot;
@@ -37,11 +39,22 @@ export const PlotCard = memo(({
   const plantState = useMemo(() => {
     if (!plot.plant_type || !plantType) return 'empty';
     const boosts = { getBoostMultiplier };
+    
+    // Récupérer les traits de la parcelle pour le calcul du temps de croissance
+    const plotTraits: PlotTraits = plot.plant_metadata || {
+      growthMultiplier: 1,
+      yieldMultiplier: 1,
+      expMultiplier: 1,
+      gemChanceBonus: 0
+    };
+    
     // CRITICAL: Utiliser le temps de base de la plante pour que les boosts s'appliquent
     const baseGrowthTime = plantType.base_growth_seconds || 60;
-    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
+    // Appliquer le multiplicateur de croissance des traits
+    const adjustedBaseTime = Math.max(1, Math.floor(baseGrowthTime / plotTraits.growthMultiplier));
+    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, adjustedBaseTime, boosts);
     return isReady ? 'ready' : 'growing';
-  }, [plot.plant_type, plot.planted_at, plantType?.base_growth_seconds, getBoostMultiplier]);
+  }, [plot.plant_type, plot.planted_at, plot.plant_metadata, plantType?.base_growth_seconds, getBoostMultiplier]);
 
   // Memoiser le calcul du coût de déblocage
   const unlockCost = useMemo(() => {
@@ -107,6 +120,10 @@ export const PlotCard = memo(({
   return (
     <div className={containerClasses} onClick={handleClick} data-plot={plot.plot_number}>
       <div className={cardClasses}>
+        {/* Affichage des traits de la parcelle si elle a une plante */}
+        {plot.unlocked && plot.plant_type && plot.plant_metadata && (
+          <PlotTraitsDisplay traits={plot.plant_metadata as PlotTraits} />
+        )}
         
         {!plot.unlocked ? (
           <div className="text-center">
@@ -164,6 +181,7 @@ export const PlotCard = memo(({
                     plantType={plantType} 
                     plantedAt={plot.planted_at} 
                     growthTimeSeconds={plantType.base_growth_seconds || 60}
+                    plotTraits={plot.plant_metadata as PlotTraits}
                   />
                 ) : (
                   <div className="text-center">

@@ -10,6 +10,7 @@ import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { MAX_PLOTS } from '@/constants';
+import { PlotTraits } from '@/services/PlotIndividualizationService';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
@@ -87,6 +88,16 @@ export const usePlantActions = () => {
 
       console.log('✅ Plante prête pour la récolte');
 
+      // Récupérer les traits de la parcelle depuis les métadonnées
+      const plotTraits: PlotTraits = plot.plant_metadata || {
+        growthMultiplier: 1,
+        yieldMultiplier: 1,
+        expMultiplier: 1,
+        gemChanceBonus: 0
+      };
+      
+      console.log('🎲 Traits de la parcelle:', plotTraits);
+
       // Obtenir les données du jardin
       const { data: garden, error: gardenError } = await supabase
         .from('player_gardens')
@@ -110,36 +121,35 @@ export const usePlantActions = () => {
       const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
       const expMultiplier = Math.max(0.1, multipliers.exp || 1);
       const plantCostReduction = Math.max(0.1, multipliers.plantCostReduction || 1);
-      const gemChance = Math.max(0, multipliers.gemChance || 0);
-
+      const gemChance = Math.max(0, Math.min(1, multipliers.gemChance || 0));
+      
+      // Appliquer les multiplicateurs des traits de la parcelle
+      const finalHarvestMultiplier = harvestMultiplier * plotTraits.yieldMultiplier;
+      const finalExpMultiplier = expMultiplier * plotTraits.expMultiplier;
+      const finalGemChance = Math.min(1, gemChance + plotTraits.gemChanceBonus);
+      
       const harvestReward = EconomyService.getHarvestReward(
-        plantLevel,
-        baseGrowthSeconds,
+        plantType.level_required,
+        plantType.rarity,
         playerLevel,
-        harvestMultiplier,
-        plantCostReduction,
+        finalHarvestMultiplier,
         garden.permanent_multiplier || 1
       );
       
-      const expReward = EconomyService.getExperienceReward(plantLevel, expMultiplier);
+      const expReward = EconomyService.calculateExpReward(
+        plantType.level_required,
+        plantType.rarity,
+        finalExpMultiplier
+      );
       
-      // Calculer les gemmes avec la chance d'amélioration
-      let gemReward = 0;
-      if (gemChance > 0) {
-        const randomChance = Math.random();
-        console.log(`💎 Chance de gemmes: ${(gemChance * 100).toFixed(1)}%, tirage: ${(randomChance * 100).toFixed(1)}%`);
-        
-        if (randomChance <= gemChance) {
-          // Récompense de gemmes basée sur le niveau de la plante (1-3 gemmes)
-          gemReward = Math.floor(Math.random() * Math.min(3, plantLevel)) + 1;
-          console.log(`💎 Drop de gemmes réussi ! Récompense: ${gemReward} gemmes`);
-        } else {
-          console.log(`💎 Pas de drop de gemmes cette fois`);
-        }
-      }
-      
+      const gemReward = EconomyService.calculateGemReward(
+        plantType.rarity,
+        finalGemChance
+      );
+
       console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes`);
-      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier}, EXP: x${expMultiplier}, Coût: x${plantCostReduction}, Gemmes: ${(gemChance * 100).toFixed(1)}%`);
+      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${finalHarvestMultiplier.toFixed(2)}, EXP: x${finalExpMultiplier.toFixed(2)}, Coût: x${plantCostReduction}, Gemmes: ${(finalGemChance * 100).toFixed(1)}%`);
+      console.log(`🎲 Multiplicateurs des traits - Récolte: x${plotTraits.yieldMultiplier}, EXP: x${plotTraits.expMultiplier}, Gemmes: +${(plotTraits.gemChanceBonus * 100).toFixed(1)}%`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
