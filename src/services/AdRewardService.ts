@@ -64,6 +64,13 @@ export class AdRewardService {
           amount = config.max_amount;
         }
 
+        // NORMALISATION: pour "growth_speed", garantir un multiplicateur >= 1
+        // Historiquement, les valeurs <1 (ex: 0.5) représentaient une réduction de 50%.
+        // Le moteur de calcul client attend désormais un multiplicateur >1 (ex: 2.0).
+        if (normalizedType === 'growth_speed' && amount < 1 && amount > 0) {
+          amount = 1 / amount;
+        }
+
         // Formater la description selon le type
         let description = config.description;
         if (normalizedType === 'coins' || normalizedType === 'gems') {

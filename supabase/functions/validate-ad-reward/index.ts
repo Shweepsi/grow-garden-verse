@@ -644,7 +644,15 @@ Deno.serve(async (req) => {
       )
     }
     
-    const calculatedAmount = rewardConfig.calculated_amount
+    let calculatedAmount = rewardConfig.calculated_amount
+
+    // NORMALISATION: pour les boosts de croissance, garantir un multiplicateur >= 1
+    // Certains anciens enregistrements stockaient des valeurs <1 (ex: 0.5) pour signifier « 50% plus rapide ».
+    // Le moteur utilise désormais un multiplicateur >1 (ex: 2). Si nécessaire, inverser la valeur.
+    if (payload.reward_type === 'growth_speed' && calculatedAmount < 1 && calculatedAmount > 0) {
+      calculatedAmount = 1 / calculatedAmount
+    }
+
     const durationMinutes = rewardConfig.duration_minutes || 30
     
     // NOUVELLE LOGIQUE: Différentiation entre récompenses immédiates et différées
