@@ -7,26 +7,29 @@ import { BoostStatusIndicator } from '@/components/ads/BoostStatusIndicator';
 import { useGameData } from '@/hooks/useGameData';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
-
 export function GameHeader() {
-  const { data: gameData, isLoading } = useGameData();
-  const { availableRewards, adState, loadingRewards } = useAdRewards();
-  const { getCompleteMultipliers } = useGameMultipliers();
-  
+  const {
+    data: gameData,
+    isLoading
+  } = useGameData();
+  const {
+    availableRewards,
+    adState,
+    loadingRewards
+  } = useAdRewards();
+  const {
+    getCompleteMultipliers
+  } = useGameMultipliers();
   const multipliers = getCompleteMultipliers();
-
   if (isLoading) {
-    return (
-      <Card className="mb-6">
+    return <Card className="mb-6">
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
             Chargement...
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`;
@@ -41,25 +44,18 @@ export function GameHeader() {
     if (loadingRewards) {
       return "Chargement des récompenses...";
     }
-    
     if (!availableRewards || availableRewards.length === 0) {
       return "Aucune récompense disponible";
     }
 
     // Afficher les 3 premières récompenses avec leurs emojis
-    const preview = availableRewards.slice(0, 3).map(reward => 
-      `${reward.emoji} ${reward.description}`
-    ).join(', ');
-    
+    const preview = availableRewards.slice(0, 3).map(reward => `${reward.emoji} ${reward.description}`).join(', ');
     if (availableRewards.length > 3) {
       return `${preview} et ${availableRewards.length - 3} autres...`;
     }
-    
     return preview;
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Stats du joueur */}
       <Card>
         <CardContent className="p-6">
@@ -84,11 +80,7 @@ export function GameHeader() {
                 <div className="text-sm text-muted-foreground">Pièces</div>
                 <div className="text-xl font-bold">
                   {formatNumber(gameData?.garden?.coins || 0)}
-                  {multipliers.coins > 1 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      x{multipliers.coins.toFixed(1)}
-                    </Badge>
-                  )}
+                  {multipliers.coins > 1}
                 </div>
               </div>
             </div>
@@ -102,33 +94,15 @@ export function GameHeader() {
                 <div className="text-sm text-muted-foreground">Gemmes</div>
                 <div className="text-xl font-bold">
                   {gameData?.garden?.gems || 0}
-                  {multipliers.gems > 1 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
+                  {multipliers.gems > 1 && <Badge variant="secondary" className="ml-2 text-xs">
                       x{multipliers.gems.toFixed(1)}
-                    </Badge>
-                  )}
+                    </Badge>}
                 </div>
               </div>
             </div>
 
             {/* Croissance */}
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-                <span className="text-xl">🌱</span>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Vitesse Croissance</div>
-                <div className="text-xl font-bold">
-                  {multipliers.growth > 1 ? (
-                    <Badge variant="secondary" className="text-sm">
-                      x{multipliers.growth.toFixed(1)}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">Normal</span>
-                  )}
-                </div>
-              </div>
-            </div>
+            
           </div>
         </CardContent>
       </Card>
@@ -155,20 +129,14 @@ export function GameHeader() {
                 {getRewardPreview()}
               </div>
               
-              {adState.available && availableRewards.length > 0 && (
-                <div className="pt-2">
-                  <Badge 
-                    variant="secondary" 
-                    className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200"
-                  >
+              {adState.available && availableRewards.length > 0 && <div className="pt-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200">
                     {availableRewards.length} récompense{availableRewards.length > 1 ? 's' : ''} disponible{availableRewards.length > 1 ? 's' : ''}
                   </Badge>
-                </div>
-              )}
+                </div>}
             </div>
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 }
