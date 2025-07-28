@@ -11,6 +11,8 @@ export const useDirectPlanting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: gameData } = useGameData();
+  // Retrieve game multipliers once for the whole hook lifecycle.
+  const { getCompleteMultipliers } = useGameMultipliers();
 
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, expectedCost }: {
@@ -87,12 +89,11 @@ export const useDirectPlanting = () => {
       // Obtenir les multiplicateurs complets (permanent + boosts)
       let multipliers;
       try {
-        const { getCompleteMultipliers } = useGameMultipliers();
         multipliers = getCompleteMultipliers();
         console.log('💪 Multiplicateurs complets (permanent + boosts):', multipliers);
       } catch (error) {
         console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
-        multipliers = { harvest: 1, growth: 1 };
+        multipliers = { harvest: 1, growth: 1, plantCostReduction: 1 } as any;
       }
 
       // Calculer le coût avec multiplicateurs
@@ -180,8 +181,6 @@ export const useDirectPlanting = () => {
       toast.error(error.message || 'Erreur lors de la plantation');
     }
   });
-
-  const { getCompleteMultipliers } = useGameMultipliers();
 
   return {
     plantDirect: (plotNumber: number, plantTypeId: string, expectedCost: number) => 

@@ -1,6 +1,7 @@
 
 import { PlantType, PlayerUpgrade } from "@/types/game";
 import { GrowthService } from "./growth/GrowthService";
+import { MINIMUM_COINS_RESERVE } from "@/constants";
 
 export class EconomyService {
   // Prix de base des plantes selon leur rareté
@@ -98,6 +99,43 @@ export class EconomyService {
   // Calculer le coût d'une plante avec réduction
   static getAdjustedPlantCost(baseCost: number, costReduction: number = 1): number {
     return Math.floor(baseCost * costReduction);
+  }
+
+  /**
+   * Calculate the direct planting cost for a plant, based on the required level.
+   * The formula is intentionally simple so that older components depending on
+   * this helper keep working after the growth-speed refactor.
+   *
+   * Feel free to tweak the numbers – the important part is to provide a stable
+   * implementation so that calls to EconomyService.getPlantDirectCost no longer
+   * crash the render cycle.
+   */
+  static getPlantDirectCost(levelRequired: number): number {
+    if (!levelRequired || levelRequired < 1) levelRequired = 1;
+
+    // Quadratic progression keeps prices affordable early game and
+    // scales reasonably for higher levels.
+    const BASE_PRICE = 25; // base cost for level 1
+    return Math.floor(BASE_PRICE * Math.pow(levelRequired, 2));
+  }
+
+  /**
+   * Check if the player can afford purchasing / planting something that costs
+   * a given amount of coins while keeping the mandatory safety reserve.
+   */
+  static canAffordUpgrade(currentCoins: number, cost: number): boolean {
+    if (currentCoins == null || cost == null) return false;
+    return currentCoins - cost >= MINIMUM_COINS_RESERVE;
+  }
+
+  /**
+   * Simpler affordability check that doesn’t take the reserve into account –
+   * used for direct plant purchases where we already subtract the reserve
+   * outside of this helper.
+   */
+  static canAffordPlant(currentCoins: number, cost: number): boolean {
+    if (currentCoins == null || cost == null) return false;
+    return currentCoins >= cost;
   }
 
   // Correspondance niveau robot -> plante (basé sur level_required)
