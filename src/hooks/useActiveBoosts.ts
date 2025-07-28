@@ -1,7 +1,8 @@
 
-import { useState, useEffect } from 'react'
+import { useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 export interface ActiveBoost {
   id: string
@@ -14,47 +15,42 @@ export interface ActiveBoost {
 
 export const useActiveBoosts = () => {
   const { user } = useAuth()
-  const [boosts, setBoosts] = useState<ActiveBoost[]>([])
-  const [loading, setLoading] = useState(false)
 
-  const fetchActiveBoosts = async () => {
-    if (!user?.id) return
+  const queryClient = useQueryClient()
 
-    setLoading(true)
-    try {
-      // Nettoyer les boosts expirés
-      await supabase.rpc('cleanup_expired_effects')
+  const fetchActiveBoosts = useCallback(async () => {
+    if (!user?.id) return []
 
-      // Récupérer les boosts actifs
-      const { data, error } = await supabase
-        .from('active_effects')
-        .select('*')
-        .eq('user_id', user.id)
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
+    // Nettoyer les boosts expirés côté DB (fonction RPC côté Supabase)
+    await supabase.rpc('cleanup_expired_effects')
 
-      if (error) {
-        console.error('Error fetching active boosts:', error)
-        return
-      }
+    const { data, error } = await supabase
+      .from('active_effects')
+      .select('*')
+      .eq('user_id', user.id)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
 
-      setBoosts(data || [])
-    } catch (error) {
-      console.error('Error in fetchActiveBoosts:', error)
-    } finally {
-      setLoading(false)
+    if (error) {
+      console.error('Error fetching active boosts:', error)
+      return []
     }
-  }
 
-  useEffect(() => {
-    fetchActiveBoosts()
+    return data || []
   }, [user?.id])
 
-  // Actualiser toutes les 30 secondes
-  useEffect(() => {
-    const interval = setInterval(fetchActiveBoosts, 30000)
-    return () => clearInterval(interval)
-  }, [user?.id])
+  const { data: boosts = [], isFetching: loading } = useQuery({
+    queryKey: ['active_boosts', user?.id],
+    queryFn: fetchActiveBoosts,
+    enabled: !!user?.id,
+    staleTime: 30000, // Considérer frais pendant 30s
+    refetchInterval: 30000, // Rafraîchir toutes les 30s
+    refetchOnWindowFocus: false,
+    keepPreviousData: true // Conserve les données précédentes pendant le refetch → plus de clignotement
+  })
+
+  // Fonction pour forcer un rafraîchissement manuel (ex: après avoir reçu un événement custom)
+  const refreshBoosts = () => queryClient.invalidateQueries({ queryKey: ['active_boosts', user?.id] })
 
   const getBoostMultiplier = (effectType: string): number => {
     // Support des alias : traiter 'growth_speed' et 'growth_boost' comme identiques
@@ -97,21 +93,20 @@ export const useActiveBoosts = () => {
   }
 
   // Écouter les changements globaux pour rafraîchir après les récompenses
+  // On se contente d'invalider le cache, react-query fera l'appel si nécessaire
   useEffect(() => {
     const handleBoostUpdate = () => {
-      fetchActiveBoosts();
-    };
+      refreshBoosts()
+    }
 
-    // Écouter les événements personnalisés si nécessaire
-    window.addEventListener('boostUpdated', handleBoostUpdate);
-    
-    return () => window.removeEventListener('boostUpdated', handleBoostUpdate);
-  }, [user?.id]);
+    window.addEventListener('boostUpdated', handleBoostUpdate)
+    return () => window.removeEventListener('boostUpdated', handleBoostUpdate)
+  }, [user?.id, refreshBoosts])
 
   return {
     boosts,
     loading,
-    refreshBoosts: fetchActiveBoosts,
+    refreshBoosts,
     getBoostMultiplier,
     hasActiveBoost,
     getTimeRemaining,
