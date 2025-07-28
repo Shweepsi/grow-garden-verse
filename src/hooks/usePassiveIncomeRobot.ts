@@ -248,7 +248,7 @@ export const usePassiveIncomeRobot = () => {
       const { error } = await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins + totalAccumulated,
+          coins: (garden.coins || 0) + totalAccumulated,
           experience: newExp,
           level: newLevel,
           robot_accumulated_coins: 0,

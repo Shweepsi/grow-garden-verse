@@ -41,7 +41,7 @@ export const useGameEconomy = () => {
       await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins - cost,
+          coins: (garden.coins || 0) - cost,
           last_played: new Date().toISOString()
         })
         .eq('user_id', user.id);
