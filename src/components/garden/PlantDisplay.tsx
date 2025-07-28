@@ -27,20 +27,28 @@ export const PlantDisplay = memo(({
   }
   useEffect(() => {
     if (!plantedAt) return;
+    
     const updateProgress = () => {
       const boosts = { getBoostMultiplier };
-      const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, growthTimeSeconds, boosts);
-      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts);
+      // CRITICAL: Utiliser le temps de base de la plante plutôt que le temps stocké
+      // pour que les boosts s'appliquent aux plantes existantes
+      const baseGrowthTime = plantType.base_growth_seconds || 60;
+      const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, baseGrowthTime, boosts);
+      const ready = PlantGrowthService.isPlantReady(plantedAt, baseGrowthTime, boosts);
+      
       setProgress(currentProgress);
       setIsReady(ready);
     };
+
     updateProgress();
 
     // Utiliser l'intervalle optimisé pour des mises à jour fluides
-    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(growthTimeSeconds);
+    const baseGrowthTime = plantType.base_growth_seconds || 60;
+    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(baseGrowthTime);
     const interval = setInterval(updateProgress, updateInterval);
+    
     return () => clearInterval(interval);
-  }, [plantedAt, growthTimeSeconds, getBoostMultiplier]);
+  }, [plantedAt, plantType.base_growth_seconds, getBoostMultiplier]);
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
       case 'mythic':
@@ -90,7 +98,7 @@ export const PlantDisplay = memo(({
       {isReady ? <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-2 py-1 rounded-full mobile-text-xs font-medium shadow-lg">
           Récolter
         </div> : <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-          <PlantTimer plantedAt={plantedAt} growthTimeSeconds={growthTimeSeconds} className="mobile-text-xs" />
+          <PlantTimer plantedAt={plantedAt} growthTimeSeconds={plantType.base_growth_seconds || 60} className="mobile-text-xs" />
         </div>}
 
       {/* Badge de rareté */}

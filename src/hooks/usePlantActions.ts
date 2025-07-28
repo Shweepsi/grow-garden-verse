@@ -70,17 +70,18 @@ export const usePlantActions = () => {
 
       console.log('🌱 Plante trouvée:', plantType.display_name);
       
-      // Vérification robuste de la maturité
-      const growthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
+      // Vérification robuste de la maturité avec application des boosts
+      // CRITICAL: Les plantes existantes doivent bénéficier des boosts actifs
+      const baseGrowthTime = plantType.base_growth_seconds || 60;
       const boosts = { getBoostMultiplier };
-      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime, boosts);
+      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
       
       if (!isReady) {
-        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, growthTime, boosts);
+        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, baseGrowthTime, boosts);
         const timeString = timeRemaining > 60 
           ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
           : `${timeRemaining}s`;
-        console.log(`⏰ Plante pas encore prête, temps restant: ${timeString}`);
+        console.log(`⏰ Plante pas encore prête avec boosts, temps restant: ${timeString}`);
         throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
       }
 
