@@ -89,7 +89,11 @@ export class AdRewardService {
           amount: Math.floor(amount * 100) / 100, // Arrondir à 2 décimales
           description,
           emoji: config.emoji || '🎁',
-          duration: config.duration_minutes
+          duration: config.duration_minutes,
+          // Ajouter des données pour personnaliser l'affichage
+          displayName: config.display_name,
+          baseAmount: config.base_amount,
+          levelCoefficient: config.level_coefficient
         };
       });
 
