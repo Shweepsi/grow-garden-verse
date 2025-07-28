@@ -629,9 +629,13 @@ Deno.serve(async (req) => {
     
     const playerLevel = garden?.level || 1
     
+    // Si le type est "growth_speed", certaines entrées de configuration peuvent être stockées sous l'alias
+    // "growth_boost" côté base de données. On normalise donc le type utilisé pour la recherche de configuration.
+    const rewardTypeForConfig = payload.reward_type === 'growth_speed' ? 'growth_boost' : payload.reward_type;
+    
     const { data: rewardConfig, error: rewardError } = await supabase
       .rpc('calculate_ad_reward', {
-        reward_type_param: payload.reward_type,
+        reward_type_param: rewardTypeForConfig,
         player_level_param: playerLevel
       })
       .single()
