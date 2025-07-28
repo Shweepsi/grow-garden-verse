@@ -26,13 +26,20 @@ export const PassiveIncomeRobot = ({
     robotPlantType
   } = usePassiveIncomeRobot();
   const [realTimeAccumulation, setRealTimeAccumulation] = useState(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
 
   // Mettre à jour l'accumulation en temps réel
   useEffect(() => {
     setRealTimeAccumulation(currentAccumulation);
-    if (coinsPerMinute > 0) {
+    setLastUpdateTime(new Date());
+    
+    if (coinsPerMinute > 0 && currentAccumulation < coinsPerMinute * 24 * 60) {
       const interval = setInterval(() => {
-        setRealTimeAccumulation(prev => prev + Math.round(coinsPerMinute / 60));
+        setRealTimeAccumulation(prev => {
+          const maxCapacity = coinsPerMinute * 24 * 60;
+          const newValue = prev + Math.round(coinsPerMinute / 60);
+          return Math.min(newValue, maxCapacity);
+        });
       }, 1000);
       return () => clearInterval(interval);
     }
@@ -95,6 +102,17 @@ export const PassiveIncomeRobot = ({
                       <p className="text-xs text-green-600">
                         Maximum: {(coinsPerMinute * 24 * 60).toLocaleString()} 🪙 (24h)
                       </p>
+                      <div className="mt-1">
+                        <div className="w-full bg-green-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full transition-all duration-1000"
+                            style={{ width: `${Math.min(100, (realTimeAccumulation / (coinsPerMinute * 24 * 60)) * 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-green-600 mt-1">
+                          {Math.round((realTimeAccumulation / (coinsPerMinute * 24 * 60)) * 100)}% de la capacité
+                        </p>
+                      </div>
                     </div>}
                 </div>
               </div>}

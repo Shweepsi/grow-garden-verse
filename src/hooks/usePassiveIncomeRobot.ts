@@ -108,7 +108,17 @@ export const usePassiveIncomeRobot = () => {
         if (coinsPerMinute <= 0) return;
 
         const now = new Date();
-        const lastCollected = new Date(robotState.lastCollected);
+        
+        // Récupérer l'état actuel depuis la base de données pour éviter les désynchronisations
+        const { data: currentGarden } = await supabase
+          .from('player_gardens')
+          .select('robot_last_collected, robot_accumulated_coins')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (!currentGarden) return;
+        
+        const lastCollected = new Date(currentGarden.robot_last_collected);
         const minutesElapsed = Math.floor((now.getTime() - lastCollected.getTime()) / (1000 * 60));
         
         // Vérification de sécurité : pas plus de 24h d'accumulation
@@ -116,17 +126,21 @@ export const usePassiveIncomeRobot = () => {
         const safeMinutesElapsed = Math.min(minutesElapsed, maxMinutes);
         
         if (safeMinutesElapsed >= 1) {
-          const freshAccumulation = safeMinutesElapsed * coinsPerMinute;
+          // Calculer UNIQUEMENT les nouvelles pièces depuis la dernière mise à jour
+          const newCoins = safeMinutesElapsed * coinsPerMinute;
           const maxAccumulation = coinsPerMinute * maxMinutes;
-          const newAccumulation = Math.min(robotState.accumulatedCoins + freshAccumulation, maxAccumulation);
+          
+          // L'accumulation totale ne doit pas dépasser 24h de production
+          const newAccumulation = Math.min(newCoins, maxAccumulation);
 
-          console.log(`🤖 Robot accumulation update: ${safeMinutesElapsed}min × ${coinsPerMinute} = ${newAccumulation} coins`);
+          console.log(`🤖 Robot accumulation update: ${safeMinutesElapsed}min × ${coinsPerMinute} = ${newAccumulation} coins (total stocké)`);
 
-          // Mettre à jour UNIQUEMENT l'accumulation (pas le timestamp)
+          // Mettre à jour l'accumulation ET le timestamp pour éviter les doubles calculs
           await supabase
             .from('player_gardens')
             .update({ 
-              robot_accumulated_coins: newAccumulation
+              robot_accumulated_coins: newAccumulation,
+              robot_last_collected: now.toISOString()
             })
             .eq('user_id', user.id);
 
@@ -138,6 +152,7 @@ export const usePassiveIncomeRobot = () => {
     };
 
     // Mettre à jour l'accumulation toutes les minutes
+    updateAccumulation(); // Appel initial
     accumulationIntervalRef.current = window.setInterval(updateAccumulation, 60000);
 
     return () => {
@@ -145,35 +160,15 @@ export const usePassiveIncomeRobot = () => {
         clearInterval(accumulationIntervalRef.current);
       }
     };
-  }, [hasPassiveRobot, robotPlantType, robotState?.lastCollected, user?.id]);
+  }, [hasPassiveRobot, robotPlantType, robotState?.lastCollected, user?.id, queryClient, getCoinsPerMinute]);
 
   // Calcul de l'accumulation totale disponible (corrigé pour éviter le double calcul)
   const calculateCurrentAccumulation = () => {
     if (!robotState || !robotPlantType) return 0;
     
-    const coinsPerMinute = getCoinsPerMinute();
-    const now = new Date();
-    const lastCollected = new Date(robotState.lastCollected);
-    const minutesElapsed = Math.floor((now.getTime() - lastCollected.getTime()) / (1000 * 60));
-    
-    // Vérification de sécurité : pas plus de 24h d'écart temporel
-    const maxMinutes = 24 * 60;
-    const safeMinutesElapsed = Math.min(minutesElapsed, maxMinutes);
-    
-    // Garde-fou : si l'écart est anormalement grand, utiliser seulement l'accumulation stockée
-    if (safeMinutesElapsed > maxMinutes || minutesElapsed < 0) {
-      console.warn(`🤖 Écart temporel anormal détecté: ${minutesElapsed}min, utilisation de l'accumulation stockée uniquement`);
-      return robotState.accumulatedCoins;
-    }
-    
-    // Calcul simple : accumulation stockée + temps écoulé depuis la dernière collecte
-    const freshAccumulation = safeMinutesElapsed * coinsPerMinute;
-    const totalAccumulation = robotState.accumulatedCoins + freshAccumulation;
-    const maxAccumulation = coinsPerMinute * maxMinutes;
-    
-    console.log(`🤖 Calcul accumulation: stockée(${robotState.accumulatedCoins}) + fraîche(${freshAccumulation}) = ${totalAccumulation} (max: ${maxAccumulation})`);
-    
-    return Math.min(totalAccumulation, maxAccumulation);
+    // Utiliser directement l'accumulation stockée dans la base de données
+    // L'accumulation est mise à jour toutes les minutes par updateAccumulation
+    return robotState.accumulatedCoins || 0;
   };
 
   // Calculer les récompenses hors-ligne basées sur l'accumulation
@@ -222,23 +217,24 @@ export const usePassiveIncomeRobot = () => {
     mutationFn: async () => {
       if (!user?.id || !robotState) return null;
 
-      const totalAccumulated = calculateCurrentAccumulation();
-      if (totalAccumulated <= 0) return null;
-
-      const { data: garden } = await supabase
+      // Récupérer l'accumulation actuelle depuis la base de données
+      const { data: currentGarden } = await supabase
         .from('player_gardens')
-        .select('coins, experience, level')
+        .select('coins, experience, level, robot_accumulated_coins')
         .eq('user_id', user.id)
         .single();
 
-      if (!garden) throw new Error('Garden not found');
+      if (!currentGarden) throw new Error('Garden not found');
+      
+      const totalAccumulated = currentGarden.robot_accumulated_coins || 0;
+      if (totalAccumulated <= 0) return null;
 
       // Calculer l'expérience basée sur le niveau du robot et le montant collecté
       const baseExp = Math.floor(totalAccumulated / 100); // 1 EXP par 100 pièces collectées
       const levelBonus = robotLevel * 2; // 2 EXP bonus par niveau du robot
       const expReward = Math.max(1, baseExp + levelBonus); // Minimum 1 EXP
 
-      const currentExp = garden.experience || 0;
+      const currentExp = currentGarden.experience || 0;
       const newExp = currentExp + expReward;
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
 
@@ -248,7 +244,7 @@ export const usePassiveIncomeRobot = () => {
       const { error } = await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins + totalAccumulated,
+          coins: currentGarden.coins + totalAccumulated,
           experience: newExp,
           level: newLevel,
           robot_accumulated_coins: 0,

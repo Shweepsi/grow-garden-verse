@@ -105,7 +105,7 @@ export const PlotGrid = ({
       
       // Vérifier si le robot a atteint la limite de capacité (24h)
       const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
-        currentAccumulation >= (coinsPerMinute * 24 * 60);
+        currentAccumulation >= (coinsPerMinute * 24 * 60 * 0.95); // 95% de la capacité max
       
       return {
         plot,
