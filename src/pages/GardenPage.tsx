@@ -40,7 +40,7 @@ export const GardenPage = () => {
     <div className="h-screen garden-background overflow-hidden">
       {/* Sticky header */}
       <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
-        <GameHeader garden={gameState.garden} />
+        <GameHeader />
       </div>
       
       {/* Content with padding to avoid overlap */}
@@ -48,8 +48,7 @@ export const GardenPage = () => {
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}
-          coins={gameState.garden?.coins || 0}
-          onHarvestPlant={harvestPlant}
+          onHarvest={harvestPlant}
           onUnlockPlot={unlockPlot}
         />
       </div>
