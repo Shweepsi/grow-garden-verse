@@ -5,7 +5,6 @@ import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { EconomyService } from '@/services/EconomyService';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
-import { PlotIndividualizationService, PlotTraits } from '@/services/PlotIndividualizationService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
 
@@ -123,23 +122,13 @@ export const useDirectPlanting = () => {
 
       const now = new Date().toISOString();
 
-      // Générer des traits aléatoires pour individualiser la parcelle
-      const plotTraits = PlotIndividualizationService.generateRandomTraits();
-      
-      // Appliquer le multiplicateur de croissance des traits de la parcelle
-      const finalGrowthTime = Math.max(1, Math.floor(adjustedGrowthTime / plotTraits.growthMultiplier));
-      
-      console.log(`🎲 Traits de parcelle générés:`, plotTraits);
-      console.log(`⏱️ Temps de croissance final: ${adjustedGrowthTime}s -> ${finalGrowthTime}s (trait multiplier: x${plotTraits.growthMultiplier})`);
-
-      // Planter sur la parcelle avec les métadonnées des traits
+      // Planter sur la parcelle
       const { error: updatePlotError } = await supabase
         .from('garden_plots')
         .update({
           plant_type: plantTypeId,
           planted_at: now,
-          growth_time_seconds: finalGrowthTime,
-          plant_metadata: plotTraits, // Stocker les traits dans les métadonnées
+          growth_time_seconds: adjustedGrowthTime,
           updated_at: now
         })
         .eq('user_id', user.id)
@@ -185,7 +174,7 @@ export const useDirectPlanting = () => {
 
       console.log('✅ Plantation directe terminée avec succès');
       
-      // Retourner les informations nécessaires pour la mise à jour optimiste
+      // Retourner les données nécessaires pour la mise à jour optimiste
       return {
         plotNumber,
         plantTypeId,
@@ -195,45 +184,29 @@ export const useDirectPlanting = () => {
       };
     },
     onSuccess: (data) => {
-      // Au lieu d'invalider toutes les données, mettre à jour uniquement la parcelle concernée
+      // Mise à jour optimiste de la parcelle plantée uniquement
       queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
         if (!oldData) return oldData;
         
-        // Trouver et mettre à jour uniquement la parcelle qui vient d'être plantée
-        const updatedPlots = oldData.plots.map((plot: any) => {
-          if (plot.plot_number === data.plotNumber) {
-            // Mettre à jour la parcelle avec les nouvelles données
-            return {
-              ...plot,
-              plant_type: data.plantTypeId,
-              planted_at: data.plantedAt,
-              growth_time_seconds: data.adjustedGrowthTime,
-              updated_at: data.plantedAt
-            };
-          }
-          return plot;
-        });
-        
-        // Mettre à jour également les coins du jardin
-        const updatedGarden = {
-          ...oldData.garden,
-          coins: Math.max(0, (oldData.garden.coins || 0) - data.actualCost)
-        };
-        
         return {
           ...oldData,
-          plots: updatedPlots,
-          garden: updatedGarden
+          plots: oldData.plots.map((plot: any) => 
+            plot.plot_number === data.plotNumber
+              ? {
+                  ...plot,
+                  plant_type: data.plantTypeId,
+                  planted_at: data.plantedAt,
+                  growth_time_seconds: data.adjustedGrowthTime,
+                  updated_at: data.plantedAt
+                }
+              : plot
+          ),
+          garden: {
+            ...oldData.garden,
+            coins: Math.max(0, (oldData.garden.coins || 0) - data.actualCost)
+          }
         };
       });
-      
-      // Rafraîchir en arrière-plan pour synchroniser avec la base de données
-      setTimeout(() => {
-        queryClient.invalidateQueries({ 
-          queryKey: ['gameData', user?.id],
-          refetchType: 'active'
-        });
-      }, 1000); // Attendre 1 seconde avant de rafraîchir
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation directe:', error);

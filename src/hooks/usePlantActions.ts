@@ -10,7 +10,6 @@ import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { MAX_PLOTS } from '@/constants';
-import { PlotTraits } from '@/services/PlotIndividualizationService';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
@@ -88,16 +87,6 @@ export const usePlantActions = () => {
 
       console.log('✅ Plante prête pour la récolte');
 
-      // Récupérer les traits de la parcelle depuis les métadonnées
-      const plotTraits: PlotTraits = plot.plant_metadata || {
-        growthMultiplier: 1,
-        yieldMultiplier: 1,
-        expMultiplier: 1,
-        gemChanceBonus: 0
-      };
-      
-      console.log('🎲 Traits de la parcelle:', plotTraits);
-
       // Obtenir les données du jardin
       const { data: garden, error: gardenError } = await supabase
         .from('player_gardens')
@@ -123,33 +112,27 @@ export const usePlantActions = () => {
       const plantCostReduction = Math.max(0.1, multipliers.plantCostReduction || 1);
       const gemChance = Math.max(0, Math.min(1, multipliers.gemChance || 0));
       
-      // Appliquer les multiplicateurs des traits de la parcelle
-      const finalHarvestMultiplier = harvestMultiplier * plotTraits.yieldMultiplier;
-      const finalExpMultiplier = expMultiplier * plotTraits.expMultiplier;
-      const finalGemChance = Math.min(1, gemChance + plotTraits.gemChanceBonus);
-      
       const harvestReward = EconomyService.getHarvestReward(
         plantType.level_required,
         plantType.rarity,
         playerLevel,
-        finalHarvestMultiplier,
+        harvestMultiplier,
         garden.permanent_multiplier || 1
       );
       
       const expReward = EconomyService.calculateExpReward(
         plantType.level_required,
         plantType.rarity,
-        finalExpMultiplier
+        expMultiplier
       );
       
       const gemReward = EconomyService.calculateGemReward(
         plantType.rarity,
-        finalGemChance
+        gemChance
       );
 
       console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes`);
-      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${finalHarvestMultiplier.toFixed(2)}, EXP: x${finalExpMultiplier.toFixed(2)}, Coût: x${plantCostReduction}, Gemmes: ${(finalGemChance * 100).toFixed(1)}%`);
-      console.log(`🎲 Multiplicateurs des traits - Récolte: x${plotTraits.yieldMultiplier}, EXP: x${plotTraits.expMultiplier}, Gemmes: +${(plotTraits.gemChanceBonus * 100).toFixed(1)}%`);
+      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier.toFixed(2)}, EXP: x${expMultiplier.toFixed(2)}, Coût: x${plantCostReduction}, Gemmes: ${(gemChance * 100).toFixed(1)}%`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
@@ -271,26 +254,22 @@ export const usePlantActions = () => {
 
       console.log('✅ Récolte terminée avec succès');
       
-      // Retourner les informations nécessaires pour la mise à jour optimiste
+      // Retourner les données pour la mise à jour optimiste
       return {
         plotNumber,
-        harvestReward,
-        expReward,
-        gemReward,
-        newLevel,
-        newExp,
         newCoins,
         newGems,
+        newExp,
+        newLevel,
         newHarvests
       };
     },
     onSuccess: (data) => {
-      // Animation de récolte subtile - léger zoom
-      const plotElement = document.querySelector(`[data-plot="${data.plotNumber}"]`);
-      if (plotElement instanceof HTMLElement) {
-        plotElement.style.transition = 'transform 0.3s ease-in-out';
+      // Animation de récolte
+      const plotElement = document.querySelector(`[data-plot="${data.plotNumber}"]`) as HTMLElement;
+      if (plotElement) {
         plotElement.style.transform = 'scale(1.05)';
-        
+        plotElement.style.transition = 'transform 0.15s ease-out';
         setTimeout(() => {
           plotElement.style.transform = 'scale(1)';
           setTimeout(() => {
@@ -300,50 +279,33 @@ export const usePlantActions = () => {
         }, 150);
       }
       
-      // Mise à jour optimiste des données
+      // Mise à jour optimiste de la parcelle récoltée uniquement
       queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
         if (!oldData) return oldData;
         
-        // Mettre à jour uniquement la parcelle récoltée
-        const updatedPlots = oldData.plots.map((plot: any) => {
-          if (plot.plot_number === data.plotNumber) {
-            // Réinitialiser la parcelle
-            return {
-              ...plot,
-              plant_type: null,
-              planted_at: null,
-              growth_time_seconds: null,
-              plant_metadata: null,
-              updated_at: new Date().toISOString()
-            };
-          }
-          return plot;
-        });
-        
-        // Mettre à jour les données du jardin
-        const updatedGarden = {
-          ...oldData.garden,
-          coins: data.newCoins,
-          gems: data.newGems,
-          experience: data.newExp,
-          level: data.newLevel,
-          total_harvests: data.newHarvests
-        };
-        
         return {
           ...oldData,
-          plots: updatedPlots,
-          garden: updatedGarden
+          plots: oldData.plots.map((plot: any) => 
+            plot.plot_number === data.plotNumber
+              ? {
+                  ...plot,
+                  plant_type: null,
+                  planted_at: null,
+                  growth_time_seconds: null,
+                  updated_at: new Date().toISOString()
+                }
+              : plot
+          ),
+          garden: {
+            ...oldData.garden,
+            coins: data.newCoins,
+            gems: data.newGems,
+            experience: data.newExp,
+            level: data.newLevel,
+            total_harvests: data.newHarvests
+          }
         };
       });
-      
-      // Rafraîchir en arrière-plan après un court délai
-      setTimeout(() => {
-        queryClient.invalidateQueries({ 
-          queryKey: ['gameData', user?.id],
-          refetchType: 'active'
-        });
-      }, 1500);
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la récolte:', error);
