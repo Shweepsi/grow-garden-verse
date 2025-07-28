@@ -73,6 +73,7 @@ export class AdBoostService {
           description: `Multiplie les gains de gemmes par ${effectValue} pendant 1 heure`
         };
       case 'growth_speed':
+      case 'growth_boost':
         return {
           icon: '⚡',
           label: `Croissance -${Math.round((1 - (1/effectValue)) * 100)}%`,
