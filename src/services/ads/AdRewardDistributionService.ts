@@ -135,25 +135,25 @@ export class AdRewardDistributionService {
     return { success: true };
   }
 
-  private static async distributeGrowthBoost(userId: string, reductionPercentage: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
+  // Boost de croissance : le paramètre "multiplier" est un multiplicateur (>1) qui accélère la croissance.
+  private static async distributeGrowthBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
     const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
-    const effectValue = 1 - (reductionPercentage / 100); // Convertir en multiplicateur
 
     const { error } = await supabase
       .from('active_effects')
       .insert({
         user_id: userId,
         effect_type: 'growth_speed',
-        effect_value: effectValue,
+        effect_value: multiplier,
         expires_at: expiresAt.toISOString(),
         source: 'ad_reward'
       });
 
     if (error) {
-      return { success: false, error: 'Erreur lors de l\'activation du boost croissance' };
+      return { success: false, error: "Erreur lors de l'activation du boost croissance" };
     }
 
-    console.log(`AdMob: Applied growth boost (${reductionPercentage}% reduction for ${durationMinutes}min) to user ${userId}`);
+    console.log(`AdMob: Applied growth boost (x${multiplier} for ${durationMinutes}min) to user ${userId}`);
     return { success: true };
   }
 }
