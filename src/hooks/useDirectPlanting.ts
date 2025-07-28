@@ -176,7 +176,6 @@ export const useDirectPlanting = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
-      toast.success('Plante plantée avec succès !');
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation directe:', error);
