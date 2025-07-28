@@ -9,7 +9,6 @@ import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
-import { PlotTraits } from '@/services/PlotIndividualizationService';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -77,19 +76,7 @@ export const PlotGrid = ({
       const plantType = plantTypeMap.get(plot.plant_type || '');
       if (plantType) {
         const boosts = { getBoostMultiplier };
-        let baseGrowthTime = plantType.base_growth_seconds || 60;
-        
-        // Appliquer le multiplicateur de croissance des traits si disponible
-        const plotTraits: PlotTraits = plot.plant_metadata || {
-          growthMultiplier: 1,
-          yieldMultiplier: 1,
-          expMultiplier: 1,
-          gemChanceBonus: 0
-        };
-        
-        if (plotTraits.growthMultiplier) {
-          baseGrowthTime = Math.max(1, Math.floor(baseGrowthTime / plotTraits.growthMultiplier));
-        }
+        const baseGrowthTime = plantType.base_growth_seconds || 60;
         
         isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
       }
