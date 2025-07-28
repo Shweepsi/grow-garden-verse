@@ -4,20 +4,17 @@ import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
 import { Progress } from '@/components/ui/progress';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
-import { PlotTraits } from '@/services/PlotIndividualizationService';
 
 interface PlantDisplayProps {
   plantType: PlantType;
   plantedAt: string | null;
   growthTimeSeconds: number;
-  plotTraits?: PlotTraits;
 }
 
 export const PlantDisplay = memo(({
   plantType,
   plantedAt,
-  growthTimeSeconds,
-  plotTraits
+  growthTimeSeconds
 }: PlantDisplayProps) => {
   const { getBoostMultiplier } = useActiveBoosts();
   const [progress, setProgress] = useState(0);
@@ -38,12 +35,7 @@ export const PlantDisplay = memo(({
       const boosts = { getBoostMultiplier };
       // CRITICAL: Utiliser le temps de base de la plante plutôt que le temps stocké
       // pour que les boosts s'appliquent aux plantes existantes
-      let baseGrowthTime = plantType.base_growth_seconds || 60;
-      
-      // Appliquer le multiplicateur de croissance des traits si disponible
-      if (plotTraits && plotTraits.growthMultiplier) {
-        baseGrowthTime = Math.max(1, Math.floor(baseGrowthTime / plotTraits.growthMultiplier));
-      }
+      const baseGrowthTime = plantType.base_growth_seconds || 60;
       
       const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, baseGrowthTime, boosts);
       const ready = PlantGrowthService.isPlantReady(plantedAt, baseGrowthTime, boosts);
@@ -55,15 +47,12 @@ export const PlantDisplay = memo(({
     updateProgress();
 
     // Utiliser l'intervalle optimisé pour des mises à jour fluides
-    let baseGrowthTime = plantType.base_growth_seconds || 60;
-    if (plotTraits && plotTraits.growthMultiplier) {
-      baseGrowthTime = Math.max(1, Math.floor(baseGrowthTime / plotTraits.growthMultiplier));
-    }
+    const baseGrowthTime = plantType.base_growth_seconds || 60;
     const updateInterval = PlantGrowthService.getOptimalUpdateInterval(baseGrowthTime);
     const interval = setInterval(updateProgress, updateInterval);
     
     return () => clearInterval(interval);
-  }, [plantedAt, plantType.base_growth_seconds, getBoostMultiplier, plotTraits]);
+  }, [plantedAt, plantType.base_growth_seconds, getBoostMultiplier]);
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
       case 'mythic':
@@ -112,11 +101,10 @@ export const PlantDisplay = memo(({
 
       {isReady ? <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-2 py-1 rounded-full mobile-text-xs font-medium shadow-lg">
           Récolter
-        </div> : <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+        </div> :         <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
           <PlantTimer 
             plantedAt={plantedAt} 
             growthTimeSeconds={plantType.base_growth_seconds || 60} 
-            plotTraits={plotTraits}
             className="mobile-text-xs" 
           />
         </div>}
