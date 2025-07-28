@@ -18,7 +18,7 @@ export interface GameMultipliers {
  */
 export const useGameMultipliers = () => {
   const { getActiveMultipliers } = useUpgrades();
-  const { getBoostMultiplier } = useActiveBoosts();
+  const { getBoostMultiplier, boosts } = useActiveBoosts();
   const { applyCoinsBoost, applyGemsBoost } = useGameEconomy();
 
   const getCompleteMultipliers = (): GameMultipliers => {
@@ -30,9 +30,10 @@ export const useGameMultipliers = () => {
     const gemBoost = getBoostMultiplier('gem_boost');
     const growthBoost = getBoostMultiplier('growth_speed');
     
-    console.log('🔧 Game Multipliers:', {
+    console.log('🔧 Game Multipliers DEBUG:', {
       permanent: permanentMultipliers,
-      boosts: { coinBoost, gemBoost, growthBoost },
+      activeBoosts: { coinBoost, gemBoost, growthBoost },
+      allBoosts: boosts, // Debug: voir tous les boosts récupérés
       combined: {
         harvest: permanentMultipliers.harvest * coinBoost,
         growth: permanentMultipliers.growth * growthBoost
