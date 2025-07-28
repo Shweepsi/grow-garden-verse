@@ -629,9 +629,9 @@ Deno.serve(async (req) => {
     
     const playerLevel = garden?.level || 1
     
-    // Si le type est "growth_speed", certaines entrées de configuration peuvent être stockées sous l'alias
-    // "growth_boost" côté base de données. On normalise donc le type utilisé pour la recherche de configuration.
-    const rewardTypeForConfig = payload.reward_type === 'growth_speed' ? 'growth_boost' : payload.reward_type;
+    // NORMALISATION: l'alias historique « growth_boost » a été renommé en « growth_speed » dans la BDD.
+    // Si nous recevons encore l'ancien identifiant, on le convertit vers le nouveau pour la recherche.
+    const rewardTypeForConfig = payload.reward_type === 'growth_boost' ? 'growth_speed' : payload.reward_type;
     
     const { data: rewardConfig, error: rewardError } = await supabase
       .rpc('calculate_ad_reward', {
