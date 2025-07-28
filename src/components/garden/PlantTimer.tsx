@@ -3,14 +3,16 @@ import { useEffect, useState, useMemo } from 'react';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { Clock } from 'lucide-react';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { PlotTraits } from '@/services/PlotIndividualizationService';
 
 interface PlantTimerProps {
   plantedAt: string | null;
   growthTimeSeconds: number;
+  plotTraits?: PlotTraits;
   className?: string;
 }
 
-export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: PlantTimerProps) => {
+export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotTraits, className = "" }: PlantTimerProps) => {
   const { getBoostMultiplier } = useActiveBoosts();
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isReady, setIsReady] = useState(false);
@@ -26,8 +28,15 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
 
     const updateTimer = () => {
       const boosts = { getBoostMultiplier };
-      const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
-      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts);
+      
+      // Appliquer le multiplicateur de croissance des traits si disponible
+      let adjustedGrowthTime = growthTimeSeconds;
+      if (plotTraits && plotTraits.growthMultiplier) {
+        adjustedGrowthTime = Math.max(1, Math.floor(growthTimeSeconds / plotTraits.growthMultiplier));
+      }
+      
+      const remaining = PlantGrowthService.getTimeRemaining(plantedAt, adjustedGrowthTime, boosts);
+      const ready = PlantGrowthService.isPlantReady(plantedAt, adjustedGrowthTime, boosts);
       
       setTimeRemaining(remaining);
       setIsReady(ready);
@@ -39,7 +48,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
     const interval = setInterval(updateTimer, updateInterval);
 
     return () => clearInterval(interval);
-  }, [plantedAt, growthTimeSeconds, updateInterval, getBoostMultiplier]);
+  }, [plantedAt, growthTimeSeconds, updateInterval, getBoostMultiplier, plotTraits]);
 
   if (!plantedAt || isReady) return null;
 

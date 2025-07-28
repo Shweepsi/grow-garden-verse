@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { EconomyService } from '@/services/EconomyService';
@@ -173,9 +173,40 @@ export const useDirectPlanting = () => {
       }
 
       console.log('✅ Plantation directe terminée avec succès');
+      
+      // Retourner les données nécessaires pour la mise à jour optimiste
+      return {
+        plotNumber,
+        plantTypeId,
+        actualCost,
+        adjustedGrowthTime,
+        plantedAt: now
+      };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
+    onSuccess: (data) => {
+      // Mise à jour optimiste de la parcelle plantée uniquement
+      queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        return {
+          ...oldData,
+          plots: oldData.plots.map((plot: any) => 
+            plot.plot_number === data.plotNumber
+              ? {
+                  ...plot,
+                  plant_type: data.plantTypeId,
+                  planted_at: data.plantedAt,
+                  growth_time_seconds: data.adjustedGrowthTime,
+                  updated_at: data.plantedAt
+                }
+              : plot
+          ),
+          garden: {
+            ...oldData.garden,
+            coins: Math.max(0, (oldData.garden.coins || 0) - data.actualCost)
+          }
+        };
+      });
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation directe:', error);

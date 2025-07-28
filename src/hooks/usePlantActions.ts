@@ -110,36 +110,29 @@ export const usePlantActions = () => {
       const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
       const expMultiplier = Math.max(0.1, multipliers.exp || 1);
       const plantCostReduction = Math.max(0.1, multipliers.plantCostReduction || 1);
-      const gemChance = Math.max(0, multipliers.gemChance || 0);
-
+      const gemChance = Math.max(0, Math.min(1, multipliers.gemChance || 0));
+      
       const harvestReward = EconomyService.getHarvestReward(
-        plantLevel,
-        baseGrowthSeconds,
+        plantType.level_required,
+        plantType.rarity,
         playerLevel,
         harvestMultiplier,
-        plantCostReduction,
         garden.permanent_multiplier || 1
       );
       
-      const expReward = EconomyService.getExperienceReward(plantLevel, expMultiplier);
+      const expReward = EconomyService.calculateExpReward(
+        plantType.level_required,
+        plantType.rarity,
+        expMultiplier
+      );
       
-      // Calculer les gemmes avec la chance d'amélioration
-      let gemReward = 0;
-      if (gemChance > 0) {
-        const randomChance = Math.random();
-        console.log(`💎 Chance de gemmes: ${(gemChance * 100).toFixed(1)}%, tirage: ${(randomChance * 100).toFixed(1)}%`);
-        
-        if (randomChance <= gemChance) {
-          // Récompense de gemmes basée sur le niveau de la plante (1-3 gemmes)
-          gemReward = Math.floor(Math.random() * Math.min(3, plantLevel)) + 1;
-          console.log(`💎 Drop de gemmes réussi ! Récompense: ${gemReward} gemmes`);
-        } else {
-          console.log(`💎 Pas de drop de gemmes cette fois`);
-        }
-      }
-      
+      const gemReward = EconomyService.calculateGemReward(
+        plantType.rarity,
+        gemChance
+      );
+
       console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes`);
-      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier}, EXP: x${expMultiplier}, Coût: x${plantCostReduction}, Gemmes: ${(gemChance * 100).toFixed(1)}%`);
+      console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier.toFixed(2)}, EXP: x${expMultiplier.toFixed(2)}, Coût: x${plantCostReduction}, Gemmes: ${(gemChance * 100).toFixed(1)}%`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
@@ -260,10 +253,20 @@ export const usePlantActions = () => {
       }
 
       console.log('✅ Récolte terminée avec succès');
+      
+      // Retourner les données pour la mise à jour optimiste
+      return {
+        plotNumber,
+        newCoins,
+        newGems,
+        newExp,
+        newLevel,
+        newHarvests
+      };
     },
-    onSuccess: (_, plotNumber) => {
-      // Animation de récolte subtile - léger zoom
-      const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`) as HTMLElement;
+    onSuccess: (data) => {
+      // Animation de récolte
+      const plotElement = document.querySelector(`[data-plot="${data.plotNumber}"]`) as HTMLElement;
       if (plotElement) {
         plotElement.style.transform = 'scale(1.05)';
         plotElement.style.transition = 'transform 0.15s ease-out';
@@ -276,7 +279,33 @@ export const usePlantActions = () => {
         }, 150);
       }
       
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      // Mise à jour optimiste de la parcelle récoltée uniquement
+      queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        return {
+          ...oldData,
+          plots: oldData.plots.map((plot: any) => 
+            plot.plot_number === data.plotNumber
+              ? {
+                  ...plot,
+                  plant_type: null,
+                  planted_at: null,
+                  growth_time_seconds: null,
+                  updated_at: new Date().toISOString()
+                }
+              : plot
+          ),
+          garden: {
+            ...oldData.garden,
+            coins: data.newCoins,
+            gems: data.newGems,
+            experience: data.newExp,
+            level: data.newLevel,
+            total_harvests: data.newHarvests
+          }
+        };
+      });
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la récolte:', error);
