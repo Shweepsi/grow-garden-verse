@@ -57,4 +57,21 @@ export class AdCacheService {
   static getCachedRewards(playerLevel: number): AdReward[] | null {
     return this.get<AdReward[]>(this.getRewardsKey(playerLevel));
   }
+
+  /**
+   * Vide le cache des récompenses pour un niveau spécifique
+   */
+  static clearRewardsCache(playerLevel: number): void {
+    this.delete(this.getRewardsKey(playerLevel));
+  }
+
+  /**
+   * Vide tout le cache des récompenses
+   */
+  static clearAllRewardsCache(): void {
+    const keys = Array.from(this.cache.keys());
+    keys.filter(key => key.startsWith('rewards_level_')).forEach(key => {
+      this.delete(key);
+    });
+  }
 }

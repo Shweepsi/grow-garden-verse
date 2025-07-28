@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { AdState } from '@/types/ads';
@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 
 export const useAdRewards = () => {
   const { user } = useAuth();
+  const mounted = useRef(true);
   const [adState, setAdState] = useState<AdState>({
     available: false,
     cooldownEnds: null,
@@ -19,6 +20,14 @@ export const useAdRewards = () => {
   const [loading, setLoading] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
 
+  // Track component mount/unmount
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   // Initialiser AdMob avec diagnostics améliorés
   useEffect(() => {
     const initializeAdMob = async () => {
@@ -28,7 +37,9 @@ export const useAdRewards = () => {
         
         // Récupérer les informations de diagnostic
         const debugInfo = AdMobService.getDebugInfo();
-        setDiagnostics(debugInfo);
+        if (mounted.current) {
+          setDiagnostics(debugInfo);
+        }
         
         console.log('AdMob: Initialization result:', initialized);
         console.log('AdMob: Debug info:', debugInfo);
@@ -42,16 +53,21 @@ export const useAdRewards = () => {
     };
   }, []);
 
-  // Actualiser l'état des publicités avec gestion d'erreur améliorée
+  // Actualiser l'état des publicités avec gestion d'erreur améliorée - FIXED: stable function
   const refreshAdState = useCallback(async (force = false) => {
-    if (!user?.id) return;
+    if (!user?.id || !mounted.current) return;
 
     try {
       // Éviter les rechargements trop fréquents sauf si forcé
       if (!force && loading) return;
       
-      setLoading(true);
+      if (mounted.current) {
+        setLoading(true);
+      }
+      
       const cooldownInfo = await AdCooldownService.getCooldownInfo(user.id);
+      
+      if (!mounted.current) return;
       
       // Seulement mettre à jour si les données ont réellement changé
       setAdState(prev => {
@@ -74,7 +90,7 @@ export const useAdRewards = () => {
       });
 
       // Mettre à jour les diagnostics seulement si nécessaire
-      if (Capacitor.isNativePlatform()) {
+      if (Capacitor.isNativePlatform() && mounted.current) {
         const debugInfo = AdMobService.getDebugInfo();
         setDiagnostics(prev => {
           if (JSON.stringify(prev) !== JSON.stringify(debugInfo)) {
@@ -87,28 +103,34 @@ export const useAdRewards = () => {
     } catch (error) {
       console.error('Error refreshing ad state:', error);
     } finally {
-      setLoading(false);
+      if (mounted.current) {
+        setLoading(false);
+      }
     }
-  }, [user?.id, loading]);
+  }, [user?.id]); // FIXED: removed loading from dependencies to prevent loops
 
   // Timer pour actualiser le cooldown
   useEffect(() => {
     if (adState.timeUntilNext > 0) {
       const interval = setInterval(() => {
-        setAdState(prev => ({
-          ...prev,
-          timeUntilNext: Math.max(0, prev.timeUntilNext - 1)
-        }));
+        if (mounted.current) {
+          setAdState(prev => ({
+            ...prev,
+            timeUntilNext: Math.max(0, prev.timeUntilNext - 1)
+          }));
+        }
       }, 1000);
 
       return () => clearInterval(interval);
     }
   }, [adState.timeUntilNext]);
 
-  // Actualiser quand l'utilisateur change
+  // Actualiser quand l'utilisateur change - FIXED: only when user changes
   useEffect(() => {
-    refreshAdState();
-  }, [refreshAdState]);
+    if (user?.id) {
+      refreshAdState();
+    }
+  }, [user?.id]); // FIXED: removed refreshAdState from dependencies
 
   // Formater le temps restant
   const formatTimeUntilNext = useCallback((seconds: number): string => {
@@ -141,10 +163,12 @@ export const useAdRewards = () => {
 
   // Fonction pour regarder une pub avec validation serveur et diagnostic amélioré
   const watchAd = async (rewardType: string, rewardAmount: number) => {
-    if (!user?.id) return { success: false, error: 'Not authenticated' };
+    if (!user?.id || !mounted.current) return { success: false, error: 'Not authenticated' };
 
     try {
-      setLoading(true);
+      if (mounted.current) {
+        setLoading(true);
+      }
       
       // Obtenir les informations de diagnostic avant d'essayer
       const debugInfo = AdMobService.getDebugInfo();
@@ -152,10 +176,12 @@ export const useAdRewards = () => {
       
       const result = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
       
-      if (result.success) {
+      if (result.success && mounted.current) {
         // Rafraîchir immédiatement avec un délai court pour permettre la propagation
         setTimeout(() => {
-          refreshAdState(true); // Force le rafraîchissement après succès
+          if (mounted.current) {
+            refreshAdState(true); // Force le rafraîchissement après succès
+          }
         }, 500);
         return { success: true };
       } else {
@@ -168,14 +194,20 @@ export const useAdRewards = () => {
       console.error('AdMob: Debug info on error:', debugInfo);
       return { success: false, error: (error as Error).message };
     } finally {
-      setLoading(false);
+      if (mounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   // Test de connectivité pour les diagnostics
   const testConnectivity = useCallback(async () => {
+    if (!mounted.current) return false;
+    
     try {
-      setLoading(true);
+      if (mounted.current) {
+        setLoading(true);
+      }
       const result = await AdMobService.testConnectivity();
       console.log('AdMob: Connectivity test result:', result);
       return result;
@@ -183,7 +215,9 @@ export const useAdRewards = () => {
       console.error('AdMob: Connectivity test error:', error);
       return false;
     } finally {
-      setLoading(false);
+      if (mounted.current) {
+        setLoading(false);
+      }
     }
   }, []);
 

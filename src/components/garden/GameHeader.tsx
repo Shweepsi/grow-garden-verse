@@ -5,7 +5,7 @@ import { useAnimations } from '@/contexts/AnimationContext';
 import { FloatingNumber } from '@/components/animations/FloatingNumber';
 import { AdRewardCard } from '@/components/ads/AdRewardCard';
 import { AdModal } from '@/components/ads/AdModal';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
@@ -22,6 +22,24 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
   const [showAdModal, setShowAdModal] = useState(false);
   const { availableRewards, adState } = useAdRewards();
   const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
+  const mounted = useRef(true);
+
+  // Track component mount/unmount to prevent state updates after unmount
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      // Close modal when component unmounts to prevent crashes
+      setShowAdModal(false);
+    };
+  }, []);
+
+  // Safe modal state setter that checks if component is mounted
+  const safeSetShowAdModal = useCallback((show: boolean) => {
+    if (mounted.current) {
+      setShowAdModal(show);
+    }
+  }, []);
 
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
@@ -149,10 +167,10 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 </div>
               </div>
 
-              {/* Bouton Publicité */}
+              {/* Bouton Publicité - FIXED: using safe state setter */}
               <Button
                 size="sm"
-                onClick={() => setShowAdModal(true)}
+                onClick={() => safeSetShowAdModal(true)}
                 className={adButtonState.className}
               >
                 <Gift className="h-3 w-3 text-white" />
@@ -258,8 +276,13 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
         </div>
       </div>
 
-      {/* Modal des publicités */}
-      <AdModal open={showAdModal} onOpenChange={setShowAdModal} />
+      {/* Modal des publicités - FIXED: using safe state setter and conditional rendering */}
+      {mounted.current && (
+        <AdModal 
+          open={showAdModal} 
+          onOpenChange={safeSetShowAdModal}
+        />
+      )}
     </div>
   );
 };

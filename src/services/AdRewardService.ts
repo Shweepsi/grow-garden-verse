@@ -5,13 +5,41 @@ import { AdSessionService } from "./ads/AdSessionService";
 import { AdCacheService } from "./ads/AdCacheService";
 
 export class AdRewardService {
+  /**
+   * Fonction de tri personnalisé pour les récompenses publicitaires
+   * Ordre : pièces, gemmes, boost pièces, boost croissance, boost gemmes
+   */
+  private static sortRewards(rewards: AdReward[]): AdReward[] {
+    const rewardOrder = {
+      'coins': 1,
+      'gems': 2,
+      'coin_boost': 3,
+      'growth_speed': 4,
+      'growth_boost': 4, // même priorité que growth_speed
+      'gem_boost': 5
+    };
+
+    return rewards.sort((a, b) => {
+      const orderA = rewardOrder[a.type] || 999;
+      const orderB = rewardOrder[b.type] || 999;
+      
+      // Si même ordre, trier par montant décroissant
+      if (orderA === orderB) {
+        return b.amount - a.amount;
+      }
+      
+      return orderA - orderB;
+    });
+  }
+
   static async getAvailableRewards(playerLevel: number): Promise<AdReward[]> {
     try {
       // Vérifier le cache d'abord
       const cachedRewards = AdCacheService.getCachedRewards(playerLevel);
       if (cachedRewards) {
         console.log('AdRewardService: Using cached rewards for level', playerLevel);
-        return cachedRewards;
+        // Appliquer le tri même aux récompenses en cache
+        return this.sortRewards(cachedRewards);
       }
 
       console.log('AdRewardService: Fetching rewards for level', playerLevel);
@@ -19,8 +47,8 @@ export class AdRewardService {
         .from('ad_reward_configs')
         .select('*')
         .eq('active', true)
-        .lte('min_player_level', playerLevel)
-        .order('reward_type');
+        .lte('min_player_level', playerLevel);
+        // Suppression du .order('reward_type') car on va trier manuellement
 
       if (error) throw error;
 
@@ -58,11 +86,14 @@ export class AdRewardService {
         };
       });
 
-      // Mettre en cache les récompenses
-      AdCacheService.cacheRewards(playerLevel, rewards);
-      console.log('AdRewardService: Cached rewards for level', playerLevel);
+      // Appliquer le tri personnalisé
+      const sortedRewards = this.sortRewards(rewards);
+
+      // Mettre en cache les récompenses triées
+      AdCacheService.cacheRewards(playerLevel, sortedRewards);
+      console.log('AdRewardService: Cached sorted rewards for level', playerLevel);
       
-      return rewards;
+      return sortedRewards;
     } catch (error) {
       console.error('Error loading ad rewards:', error);
       // Fallback en cas d'erreur
@@ -75,9 +106,12 @@ export class AdRewardService {
         }
       ];
       
+      // Appliquer le tri même aux récompenses de fallback (pas nécessaire ici mais pour cohérence)
+      const sortedFallbackRewards = this.sortRewards(fallbackRewards);
+      
       // Mettre en cache même les récompenses de fallback
-      AdCacheService.cacheRewards(playerLevel, fallbackRewards);
-      return fallbackRewards;
+      AdCacheService.cacheRewards(playerLevel, sortedFallbackRewards);
+      return sortedFallbackRewards;
     }
   }
 
@@ -124,5 +158,25 @@ export class AdRewardService {
 
   static async getRecentSessions(userId: string, limit = 10) {
     return AdSessionService.getRecentSessions(userId, limit);
+  }
+
+  /**
+   * Force le rechargement des récompenses en vidant le cache
+   * Utile pour appliquer immédiatement les nouveaux changements de tri
+   */
+  static async forceReloadRewards(playerLevel: number): Promise<AdReward[]> {
+    // Vider le cache pour ce niveau
+    AdCacheService.clearRewardsCache(playerLevel);
+    
+    // Recharger les récompenses avec le nouveau tri
+    return this.getAvailableRewards(playerLevel);
+  }
+
+  /**
+   * Vide tout le cache des récompenses
+   * Utile après des modifications importantes du système de tri
+   */
+  static clearAllRewardsCache(): void {
+    AdCacheService.clearAllRewardsCache();
   }
 }

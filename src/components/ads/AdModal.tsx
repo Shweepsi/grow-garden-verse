@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
@@ -28,6 +28,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { toast } = useToast();
   const { data: gameData } = useGameData();
   const { adState } = useAdRewards();
+  const mounted = useRef(true);
   
   // Hooks refactorisés
   const { watchState, watchAd } = useAdWatcher();
@@ -42,49 +43,88 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     reset
   } = useAdModalState();
 
-  // Charger les récompenses disponibles
+  // Track component mount/unmount
   useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  // Charger les récompenses disponibles - FIXED: removed hook functions from dependencies
+  useEffect(() => {
+    let cancelled = false;
+    
     const loadRewards = async () => {
-      if (!open || !user?.id) return;
+      if (!open || !user?.id || !mounted.current) return;
 
       try {
         setLoadingRewards(true);
         const playerLevel = gameData?.garden?.level || 1;
         const rewards = await AdRewardService.getAvailableRewards(playerLevel);
-        setAvailableRewards(rewards);
+        
+        // Check if component is still mounted and request wasn't cancelled
+        if (!cancelled && mounted.current) {
+          setAvailableRewards(rewards);
+        }
       } catch (error) {
         console.error('Error loading rewards:', error);
-        toast({
-          title: "Erreur",
-          description: "Erreur lors du chargement des récompenses",
-          variant: "destructive"
-        });
+        if (!cancelled && mounted.current) {
+          toast({
+            title: "Erreur",
+            description: "Erreur lors du chargement des récompenses",
+            variant: "destructive"
+          });
+        }
       } finally {
-        setLoadingRewards(false);
+        if (!cancelled && mounted.current) {
+          setLoadingRewards(false);
+        }
       }
     };
 
     loadRewards();
-  }, [open, user?.id, gameData?.garden?.level, toast, setLoadingRewards, setAvailableRewards]);
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.id, gameData?.garden?.level]); // FIXED: removed toast and setter functions
 
-  // Précharger la publicité à l'ouverture
+  // Précharger la publicité à l'ouverture - FIXED: removed debugInfo from dependencies
   useEffect(() => {
-    if (open && user?.id) {
-      const preloadAd = async () => {
-        console.log('AdMob: Preloading ad with debug info:', debugInfo);
+    if (!open || !user?.id || !mounted.current) return;
+    
+    let cancelled = false;
+    
+    const preloadAd = async () => {
+      console.log('AdMob: Preloading ad');
+      if (!cancelled && mounted.current) {
         await AdMobService.preloadAd(user.id, 'coins', 100);
-      };
-      preloadAd();
-    }
-  }, [open, user?.id, debugInfo]);
+      }
+    };
+    
+    preloadAd();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.id]); // FIXED: removed debugInfo dependency
 
-  // Reset state when modal closes
+  // Reset state when modal closes - FIXED: added cleanup
   useEffect(() => {
-    if (!open) {
-      reset();
+    if (!open && mounted.current) {
+      // Use setTimeout to avoid state updates during render
+      const timeoutId = setTimeout(() => {
+        if (mounted.current) {
+          reset();
+        }
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [open, reset]);
+  }, [open]); // FIXED: removed reset function from dependencies
 
+  // FIXED: moved toast dependency inside the function to avoid re-renders
   const handleWatchAd = async () => {
     if (!selectedReward) {
       toast({
@@ -105,7 +145,9 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     }
 
     await watchAd(selectedReward, () => {
-      onOpenChange(false);
+      if (mounted.current) {
+        onOpenChange(false);
+      }
     });
   };
 
