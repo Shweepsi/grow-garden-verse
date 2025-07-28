@@ -32,7 +32,10 @@ export const PlantReadyIndicator = memo(({
         {/* Bouton récolte normale */}
         <Button
           size="sm"
-          onClick={onHarvest}
+          onClick={(e) => {
+            e.stopPropagation(); // Empêche la propagation pour éviter un double déclenchement
+            onHarvest();
+          }}
           className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white mobile-text-xs px-3 py-1 h-auto rounded-full shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200"
         >
           <Gift className="h-3 w-3 mr-1" />
@@ -43,7 +46,10 @@ export const PlantReadyIndicator = memo(({
         {canWatchAd && onWatchAd && (
           <Button
             size="sm"
-            onClick={onWatchAd}
+            onClick={(e) => {
+              e.stopPropagation();
+              onWatchAd();
+            }}
             className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white mobile-text-xs px-3 py-1 h-auto rounded-full shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200"
           >
             <Play className="h-3 w-3 mr-1" />
