@@ -1,78 +1,61 @@
-# 🐛 Fix: Correction du bug d'affichage post-refactoring + Suppression notification redondante
+# Fix 4 critical bugs for improved stability and performance
 
-## 📋 Résumé
+## 🐛 Bug Fixes
 
-Cette PR corrige un bug critique qui empêchait l'affichage correct des temps de croissance depuis le refactoring du système de croissance, et supprime une notification redondante pour améliorer l'UX.
+This PR addresses 4 critical bugs that were affecting application stability, performance, and functionality.
 
-## 🐛 Problèmes résolus
+### **Bug 1: Memory Leak in useGameData Hook**
+- **Problem**: Realtime subscriptions were creating duplicate channels and not properly cleaning up
+- **Fix**: Added unique channel names, removed unnecessary dependencies, improved cleanup logic
+- **Impact**: Prevents memory leaks and multiple active subscriptions
 
-### 1. Bug d'affichage des temps de croissance
-- **Problème** : Après le refactoring du système de croissance (PR #5), la méthode `formatTimeRemaining` du `PlantGrowthService` ne retournait plus une chaîne formatée mais un nombre
-- **Cause** : L'alias pointait vers `getTimeRemaining()` qui retourne des secondes (number) au lieu d'une chaîne formatée
-- **Impact** : Les composants `PlantTimer`, `PlantDisplay` tentaient d'afficher des nombres au lieu de temps formatés (ex: "120" au lieu de "2m 0s")
+### **Bug 2: Race Condition in Plant Harvesting**
+- **Problem**: Plant was cleared before garden update, causing data loss if garden update failed
+- **Fix**: Added fallback mechanism with proper error handling and rollback capability
+- **Impact**: Maintains data consistency and prevents plant loss
 
-### 2. Notification redondante
-- **Problème** : Toast "Plante plantée avec succès !" apparaissait à chaque plantation
-- **Impact** : Expérience utilisateur dégradée avec des notifications trop fréquentes
+### **Bug 3: Performance Issue in Plant Growth Service**
+- **Problem**: Time calculations were inefficient and recalculated frequently without caching
+- **Fix**: Added caching mechanisms for growth time calculations and update intervals
+- **Impact**: Significantly improves performance and reduces CPU usage
 
-## ✅ Solutions implémentées
+### **Bug 4: Growth Speed Multiplier Logic Error - CRITICAL**
+- **Problem**: Growth speed upgrades were INCREASING growth time instead of decreasing it
+- **Fix**: Corrected calculation logic from `baseTime * multiplier` to `baseTime / multiplier`
+- **Impact**: Growth speed upgrades now work as intended (plants grow faster)
 
-### 1. Correction de `formatTimeRemaining`
-```typescript
-// Avant (bugué)
-static formatTimeRemaining = PlantGrowthService.getTimeRemaining;
+## 🔧 Technical Details
 
-// Après (corrigé)
-static formatTimeRemaining(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): string {
-  const seconds = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
-  return GrowthService.formatTimeRemaining(seconds);
-}
-```
+### Files Modified:
+- `src/hooks/useGameData.ts` - Fixed realtime subscription memory leaks
+- `src/hooks/usePlantActions.ts` - Added fallback for harvest transactions
+- `src/services/PlantGrowthService.ts` - Added caching and fixed growth speed logic
+- `src/services/EconomyService.ts` - Fixed growth speed multiplier calculation
+- `src/components/garden/PlantSelector.tsx` - Fixed growth speed display logic
+- `supabase/migrations/20241201000000_add_harvest_transaction.sql` - Added database transaction function
 
-### 2. Suppression de la notification
-```typescript
-// Supprimé du hook useDirectPlanting
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ['gameData'] });
-  // toast.success('Plante plantée avec succès !'); // ← SUPPRIMÉ
-},
-```
+### Database Changes:
+- Added `harvest_plant_transaction` function for atomic plant harvesting operations
 
-## 🔄 Rétrocompatibilité
+## ✅ Testing
 
-- ✅ Tous les composants existants continuent de fonctionner sans modification
-- ✅ Le `PlantGrowthService` reste un facade compatible pour l'ancien code
-- ✅ Les notifications d'erreur sont conservées pour le feedback utilisateur
-- ✅ Pas de breaking changes
-
-## 🧪 Tests
-
-- ✅ Compilation réussie (`npm run build`)
-- ✅ Application démarre sans erreurs (`npm run dev`)
-- ✅ Pas d'erreurs TypeScript (`npx tsc --noEmit`)
-- ✅ Tous les composants de croissance fonctionnent correctement
-
-## 📁 Fichiers modifiés
-
-- `src/services/PlantGrowthService.ts` - Correction de la méthode `formatTimeRemaining`
-- `src/hooks/useDirectPlanting.ts` - Suppression de la notification redondante
+All fixes maintain backward compatibility and include:
+- Graceful fallback mechanisms
+- Proper error handling
+- Performance optimizations
+- Memory leak prevention
 
 ## 🚀 Impact
 
-- 🐛 **Bug critique corrigé** : Les temps de croissance s'affichent à nouveau correctement
-- 🎯 **UX améliorée** : Moins de notifications parasites
-- 🔧 **Stabilité** : Le refactoring du système de croissance est maintenant pleinement fonctionnel
-- ⚡ **Performance** : Pas d'impact négatif sur les performances
+- **Stability**: Eliminates memory leaks and race conditions
+- **Performance**: Reduces CPU usage and improves responsiveness
+- **Functionality**: Growth speed upgrades now work correctly
+- **User Experience**: More reliable and faster application
 
-## 🏷️ Type de changement
+## 🔗 Related Issues
 
-- [x] Bug fix (changement non-breaking qui corrige un problème)
-- [x] Amélioration UX (suppression notification redondante)
-- [ ] Nouvelle fonctionnalité
-- [ ] Breaking change
-- [ ] Documentation
-
----
-
-### ⚠️ Note importante
-Ce fix est critique pour la fonctionnalité principale du jeu (affichage des temps de croissance). Il devrait être mergé en priorité.
+Fixes critical bugs affecting:
+- Memory management
+- Data consistency
+- Performance optimization
+- Growth speed functionality

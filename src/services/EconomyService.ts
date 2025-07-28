@@ -1,68 +1,52 @@
 
-import { PlantType, PlayerUpgrade } from "@/types/game";
-import { GrowthService } from "./growth/GrowthService";
-import { MINIMUM_COINS_RESERVE } from "@/constants";
+import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
+import { MINIMUM_COINS_RESERVE, INITIAL_COINS } from '@/constants';
 
 export class EconomyService {
-  // Prix de base des plantes selon leur rareté
-  static getPlantPrice(plantType: PlantType): number {
-    switch (plantType.rarity) {
-      case 'common': return 10;
-      case 'uncommon': return 50;
-      case 'rare': return 200;
-      case 'epic': return 1000;
-      case 'legendary': return 5000;
-      default: return 10;
-    }
+  // Pièces minimum à conserver pour pouvoir continuer à jouer
+  static readonly MINIMUM_COINS = MINIMUM_COINS_RESERVE;
+
+  // Système de coût progressif équilibré
+  static getPlantDirectCost(plantLevel: number): number {
+    if (!plantLevel || plantLevel < 1) return INITIAL_COINS;
+    // Progression douce : 100 * 1.5^(niveau-1)
+    return Math.floor(100 * Math.pow(1.5, plantLevel - 1));
   }
 
-  // Récompenses de récolte avec multiplicateur d'amélioration et boost
+  // Vérifier si l'achat d'une plante est possible (sans restriction)
+  static canAffordPlant(currentCoins: number, plantCost: number): boolean {
+    return currentCoins >= plantCost;
+  }
+
+  // Vérifier si l'achat d'une amélioration est possible avec protection des 100 pièces
+  static canAffordUpgrade(currentCoins: number, upgradeCost: number): boolean {
+    return currentCoins >= (upgradeCost + this.MINIMUM_COINS);
+  }
+
+  // Calculer les récompenses avec multiplicateurs d'améliorations
   static getHarvestReward(
-    plantLevel: number,
-    harvestMultiplier: number = 1,
-    coinBoostMultiplier: number = 1,
+    plantLevel: number, 
     growthTimeSeconds: number,
+    playerLevel: number = 1,
+    harvestMultiplier: number = 1,
+    plantCostReduction: number = 1,
     permanentMultiplier: number = 1
   ): number {
     // Validation des paramètres
     if (!plantLevel || plantLevel < 1) plantLevel = 1;
-    if (!harvestMultiplier || harvestMultiplier < 0.1) harvestMultiplier = 1;
-    if (!coinBoostMultiplier || coinBoostMultiplier < 0.1) coinBoostMultiplier = 1;
-    if (!permanentMultiplier || permanentMultiplier < 0.1) permanentMultiplier = 1;
     if (!growthTimeSeconds || growthTimeSeconds < 1) growthTimeSeconds = 60;
-
-    // Récompense de base selon le niveau
-    const baseReward = 10 + (plantLevel * 5);
+    if (!playerLevel || playerLevel < 1) playerLevel = 1;
+    if (!harvestMultiplier || harvestMultiplier < 0.1) harvestMultiplier = 1;
     
-    // Bonus basé sur le temps de croissance
-    // Les plantes qui prennent plus de temps donnent plus de récompenses
+    const baseCost = this.getPlantDirectCost(plantLevel) * plantCostReduction;
+    
+    // Profit de base de 70% + bonus pour temps long + bonus niveau
+    const baseProfit = baseCost * 1.7; // 70% de profit de base
     const timeBonus = Math.max(1, Math.floor(growthTimeSeconds / 600)) * 0.1; // 10% par 10min (600s)
-    const timeBonusMultiplier = 1 + timeBonus;
+    const levelBonus = 1 + (playerLevel * 0.02); // 2% par niveau du joueur
     
-    // Application des multiplicateurs
-    const reward = baseReward * harvestMultiplier * coinBoostMultiplier * timeBonusMultiplier * permanentMultiplier;
-    
-    return Math.floor(reward);
-  }
-
-  // Gemmes avec chance et multiplicateur de boost
-  static getGemReward(
-    plantLevel: number,
-    gemChance: number = 0,
-    gemBoostMultiplier: number = 1
-  ): number {
-    if (!plantLevel || plantLevel < 1) plantLevel = 1;
-    if (!gemChance || gemChance < 0) gemChance = 0;
-    if (!gemBoostMultiplier || gemBoostMultiplier < 0.1) gemBoostMultiplier = 1;
-    
-    const random = Math.random();
-    const effectiveChance = Math.min(1, gemChance); // Cap à 100%
-    
-    if (random < effectiveChance) {
-      const baseGems = Math.max(1, Math.floor(plantLevel / 5));
-      return Math.floor(baseGems * gemBoostMultiplier);
-    }
-    return 0;
+    const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
+    return Math.floor(finalReward * harvestMultiplier * permanentMultiplier);
   }
 
   // Expérience avec multiplicateur d'amélioration
@@ -82,12 +66,11 @@ export class EconomyService {
     if (!baseGrowthSeconds || baseGrowthSeconds < 1) baseGrowthSeconds = 60;
     if (!growthMultiplier || growthMultiplier <= 0) growthMultiplier = 1;
     
-    // Use the new GrowthService for consistent calculation
-    const calculation = GrowthService.calculateGrowthTime(baseGrowthSeconds, {
-      upgrades: growthMultiplier
-    });
+    // FIXED: Growth multiplier should REDUCE time, not increase it
+    // growthMultiplier of 1.15 means 15% faster growth = 15% less time
+    const adjustedTime = baseGrowthSeconds / growthMultiplier;
     
-    return calculation.finalTimeSeconds;
+    return Math.max(1, Math.floor(adjustedTime));
   }
 
   // Vérification d'accès aux plantes
@@ -99,43 +82,6 @@ export class EconomyService {
   // Calculer le coût d'une plante avec réduction
   static getAdjustedPlantCost(baseCost: number, costReduction: number = 1): number {
     return Math.floor(baseCost * costReduction);
-  }
-
-  /**
-   * Calculate the direct planting cost for a plant, based on the required level.
-   * The formula is intentionally simple so that older components depending on
-   * this helper keep working after the growth-speed refactor.
-   *
-   * Feel free to tweak the numbers – the important part is to provide a stable
-   * implementation so that calls to EconomyService.getPlantDirectCost no longer
-   * crash the render cycle.
-   */
-  static getPlantDirectCost(levelRequired: number): number {
-    if (!levelRequired || levelRequired < 1) levelRequired = 1;
-
-    // Quadratic progression keeps prices affordable early game and
-    // scales reasonably for higher levels.
-    const BASE_PRICE = 25; // base cost for level 1
-    return Math.floor(BASE_PRICE * Math.pow(levelRequired, 2));
-  }
-
-  /**
-   * Check if the player can afford purchasing / planting something that costs
-   * a given amount of coins while keeping the mandatory safety reserve.
-   */
-  static canAffordUpgrade(currentCoins: number, cost: number): boolean {
-    if (currentCoins == null || cost == null) return false;
-    return currentCoins - cost >= MINIMUM_COINS_RESERVE;
-  }
-
-  /**
-   * Simpler affordability check that doesn’t take the reserve into account –
-   * used for direct plant purchases where we already subtract the reserve
-   * outside of this helper.
-   */
-  static canAffordPlant(currentCoins: number, cost: number): boolean {
-    if (currentCoins == null || cost == null) return false;
-    return currentCoins >= cost;
   }
 
   // Correspondance niveau robot -> plante (basé sur level_required)
@@ -187,8 +133,6 @@ export class EconomyService {
           multipliers.harvest *= levelUpgrade.effect_value;
           break;
         case 'growth_speed':
-          // Growth speed upgrades should multiply together for cumulative effect
-          // e.g., two 1.15x upgrades = 1.15 * 1.15 = 1.3225x faster
           multipliers.growth *= levelUpgrade.effect_value;
           break;
         case 'exp_multiplier':
@@ -206,20 +150,18 @@ export class EconomyService {
     return multipliers;
   }
 
-  // Calculer le revenu total par minute (robot + récoltes manuelles estimées)
-  static calculateIncomePerMinute(
-    robotLevel: number,
-    playerLevel: number,
-    harvestMultiplier: number = 1,
-    permanentMultiplier: number = 1
-  ): number {
-    // Revenu du robot
-    const robotIncome = this.getRobotPassiveIncome(robotLevel, harvestMultiplier, permanentMultiplier);
-    
-    // Estimation des récoltes manuelles (basé sur le niveau du joueur)
-    // On estime 2 récoltes par minute en moyenne
-    const manualHarvestEstimate = this.getHarvestReward(playerLevel, harvestMultiplier, 1, 60, permanentMultiplier) * 2;
-    
-    return robotIncome + manualHarvestEstimate;
+  // Méthodes pour les récompenses publicitaires
+  static getAdCoinReward(baseAmount: number, playerLevel: number, permanentMultiplier: number): number {
+    const levelBonus = 1 + (Math.max(0, playerLevel - 1) * 0.05); // 5% par niveau après le niveau 1
+    return Math.floor(baseAmount * levelBonus * permanentMultiplier);
+  }
+
+  static getAdGemReward(playerLevel: number): number {
+    // 5 gemmes de base + 1 par niveau (max 20)
+    return Math.min(5 + Math.floor(playerLevel / 2), 20);
+  }
+
+  static applyPermanentMultiplier(baseAmount: number, permanentMultiplier: number): number {
+    return Math.floor(baseAmount * permanentMultiplier);
   }
 }

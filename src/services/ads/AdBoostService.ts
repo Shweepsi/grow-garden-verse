@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { GrowthService } from '@/services/growth/GrowthService';
 
 /**
  * Service pour gérer l'application des boosts publicitaires
@@ -74,13 +73,10 @@ export class AdBoostService {
           description: `Multiplie les gains de gemmes par ${effectValue} pendant 1 heure`
         };
       case 'growth_boost':
-        // Convert effect value to reduction percentage for display
-        const reductionPercentage = Math.round((1 - effectValue) * 100);
-        const multiplier = GrowthService.adBoostToMultiplier(reductionPercentage);
         return {
           icon: '⚡',
-          label: `Croissance -${reductionPercentage}%`,
-          description: `Réduit le temps de croissance des plantes de ${reductionPercentage}% pendant 1 heure`
+          label: `Croissance -${Math.round((1 - (1/effectValue)) * 100)}%`,
+          description: `Réduit le temps de croissance des plantes de ${Math.round((1 - (1/effectValue)) * 100)}% pendant 1 heure`
         };
       default:
         return {
@@ -89,13 +85,5 @@ export class AdBoostService {
           description: 'Bonus temporaire'
         };
     }
-  }
-
-  /**
-   * Convert growth boost reduction percentage to effect value for storage
-   * e.g., 20% reduction -> 0.8 effect value
-   */
-  static growthBoostPercentageToEffectValue(reductionPercentage: number): number {
-    return 1 - (reductionPercentage / 100);
   }
 }

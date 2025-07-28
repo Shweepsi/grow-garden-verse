@@ -42,13 +42,7 @@ export const PlantSelector = ({
     return EconomyService.getPlantDirectCost(plantType.level_required || 1);
   };
   const getPlantReward = (plantType: PlantType): number => {
-    const baseReward = EconomyService.getHarvestReward(
-      plantType.level_required || 1,
-      multipliers.harvest,        // Multiplicateur permanent
-      1,                          // Pas de coin boost direct
-      plantType.base_growth_seconds || 60,
-      permanentMultiplier
-    );
+    const baseReward = EconomyService.getHarvestReward(plantType.level_required || 1, plantType.base_growth_seconds || 60, playerLevel, multipliers.harvest, multipliers.plantCostReduction, permanentMultiplier);
     return baseReward;
   };
   const getAdjustedGrowthTime = (baseGrowthSeconds: number): number => {

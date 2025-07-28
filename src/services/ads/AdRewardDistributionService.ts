@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { AdReward } from "@/types/ads";
-import { AdBoostService } from "./AdBoostService";
 
 export class AdRewardDistributionService {
   static async distributeReward(userId: string, reward: AdReward): Promise<{ success: boolean; error?: string }> {
@@ -138,8 +137,7 @@ export class AdRewardDistributionService {
 
   private static async distributeGrowthBoost(userId: string, reductionPercentage: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
     const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
-    // Use the new consistent method to convert percentage to effect value
-    const effectValue = AdBoostService.growthBoostPercentageToEffectValue(reductionPercentage);
+    const effectValue = 1 - (reductionPercentage / 100); // Convertir en multiplicateur
 
     const { error } = await supabase
       .from('active_effects')
