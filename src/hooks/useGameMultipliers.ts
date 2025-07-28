@@ -53,6 +53,41 @@ export const useGameMultipliers = () => {
       gems: gemBoost
     };
   };
+  
+  /**
+   * Return the FINAL multiplier that should be applied for a given effect type.
+   * This helper merges the permanent multipliers coming from upgrades with any
+   * temporary boost that might currently be active so that callers do not need
+   * to worry about combining them manually. Only the effect types that are
+   * presently used in the codebase are handled – other values default to 1.
+   */
+  const getCombinedBoostMultiplier = (effectType: string): number => {
+    const multipliers = getCompleteMultipliers();
+
+    switch (effectType) {
+      case 'growth_speed':
+      case 'growth_boost':
+        return multipliers.growth;
+
+      case 'harvest_multiplier':
+        return multipliers.harvest;
+
+      case 'exp_multiplier':
+        return multipliers.exp;
+
+      case 'plant_cost_reduction':
+        return multipliers.plantCostReduction;
+
+      case 'coin_boost':
+        return multipliers.coins;
+
+      case 'gem_boost':
+        return multipliers.gems;
+
+      default:
+        return 1;
+    }
+  };
 
   const applyAllBoosts = (coins: number, gems: number) => {
     return {
@@ -64,6 +99,9 @@ export const useGameMultipliers = () => {
   return {
     getCompleteMultipliers,
     applyAllBoosts,
+    // New unified helper so that external code (growth timers, etc.) can use
+    // the same source of truth for multipliers.
+    getCombinedBoostMultiplier,
     // Fonctions individuelles pour la compatibilité
     getBoostMultiplier,
     applyCoinsBoost,

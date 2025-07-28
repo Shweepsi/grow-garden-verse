@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { Clock } from 'lucide-react';
-import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 interface PlantTimerProps {
   plantedAt: string | null;
@@ -11,7 +11,7 @@ interface PlantTimerProps {
 }
 
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: PlantTimerProps) => {
-  const { getBoostMultiplier } = useActiveBoosts();
+  const { getCombinedBoostMultiplier } = useGameMultipliers();
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
@@ -25,7 +25,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
     if (!plantedAt) return;
 
     const updateTimer = () => {
-      const boosts = { getBoostMultiplier };
+      const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
       
       const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
       const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts);
@@ -40,7 +40,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: Pla
     const interval = setInterval(updateTimer, updateInterval);
 
     return () => clearInterval(interval);
-  }, [plantedAt, growthTimeSeconds, updateInterval, getBoostMultiplier]);
+  }, [plantedAt, growthTimeSeconds, updateInterval, getCombinedBoostMultiplier]);
 
   if (!plantedAt || isReady) return null;
 
