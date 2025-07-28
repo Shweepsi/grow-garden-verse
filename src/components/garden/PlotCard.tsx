@@ -35,12 +35,13 @@ export const PlotCard = memo(({
   
   // Memoiser le calcul de l'état de la plante pour éviter les recalculs
   const plantState = useMemo(() => {
-    if (!plot.plant_type) return 'empty';
-    const growthTime = plot.growth_time_seconds || 3600;
+    if (!plot.plant_type || !plantType) return 'empty';
     const boosts = { getBoostMultiplier };
-    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, growthTime, boosts);
+    // CRITICAL: Utiliser le temps de base de la plante pour que les boosts s'appliquent
+    const baseGrowthTime = plantType.base_growth_seconds || 60;
+    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
     return isReady ? 'ready' : 'growing';
-  }, [plot.plant_type, plot.planted_at, plot.growth_time_seconds, getBoostMultiplier]);
+  }, [plot.plant_type, plot.planted_at, plantType?.base_growth_seconds, getBoostMultiplier]);
 
   // Memoiser le calcul du coût de déblocage
   const unlockCost = useMemo(() => {
@@ -162,7 +163,7 @@ export const PlotCard = memo(({
                   <PlantDisplay 
                     plantType={plantType} 
                     plantedAt={plot.planted_at} 
-                    growthTimeSeconds={plot.growth_time_seconds || 3600} 
+                    growthTimeSeconds={plantType.base_growth_seconds || 60}
                   />
                 ) : (
                   <div className="text-center">
