@@ -7,11 +7,13 @@ import { EconomyService } from '@/services/EconomyService';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
+import { useState } from 'react';
 
 export const useDirectPlanting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: gameData } = useGameData();
+  const [plantingPlotNumber, setPlantingPlotNumber] = useState<number | null>(null);
 
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, expectedCost }: {
@@ -20,6 +22,9 @@ export const useDirectPlanting = () => {
       expectedCost: number;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
+
+      // Marquer cette parcelle comme en cours de plantation
+      setPlantingPlotNumber(plotNumber);
 
       // Validation stricte du numéro de parcelle
       if (!plotNumber || plotNumber < 1 || plotNumber > MAX_PLOTS) {
@@ -207,10 +212,16 @@ export const useDirectPlanting = () => {
           }
         };
       });
+
+      // Réinitialiser l'état de plantation
+      setPlantingPlotNumber(null);
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation directe:', error);
       toast.error(error.message || 'Erreur lors de la plantation');
+      
+      // Réinitialiser l'état de plantation en cas d'erreur
+      setPlantingPlotNumber(null);
     }
   });
 
@@ -220,7 +231,7 @@ export const useDirectPlanting = () => {
     plantDirect: (plotNumber: number, plantTypeId: string, expectedCost: number) => 
       plantDirectMutation.mutate({ plotNumber, plantTypeId, expectedCost }),
     isPlanting: plantDirectMutation.isPending,
-    isPlantingPlot: (plotNumber: number) => plantDirectMutation.isPending,
+    isPlantingPlot: (plotNumber: number) => plantingPlotNumber === plotNumber,
     getActiveMultipliers: getCompleteMultipliers
   };
 };
