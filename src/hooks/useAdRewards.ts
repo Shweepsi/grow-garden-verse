@@ -43,32 +43,53 @@ export const useAdRewards = () => {
   }, []);
 
   // Actualiser l'état des publicités avec gestion d'erreur améliorée
-  const refreshAdState = useCallback(async () => {
+  const refreshAdState = useCallback(async (force = false) => {
     if (!user?.id) return;
 
     try {
+      // Éviter les rechargements trop fréquents sauf si forcé
+      if (!force && loading) return;
+      
       setLoading(true);
       const cooldownInfo = await AdCooldownService.getCooldownInfo(user.id);
       
-      setAdState(prev => ({
-        ...prev,
-        available: cooldownInfo.available,
-        cooldownEnds: cooldownInfo.cooldownEnds,
-        timeUntilNext: cooldownInfo.timeUntilNext,
-        dailyCount: cooldownInfo.dailyCount,
-        maxDaily: cooldownInfo.maxDaily
-      }));
+      // Seulement mettre à jour si les données ont réellement changé
+      setAdState(prev => {
+        const hasChanged = 
+          prev.available !== cooldownInfo.available ||
+          prev.dailyCount !== cooldownInfo.dailyCount ||
+          prev.maxDaily !== cooldownInfo.maxDaily ||
+          prev.timeUntilNext !== cooldownInfo.timeUntilNext;
+        
+        if (!hasChanged) return prev;
+        
+        return {
+          ...prev,
+          available: cooldownInfo.available,
+          cooldownEnds: cooldownInfo.cooldownEnds,
+          timeUntilNext: cooldownInfo.timeUntilNext,
+          dailyCount: cooldownInfo.dailyCount,
+          maxDaily: cooldownInfo.maxDaily
+        };
+      });
 
-      // Mettre à jour les diagnostics
-      const debugInfo = AdMobService.getDebugInfo();
-      setDiagnostics(debugInfo);
+      // Mettre à jour les diagnostics seulement si nécessaire
+      if (Capacitor.isNativePlatform()) {
+        const debugInfo = AdMobService.getDebugInfo();
+        setDiagnostics(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(debugInfo)) {
+            return debugInfo;
+          }
+          return prev;
+        });
+      }
       
     } catch (error) {
       console.error('Error refreshing ad state:', error);
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, loading]);
 
   // Timer pour actualiser le cooldown
   useEffect(() => {
@@ -134,7 +155,7 @@ export const useAdRewards = () => {
       if (result.success) {
         // Rafraîchir immédiatement avec un délai court pour permettre la propagation
         setTimeout(() => {
-          refreshAdState();
+          refreshAdState(true); // Force le rafraîchissement après succès
         }, 500);
         return { success: true };
       } else {

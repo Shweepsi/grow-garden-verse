@@ -358,6 +358,7 @@
   animation: slowBounce 1s ease-in-out infinite;
 }
 
+
 /* Scrollbar optimisé */
 ::-webkit-scrollbar {
   width: 4px;
@@ -403,6 +404,15 @@
   .plot-growing::after {
     animation: none;
   }
+  
+
+}
+
+/* Optimisation du logo et des images */
+img[alt*="Logo"] {
+  will-change: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 /* Optimisation pour les appareils moins performants */
