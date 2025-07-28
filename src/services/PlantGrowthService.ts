@@ -60,7 +60,7 @@ export class PlantGrowthService {
     const adjustedTime = Math.floor(baseTime / growthBoostMultiplier);
     
     console.log(`🌱 Growth boost applied: ${baseTime}s -> ${adjustedTime}s (multiplier: x${growthBoostMultiplier})`);
-    return Math.max(adjustedTime, 5); // Minimum 5 secondes
+    return Math.max(adjustedTime, 1); // Minimum 1 seconde
   }
 
   static isReadyToHarvest(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): boolean {
