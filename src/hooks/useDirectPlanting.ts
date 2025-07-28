@@ -184,9 +184,56 @@ export const useDirectPlanting = () => {
       }
 
       console.log('✅ Plantation directe terminée avec succès');
+      
+      // Retourner les informations nécessaires pour la mise à jour optimiste
+      return {
+        plotNumber,
+        plantTypeId,
+        actualCost,
+        adjustedGrowthTime,
+        plantedAt: now
+      };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
+    onSuccess: (data) => {
+      // Au lieu d'invalider toutes les données, mettre à jour uniquement la parcelle concernée
+      queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        // Trouver et mettre à jour uniquement la parcelle qui vient d'être plantée
+        const updatedPlots = oldData.plots.map((plot: any) => {
+          if (plot.plot_number === data.plotNumber) {
+            // Mettre à jour la parcelle avec les nouvelles données
+            return {
+              ...plot,
+              plant_type: data.plantTypeId,
+              planted_at: data.plantedAt,
+              growth_time_seconds: data.adjustedGrowthTime,
+              updated_at: data.plantedAt
+            };
+          }
+          return plot;
+        });
+        
+        // Mettre à jour également les coins du jardin
+        const updatedGarden = {
+          ...oldData.garden,
+          coins: Math.max(0, (oldData.garden.coins || 0) - data.actualCost)
+        };
+        
+        return {
+          ...oldData,
+          plots: updatedPlots,
+          garden: updatedGarden
+        };
+      });
+      
+      // Rafraîchir en arrière-plan pour synchroniser avec la base de données
+      setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['gameData', user?.id],
+          refetchType: 'active'
+        });
+      }, 1000); // Attendre 1 seconde avant de rafraîchir
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation directe:', error);

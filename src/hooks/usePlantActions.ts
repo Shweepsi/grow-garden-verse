@@ -270,13 +270,27 @@ export const usePlantActions = () => {
       }
 
       console.log('✅ Récolte terminée avec succès');
+      
+      // Retourner les informations nécessaires pour la mise à jour optimiste
+      return {
+        plotNumber,
+        harvestReward,
+        expReward,
+        gemReward,
+        newLevel,
+        newExp,
+        newCoins,
+        newGems,
+        newHarvests
+      };
     },
-    onSuccess: (_, plotNumber) => {
+    onSuccess: (data) => {
       // Animation de récolte subtile - léger zoom
-      const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`) as HTMLElement;
-      if (plotElement) {
+      const plotElement = document.querySelector(`[data-plot="${data.plotNumber}"]`);
+      if (plotElement instanceof HTMLElement) {
+        plotElement.style.transition = 'transform 0.3s ease-in-out';
         plotElement.style.transform = 'scale(1.05)';
-        plotElement.style.transition = 'transform 0.15s ease-out';
+        
         setTimeout(() => {
           plotElement.style.transform = 'scale(1)';
           setTimeout(() => {
@@ -286,7 +300,50 @@ export const usePlantActions = () => {
         }, 150);
       }
       
-      queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      // Mise à jour optimiste des données
+      queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        // Mettre à jour uniquement la parcelle récoltée
+        const updatedPlots = oldData.plots.map((plot: any) => {
+          if (plot.plot_number === data.plotNumber) {
+            // Réinitialiser la parcelle
+            return {
+              ...plot,
+              plant_type: null,
+              planted_at: null,
+              growth_time_seconds: null,
+              plant_metadata: null,
+              updated_at: new Date().toISOString()
+            };
+          }
+          return plot;
+        });
+        
+        // Mettre à jour les données du jardin
+        const updatedGarden = {
+          ...oldData.garden,
+          coins: data.newCoins,
+          gems: data.newGems,
+          experience: data.newExp,
+          level: data.newLevel,
+          total_harvests: data.newHarvests
+        };
+        
+        return {
+          ...oldData,
+          plots: updatedPlots,
+          garden: updatedGarden
+        };
+      });
+      
+      // Rafraîchir en arrière-plan après un court délai
+      setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['gameData', user?.id],
+          refetchType: 'active'
+        });
+      }, 1500);
     },
     onError: (error: any) => {
       console.error('💥 Erreur lors de la récolte:', error);
