@@ -93,21 +93,8 @@ serve(async (req) => {
       throw new Error("Erreur lors de l'attribution des gemmes");
     }
 
-    // Attribuer le multiplicateur Early Access permanent
-    const { error: perkError } = await supabaseService
-      .from("user_perks")
-      .insert({
-        user_id: purchase.user_id,
-        perk_type: "early_access_coins_multiplier",
-        perk_name: "Early Access Pack - Multiplicateur X2 Pièces",
-        multiplier_value: 2.0,
-        is_active: true
-      });
-
-    if (perkError) {
-      console.error("❌ Erreur attribution multiplicateur Early Access:", perkError);
-      // Ne pas faire échouer le paiement pour ça, mais log l'erreur
-    }
+    // Le multiplicateur Early Access est déjà attribué via early_access_multiplier = 2.0 ci-dessus
+    // Plus besoin d'insérer dans user_perks
 
     // Marquer l'achat comme terminé
     const { error: updatePurchaseError } = await supabaseService

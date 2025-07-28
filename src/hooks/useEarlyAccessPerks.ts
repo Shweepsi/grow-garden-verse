@@ -1,55 +1,40 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { UserPerk } from '@/types/game';
+import { useGameData } from '@/hooks/useGameData';
 
+/**
+ * Hook simplifié pour les avantages Early Access
+ * Utilise les données déjà chargées par useGameData pour éviter les requêtes supplémentaires
+ */
 export const useEarlyAccessPerks = () => {
-  const { user } = useAuth();
-
-  const { data: userPerks = [], isLoading } = useQuery({
-    queryKey: ['userPerks', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('user_perks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-      
-      if (error) throw error;
-      return data as UserPerk[];
-    },
-    enabled: !!user?.id
-  });
-
+  const { data: gameData, isLoading } = useGameData();
+  
+  const garden = gameData?.garden;
+  
   // Vérifier si l'utilisateur a le multiplicateur Early Access
   const hasEarlyAccessMultiplier = () => {
-    return userPerks.some(perk => 
-      perk.perk_type === 'early_access_coins_multiplier' && 
-      perk.is_active
-    );
+    return (garden?.early_access_multiplier || 1.0) > 1.0;
   };
 
   // Obtenir la valeur du multiplicateur Early Access
   const getEarlyAccessMultiplier = () => {
-    const perk = userPerks.find(perk => 
-      perk.perk_type === 'early_access_coins_multiplier' && 
-      perk.is_active
-    );
-    return perk?.multiplier_value || 1.0;
+    return garden?.early_access_multiplier || 1.0;
   };
 
-  // Obtenir tous les multiplicateurs Early Access actifs
+  // Pour compatibilité avec l'ancien code (si nécessaire)
   const getActiveEarlyAccessPerks = () => {
-    return userPerks.filter(perk => 
-      perk.perk_type.includes('multiplier') && 
-      perk.is_active
-    );
+    if (hasEarlyAccessMultiplier()) {
+      return [{
+        id: 'early_access',
+        perk_type: 'early_access_coins_multiplier',
+        perk_name: 'Early Access Pack - Multiplicateur X2 Pièces',
+        multiplier_value: getEarlyAccessMultiplier(),
+        is_active: true
+      }];
+    }
+    return [];
   };
 
   return {
-    userPerks,
+    userPerks: getActiveEarlyAccessPerks(), // Pour compatibilité
     isLoading,
     hasEarlyAccessMultiplier,
     getEarlyAccessMultiplier,
