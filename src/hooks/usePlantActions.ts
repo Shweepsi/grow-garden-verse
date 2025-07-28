@@ -112,12 +112,11 @@ export const usePlantActions = () => {
       const gemChance = Math.max(0, multipliers.gemChance || 0);
 
       const harvestReward = EconomyService.getHarvestReward(
-        plantLevel,
-        baseGrowthSeconds,
-        playerLevel,
-        harvestMultiplier,
-        plantCostReduction,
-        garden.permanent_multiplier || 1
+        plantLevel,                 // Niveau de la plante
+        harvestMultiplier,          // Multiplicateur de récolte permanent
+        1,                          // Pas de coin-boost direct ici
+        baseGrowthSeconds,          // Temps de croissance pour le bonus temps
+        garden.permanent_multiplier || 1 // Multiplicateur permanent global
       );
       
       const expReward = EconomyService.getExperienceReward(plantLevel, expMultiplier);
