@@ -118,7 +118,7 @@ export const useDirectPlanting = () => {
 
       console.log(`💰 Coût de plantation: ${actualCost} pièces`);
 
-      // Calculer le temps de croissance avec les boosts (utilisation de PlantGrowthService pour cohérence)
+      // Calculer le temps de croissance avec les boosts (pour l'affichage et le debug)
       const baseGrowthSeconds = plantType.base_growth_seconds || 60;
       const growthBoosts = { getBoostMultiplier: () => multipliers.growth };
       const adjustedGrowthTime = PlantGrowthService.calculateGrowthTime(baseGrowthSeconds, growthBoosts);
@@ -127,13 +127,14 @@ export const useDirectPlanting = () => {
 
       const now = new Date().toISOString();
 
-      // Planter sur la parcelle
+      // FIXED: Stocker le temps de BASE au lieu du temps ajusté
+      // Les boosts seront appliqués dynamiquement lors de l'affichage
       const { error: updatePlotError } = await supabase
         .from('garden_plots')
         .update({
           plant_type: plantTypeId,
           planted_at: now,
-          growth_time_seconds: adjustedGrowthTime,
+          growth_time_seconds: baseGrowthSeconds, // CHANGEMENT: temps de base au lieu d'adjustedGrowthTime
           updated_at: now
         })
         .eq('user_id', user.id)
@@ -184,7 +185,7 @@ export const useDirectPlanting = () => {
         plotNumber,
         plantTypeId,
         actualCost,
-        adjustedGrowthTime,
+        adjustedGrowthTime: baseGrowthSeconds, // CHANGEMENT: retourner le temps de base
         plantedAt: now
       };
     },
@@ -201,7 +202,7 @@ export const useDirectPlanting = () => {
                   ...plot,
                   plant_type: data.plantTypeId,
                   planted_at: data.plantedAt,
-                  growth_time_seconds: data.adjustedGrowthTime,
+                  growth_time_seconds: data.adjustedGrowthTime, // Utilise le temps de base maintenant
                   updated_at: data.plantedAt
                 }
               : plot
