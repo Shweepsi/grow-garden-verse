@@ -32,30 +32,6 @@ export class AdRewardService {
     });
   }
 
-  /**
-   * Générer une description détaillée pour les boosts de croissance
-   */
-  private static formatGrowthSpeedDescription(multiplier: number, duration: number): string {
-    const reductionPercent = Math.round((1 - (1 / multiplier)) * 100);
-    
-    // Exemples concrets pour mieux comprendre l'effet
-    const examples = [];
-    
-    // Exemple avec carotte (30s de base)
-    const carrotBase = 30;
-    const carrotFast = Math.floor(carrotBase / multiplier);
-    examples.push(`Carotte: ${carrotBase}s → ${carrotFast}s`);
-    
-    // Exemple avec tomate (2min de base)
-    const tomatoBase = 120;
-    const tomatoFast = Math.floor(tomatoBase / multiplier);
-    const tomatoFastMin = Math.floor(tomatoFast / 60);
-    const tomatoFastSec = tomatoFast % 60;
-    examples.push(`Tomate: 2min → ${tomatoFastMin}m${tomatoFastSec > 0 ? tomatoFastSec + 's' : ''}`);
-    
-    return `Temps de croissance -${reductionPercent}% (${duration}min)\nEx: ${examples.join(', ')}`;
-  }
-
   static async getAvailableRewards(playerLevel: number): Promise<AdReward[]> {
     try {
       // Vérifier le cache d'abord
@@ -100,8 +76,9 @@ export class AdRewardService {
         if (normalizedType === 'coins' || normalizedType === 'gems') {
           description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
         } else if (normalizedType === 'growth_speed') {
-          // Description améliorée avec exemples concrets
-          description = this.formatGrowthSpeedDescription(amount, config.duration_minutes || 30);
+          // Afficher la réduction de temps en pourcentage pour plus de clarté
+          const reductionPercent = Math.round((1 - (1 / amount)) * 100);
+          description = `Boost Croissance -${reductionPercent}% (${config.duration_minutes}min)`;
         } else if (normalizedType.includes('boost')) {
           description = `${config.display_name} x${amount} (${config.duration_minutes}min)`;
         }

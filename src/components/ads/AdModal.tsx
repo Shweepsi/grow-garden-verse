@@ -17,7 +17,6 @@ import { useAdWatcher } from '@/hooks/useAdWatcher';
 import { useAdDiagnostics } from '@/hooks/useAdDiagnostics';
 import { useAdModalState } from '@/hooks/useAdModalState';
 import { useToast } from '@/hooks/use-toast';
-import { AdReward } from '@/types/ads';
 
 interface AdModalProps {
   open: boolean;
@@ -28,7 +27,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: gameData } = useGameData();
-  const { adState, availableRewards, loadingRewards, refreshRewards } = useAdRewards();
+  const { adState } = useAdRewards();
   const mounted = useRef(true);
   
   // Hooks refactorisés
@@ -36,7 +35,11 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
   const { showDiagnostics, toggleDiagnostics, runConnectivityTest, debugInfo } = useAdDiagnostics();
   const { 
     selectedReward, 
+    availableRewards, 
+    loadingRewards,
     setSelectedReward,
+    setAvailableRewards,
+    setLoadingRewards,
     reset
   } = useAdModalState();
 
@@ -48,118 +51,172 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
     };
   }, []);
 
-  // Actualiser les récompenses quand la modal s'ouvre
+  // Charger les récompenses disponibles - FIXED: removed hook functions from dependencies
   useEffect(() => {
-    if (open && user?.id) {
-      refreshRewards();
-    }
-  }, [open, user?.id, refreshRewards]);
+    let cancelled = false;
+    
+    const loadRewards = async () => {
+      if (!open || !user?.id || !mounted.current) return;
 
-  // Sélectionner automatiquement la première récompense si aucune n'est sélectionnée
+      try {
+        setLoadingRewards(true);
+        const playerLevel = gameData?.garden?.level || 1;
+        const rewards = await AdRewardService.getAvailableRewards(playerLevel);
+        
+        // Check if component is still mounted and request wasn't cancelled
+        if (!cancelled && mounted.current) {
+          setAvailableRewards(rewards);
+        }
+      } catch (error) {
+        console.error('Error loading rewards:', error);
+        if (!cancelled && mounted.current) {
+          toast({
+            title: "Erreur",
+            description: "Erreur lors du chargement des récompenses",
+            variant: "destructive"
+          });
+        }
+      } finally {
+        if (!cancelled && mounted.current) {
+          setLoadingRewards(false);
+        }
+      }
+    };
+
+    loadRewards();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.id, gameData?.garden?.level]); // FIXED: removed toast and setter functions
+
+  // Précharger la publicité à l'ouverture - FIXED: removed debugInfo from dependencies
   useEffect(() => {
-    if (availableRewards.length > 0 && !selectedReward) {
-      setSelectedReward(availableRewards[0]);
+    if (!open || !user?.id || !mounted.current) return;
+    
+    let cancelled = false;
+    
+    const preloadAd = async () => {
+      console.log('AdMob: Preloading ad');
+      if (!cancelled && mounted.current) {
+        await AdMobService.preloadAd(user.id, 'coins', 100);
+      }
+    };
+    
+    preloadAd();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.id]); // FIXED: removed debugInfo dependency
+
+  // Reset state when modal closes - FIXED: added cleanup
+  useEffect(() => {
+    if (!open && mounted.current) {
+      // Use setTimeout to avoid state updates during render
+      const timeoutId = setTimeout(() => {
+        if (mounted.current) {
+          reset();
+        }
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [availableRewards, selectedReward, setSelectedReward]);
+  }, [open]); // FIXED: removed reset function from dependencies
 
-  const handleSelectReward = (reward: AdReward) => {
-    setSelectedReward(reward);
-  };
-
+  // FIXED: moved toast dependency inside the function to avoid re-renders
   const handleWatchAd = async () => {
-    if (!selectedReward || !user?.id) {
+    if (!selectedReward) {
       toast({
-        title: "Erreur", 
+        title: "Erreur",
         description: "Veuillez sélectionner une récompense",
         variant: "destructive"
       });
       return;
     }
 
-    try {
-      // Fonctionnalité temporairement désactivée
-      const result = { success: false, error: 'Fonctionnalité en maintenance' };
-
-      if (result.success) {
-        toast({
-          title: "Félicitations!",
-          description: `Vous avez reçu: ${selectedReward.description}`,
-          variant: "default"
-        });
-        
-        // Fermer la modal après succès
-        setTimeout(() => {
-          onOpenChange(false);
-          reset();
-        }, 1500);
-      } else {
-        toast({
-          title: "Erreur",
-          description: result.error || "Erreur lors du visionnage de la publicité",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error watching ad:', error);
+    if (adState.dailyCount >= adState.maxDaily) {
       toast({
         title: "Erreur",
-        description: "Une erreur inattendue s'est produite",
+        description: "Limite quotidienne de publicités atteinte",
         variant: "destructive"
       });
+      return;
     }
+
+    await watchAd(selectedReward, () => {
+      if (mounted.current) {
+        onOpenChange(false);
+      }
+    });
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-    reset();
-  };
+  const isLoading = watchState.isWatching || watchState.isWaitingForReward;
+  const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-center text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            🎁 Récompenses Publicitaires
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border border-orange-200/50 shadow-2xl shadow-orange-500/20 animate-in fade-in-0 zoom-in-95 duration-300">
+        <DialogHeader className="space-y-4 pb-6">
+          <DialogTitle className="text-center">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <Play className="w-5 h-5 text-white drop-shadow-sm" />
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-orange-400 to-amber-600 rounded-2xl opacity-30 blur-sm -z-10"></div>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+              Récompenses Publicitaires
+            </h2>
           </DialogTitle>
+          
+          <AdProgressBar
+            dailyCount={adState.dailyCount}
+            maxDaily={adState.maxDaily}
+            onToggleDiagnostics={toggleDiagnostics}
+          />
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Affichage du statut */}
-          <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-            <div className="text-sm text-blue-700 font-medium">
-              {adState.available 
-                ? `🎯 Publicités disponibles • Niveau ${gameData?.garden?.level || 1}`
-                : "⏰ Limite quotidienne atteinte"
-              }
-            </div>
-          </div>
+          {/* Panel de diagnostics */}
+          {showDiagnostics && (
+            <AdDiagnosticsPanel
+              debugInfo={debugInfo}
+              onTestConnectivity={runConnectivityTest}
+            />
+          )}
 
-          {/* Sélecteur de récompenses amélioré */}
+          {/* Sélecteur de récompenses */}
           <AdRewardSelector
             availableRewards={availableRewards}
             selectedReward={selectedReward}
             loadingRewards={loadingRewards}
-            onSelectReward={handleSelectReward}
+            onSelectReward={setSelectedReward}
           />
 
-          {/* Fonctionnalité temporairement désactivée */}
-          <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-yellow-700">Fonctionnalité en cours de maintenance</p>
-          </div>
+          {/* Indicateur de progression de validation */}
+          <AdValidationProgress watchState={watchState} />
 
-          {/* Bouton de diagnostics (en mode développement) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="pt-4 border-t border-gray-200">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleDiagnostics}
-                className="w-full text-xs"
-              >
-                {showDiagnostics ? 'Masquer' : 'Afficher'} les diagnostics
-              </Button>
-            </div>
-          )}
+          {/* Boutons d'action */}
+          <div className="flex gap-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              className="flex-1 border-gray-200 hover:bg-gray-50 text-gray-700 font-medium transition-colors duration-200" 
+              disabled={isLoading}
+            >
+              Annuler
+            </Button>
+            
+            <AdWatchButton
+              watchState={watchState}
+              selectedReward={!!selectedReward}
+              dailyLimitReached={dailyLimitReached}
+              onWatchAd={handleWatchAd}
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>

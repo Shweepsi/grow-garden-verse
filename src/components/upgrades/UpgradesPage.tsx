@@ -111,7 +111,7 @@ export const UpgradesPage = () => {
   return <div className="min-h-screen garden-background">
       {/* Sticky header */}
       <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
-        <GameHeader />
+        <GameHeader garden={gameData?.garden} />
       </div>
       
       {/* Content with compact padding */}

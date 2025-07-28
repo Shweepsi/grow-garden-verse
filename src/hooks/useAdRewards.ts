@@ -1,16 +1,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useGameData } from '@/hooks/useGameData';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
-import { AdRewardService } from '@/services/AdRewardService';
-import { AdState, AdReward } from '@/types/ads';
+import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
 
 export const useAdRewards = () => {
   const { user } = useAuth();
-  const { data: gameData } = useGameData();
   const mounted = useRef(true);
   const [adState, setAdState] = useState<AdState>({
     available: false,
@@ -20,9 +17,7 @@ export const useAdRewards = () => {
     currentReward: null,
     timeUntilNext: 0
   });
-  const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingRewards, setLoadingRewards] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
 
   // Track component mount/unmount
@@ -137,52 +132,6 @@ export const useAdRewards = () => {
     }
   }, [user?.id]); // FIXED: removed refreshAdState from dependencies
 
-  // Charger les récompenses disponibles depuis Supabase
-  const loadAvailableRewards = useCallback(async () => {
-    if (!user?.id || !mounted.current) return;
-
-    try {
-      setLoadingRewards(true);
-      const playerLevel = gameData?.garden?.level || 1;
-      
-      console.log('AdRewards: Loading rewards for level', playerLevel);
-      const rewards = await AdRewardService.getAvailableRewards(playerLevel);
-      
-      if (mounted.current) {
-        setAvailableRewards(rewards);
-        console.log('AdRewards: Loaded rewards:', rewards);
-      }
-    } catch (error) {
-      console.error('Error loading available rewards:', error);
-      if (mounted.current) {
-        setAvailableRewards([]);
-      }
-    } finally {
-      if (mounted.current) {
-        setLoadingRewards(false);
-      }
-    }
-  }, [user?.id, gameData?.garden?.level]);
-
-  // Charger les récompenses quand l'utilisateur ou le niveau change
-  useEffect(() => {
-    if (user?.id && gameData?.garden?.level) {
-      loadAvailableRewards();
-    }
-  }, [user?.id, gameData?.garden?.level, loadAvailableRewards]);
-
-  // Fonction pour forcer le rechargement des récompenses
-  const refreshRewards = useCallback(async () => {
-    if (!user?.id || !mounted.current) return;
-    
-    // Vider le cache pour forcer le rechargement
-    const playerLevel = gameData?.garden?.level || 1;
-    await AdRewardService.forceReloadRewards(playerLevel);
-    
-    // Recharger les récompenses
-    await loadAvailableRewards();
-  }, [user?.id, gameData?.garden?.level, loadAvailableRewards]);
-
   // Formater le temps restant
   const formatTimeUntilNext = useCallback((seconds: number): string => {
     if (seconds <= 0) return '';
@@ -274,11 +223,8 @@ export const useAdRewards = () => {
 
   return {
     adState,
-    availableRewards,
     loading,
-    loadingRewards,
     refreshAdState,
-    refreshRewards,
     formatTimeUntilNext,
     getAdStatusMessage,
     watchAd,
@@ -286,6 +232,7 @@ export const useAdRewards = () => {
     debug: { 
       adMobState: AdMobService.getState(),
       diagnostics: diagnostics
-    }
+    },
+    availableRewards: []
   };
 };

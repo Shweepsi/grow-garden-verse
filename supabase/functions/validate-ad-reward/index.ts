@@ -650,20 +650,6 @@ Deno.serve(async (req) => {
     
     let calculatedAmount = rewardConfig.calculated_amount
 
-    // Appliquer le multiplicateur gem_boost si la récompense est de type "gems"
-    if (payload.reward_type === 'gems') {
-      const { data: activeBoost } = await supabase
-        .from('active_effects')
-        .select('effect_value')
-        .eq('user_id', payload.user_id)
-        .eq('effect_type', 'gem_boost')
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
-
-      const gemMultiplier = activeBoost?.effect_value ?? 1;
-      calculatedAmount = Math.floor(calculatedAmount * gemMultiplier);
-    }
-
     // NORMALISATION: pour les boosts de croissance, garantir un multiplicateur >= 1
     // Certains anciens enregistrements stockaient des valeurs <1 (ex: 0.5) pour signifier « 50% plus rapide ».
     // Le moteur utilise désormais un multiplicateur >1 (ex: 2). Si nécessaire, inverser la valeur.

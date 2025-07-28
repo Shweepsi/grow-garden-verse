@@ -13,7 +13,7 @@ import { MAX_PLOTS } from '@/constants';
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { getCompleteMultipliers, applyAllBoosts, applyGemsBoost, getCombinedBoostMultiplier } = useGameMultipliers();
+  const { getCompleteMultipliers, applyAllBoosts, getCombinedBoostMultiplier } = useGameMultipliers();
   // getCombinedBoostMultiplier already includes permanent + active boosts
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
@@ -131,16 +131,13 @@ export const usePlantActions = () => {
         gemChance
       );
 
-      // Appliquer le boost gemmes (gem_boost) si actif
-      const boostedGems = applyGemsBoost(gemReward);
-
       console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes`);
       console.log(`🔥 Multiplicateurs appliqués - Récolte: x${harvestMultiplier.toFixed(2)}, EXP: x${expMultiplier.toFixed(2)}, Coût: x${plantCostReduction}, Gemmes: ${(gemChance * 100).toFixed(1)}%`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
       const newCoins = Math.max(0, (garden.coins || 0) + harvestReward);
-      const newGems = Math.max(0, (garden.gems || 0) + boostedGems);
+      const newGems = Math.max(0, (garden.gems || 0) + gemReward);
       const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
 
       // Use atomic transaction for better data consistency
