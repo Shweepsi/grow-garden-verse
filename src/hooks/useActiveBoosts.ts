@@ -57,12 +57,25 @@ export const useActiveBoosts = () => {
   }, [user?.id])
 
   const getBoostMultiplier = (effectType: string): number => {
-    const boost = boosts.find(b => b.effect_type === effectType)
+    // Support des alias : traiter 'growth_speed' et 'growth_boost' comme identiques
+    const equivalentTypes = effectType === 'growth_speed'
+      ? ['growth_speed', 'growth_boost']
+      : effectType === 'growth_boost'
+        ? ['growth_boost', 'growth_speed']
+        : [effectType]
+
+    const boost = boosts.find(b => equivalentTypes.includes(b.effect_type))
     return boost ? boost.effect_value : 1
   }
 
   const hasActiveBoost = (effectType: string): boolean => {
-    return boosts.some(b => b.effect_type === effectType)
+    const equivalentTypes = effectType === 'growth_speed'
+      ? ['growth_speed', 'growth_boost']
+      : effectType === 'growth_boost'
+        ? ['growth_boost', 'growth_speed']
+        : [effectType]
+
+    return boosts.some(b => equivalentTypes.includes(b.effect_type))
   }
 
   const getTimeRemaining = (expiresAt: string): number => {
