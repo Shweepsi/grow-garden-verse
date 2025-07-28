@@ -103,7 +103,7 @@ export const useUpgrades = () => {
       const { error: gardenError } = await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins - costCoins,
+          coins: (garden.coins || 0) - costCoins,
           gems: (garden.gems || 0) - costGems
         })
         .eq('user_id', user.id);

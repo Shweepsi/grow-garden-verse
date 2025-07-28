@@ -151,7 +151,7 @@ export const useDirectPlanting = () => {
       const { error: updateGardenError } = await supabase
         .from('player_gardens')
         .update({
-          coins: garden.coins - actualCost,
+          coins: (garden.coins || 0) - actualCost,
           last_played: now
         })
         .eq('user_id', user.id);
