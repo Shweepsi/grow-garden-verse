@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { App as CapacitorApp } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 
 /**
  * useAndroidBackButton
