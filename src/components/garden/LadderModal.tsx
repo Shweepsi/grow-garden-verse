@@ -132,7 +132,7 @@ export const LadderModal = ({
       </Card>;
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] max-h-[85dvh] bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-500" />

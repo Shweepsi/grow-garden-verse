@@ -71,7 +71,7 @@ export const PlantSelector = ({
   const availablePlants = plantTypes.filter(plant => EconomyService.canAccessPlant(plant.level_required || 1, playerLevel)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
   const lockedPlants = plantTypes.filter(plant => !EconomyService.canAccessPlant(plant.level_required || 1, playerLevel)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[90vh] overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 p-0">
+      <DialogContent className="max-w-5xl h-[90vh] h-[90dvh] overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 p-0">
         {/* Header fixe avec informations importantes */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200 p-4">
           <div className="flex items-center justify-between mb-4">
