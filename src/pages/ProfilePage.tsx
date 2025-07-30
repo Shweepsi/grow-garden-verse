@@ -5,11 +5,14 @@ import { LadderModal } from '@/components/garden/LadderModal';
 import { PremiumStore } from '@/components/store/PremiumStore';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 import { Button } from '@/components/ui/button';
 import { Loader2, LogOut, Settings, Trophy } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 export const ProfilePage = () => {
+  const navigate = useNavigate();
   const {
     gameState,
     loading
@@ -19,6 +22,11 @@ export const ProfilePage = () => {
   } = useAuth();
   const queryClient = useQueryClient();
   const [showLadder, setShowLadder] = useState(false);
+
+  // Gestion du bouton retour Android
+  useAndroidBackButton(true, () => {
+    navigate('/garden');
+  });
   const handlePrestige = () => {
     // Invalider les queries pour rafraîchir les données
     queryClient.invalidateQueries({

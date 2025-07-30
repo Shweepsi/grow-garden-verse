@@ -1,5 +1,6 @@
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useGameData } from '@/hooks/useGameData';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 import { GameHeader } from '@/components/garden/GameHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Coins, Gem, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { LevelUpgrade } from '@/types/upgrades';
 import { MINIMUM_COINS_RESERVE } from '@/constants';
+import { useNavigate } from 'react-router-dom';
 export const UpgradesPage = () => {
+  const navigate = useNavigate();
   const {
     data: gameData
   } = useGameData();
@@ -24,6 +27,11 @@ export const UpgradesPage = () => {
   const playerLevel = gameData?.garden?.level || 1;
   const coins = gameData?.garden?.coins || 0;
   const gems = gameData?.garden?.gems || 0;
+
+  // Gestion du bouton retour Android
+  useAndroidBackButton(true, () => {
+    navigate('/garden');
+  });
 
   // Obtenir les améliorations par catégorie et les infos de progression
   const sequentialUpgrades = getSequentialUpgrades();
