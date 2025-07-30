@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Coins, Sparkles, Zap } from 'lucide-react';
 import { useGameData } from '@/hooks/useGameData';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 interface PassiveIncomeRobotProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,6 +15,8 @@ export const PassiveIncomeRobot = ({
   isOpen,
   onClose
 }: PassiveIncomeRobotProps) => {
+  // Bouton retour Android : fermer la modale
+  useAndroidBackButton(isOpen, onClose);
   const {
     data: gameData
   } = useGameData();

@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trophy, Coins, Crown, Star, TrendingUp, Medal, Award } from 'lucide-react';
 import { useLadder } from '@/hooks/useLadder';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 interface LadderModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,6 +17,8 @@ export const LadderModal = ({
   onClose
 }: LadderModalProps) => {
   const [activeTab, setActiveTab] = useState('harvests');
+  // Fermer la modale via le bouton « Retour » Android
+  useAndroidBackButton(isOpen, onClose);
   const {
     harvestLeaders,
     coinsLeaders,
