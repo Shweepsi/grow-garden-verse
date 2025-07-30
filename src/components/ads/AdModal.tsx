@@ -156,8 +156,8 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border border-orange-200/50 shadow-2xl shadow-orange-500/20 animate-in fade-in-0 zoom-in-95 duration-300">
-        <DialogHeader className="space-y-4 pb-6">
+      <DialogContent className="max-w-md max-h-[90vh] bg-white/95 backdrop-blur-xl border border-orange-200/50 shadow-2xl shadow-orange-500/20 animate-in fade-in-0 zoom-in-95 duration-300 overflow-hidden flex flex-col">
+        <DialogHeader className="space-y-4 pb-6 shrink-0">
           <DialogTitle className="text-center">
             <div className="flex items-center justify-center gap-3 mb-3">
               <div className="relative">
@@ -179,7 +179,7 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
           />
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto pr-1 flex-1">
           {/* Panel de diagnostics */}
           {showDiagnostics && (
             <AdDiagnosticsPanel
@@ -198,25 +198,25 @@ export function AdModal({ open, onOpenChange }: AdModalProps) {
 
           {/* Indicateur de progression de validation */}
           <AdValidationProgress watchState={watchState} />
+        </div>
 
-          {/* Boutons d'action */}
-          <div className="flex gap-3 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => onOpenChange(false)} 
-              className="flex-1 border-gray-200 hover:bg-gray-50 text-gray-700 font-medium transition-colors duration-200" 
-              disabled={isLoading}
-            >
-              Annuler
-            </Button>
-            
-            <AdWatchButton
-              watchState={watchState}
-              selectedReward={!!selectedReward}
-              dailyLimitReached={dailyLimitReached}
-              onWatchAd={handleWatchAd}
-            />
-          </div>
+        {/* Boutons d'action - fixes en bas */}
+        <div className="flex gap-3 pt-4 shrink-0 border-t border-gray-100 mt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            className="flex-1 border-gray-200 hover:bg-gray-50 text-gray-700 font-medium transition-colors duration-200" 
+            disabled={isLoading}
+          >
+            Annuler
+          </Button>
+          
+          <AdWatchButton
+            watchState={watchState}
+            selectedReward={!!selectedReward}
+            dailyLimitReached={dailyLimitReached}
+            onWatchAd={handleWatchAd}
+          />
         </div>
       </DialogContent>
     </Dialog>

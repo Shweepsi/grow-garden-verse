@@ -46,7 +46,7 @@ export const useActiveBoosts = () => {
     staleTime: 30000, // Considérer frais pendant 30s
     refetchInterval: 30000, // Rafraîchir toutes les 30s
     refetchOnWindowFocus: false,
-    keepPreviousData: true // Conserve les données précédentes pendant le refetch → plus de clignotement
+    placeholderData: [] // Conserve les données précédentes pendant le refetch → plus de clignotement
   })
 
   // Fonction pour forcer un rafraîchissement manuel (ex: après avoir reçu un événement custom)
@@ -60,7 +60,7 @@ export const useActiveBoosts = () => {
         ? ['growth_boost', 'growth_speed']
         : [effectType]
 
-    const boost = boosts.find(b => equivalentTypes.includes(b.effect_type))
+    const boost = (boosts as ActiveBoost[]).find(b => equivalentTypes.includes(b.effect_type))
     return boost ? boost.effect_value : 1
   }
 
@@ -71,7 +71,7 @@ export const useActiveBoosts = () => {
         ? ['growth_boost', 'growth_speed']
         : [effectType]
 
-    return boosts.some(b => equivalentTypes.includes(b.effect_type))
+    return (boosts as ActiveBoost[]).some(b => equivalentTypes.includes(b.effect_type))
   }
 
   const getTimeRemaining = (expiresAt: string): number => {
@@ -104,7 +104,7 @@ export const useActiveBoosts = () => {
   }, [user?.id, refreshBoosts])
 
   return {
-    boosts,
+    boosts: boosts as ActiveBoost[],
     loading,
     refreshBoosts,
     getBoostMultiplier,

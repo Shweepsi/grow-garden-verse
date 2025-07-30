@@ -12,7 +12,7 @@ interface BoostStatusIndicatorProps {
 export function BoostStatusIndicator({ showInline = false, className = '' }: BoostStatusIndicatorProps) {
   const { boosts, getTimeRemaining, formatTimeRemaining } = useActiveBoosts();
 
-  if (boosts.length === 0) return null;
+  if (!boosts || boosts.length === 0) return null;
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {

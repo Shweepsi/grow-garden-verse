@@ -178,7 +178,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
             </div>
 
             {/* Ligne 2: Boosts actifs (si présents) */}
-            {boosts.length > 0 && (
+            {boosts && boosts.length > 0 && (
               <div className="premium-card rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
