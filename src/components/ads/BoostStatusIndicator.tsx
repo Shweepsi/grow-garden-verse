@@ -12,7 +12,7 @@ interface BoostStatusIndicatorProps {
 export function BoostStatusIndicator({ showInline = false, className = '' }: BoostStatusIndicatorProps) {
   const { boosts, getTimeRemaining, formatTimeRemaining } = useActiveBoosts();
 
-  if (!Array.isArray(boosts) || boosts.length === 0) return null;
+  if (boosts.length === 0) return null;
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
@@ -55,7 +55,7 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
           <span className="text-xs font-medium text-orange-700">Boosts actifs:</span>
         </div>
         <div className="flex gap-1">
-          {(boosts as any[]).slice(0, 2).map((boost) => (
+          {boosts.slice(0, 2).map((boost) => (
             <TooltipProvider key={boost.id}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -78,9 +78,9 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
               </Tooltip>
             </TooltipProvider>
           ))}
-          {(boosts as any[]).length > 2 && (
+          {boosts.length > 2 && (
             <Badge variant="outline" className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700">
-              +{(boosts as any[]).length - 2}
+              +{boosts.length - 2}
             </Badge>
           )}
         </div>
@@ -93,10 +93,10 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
       <div className={`space-y-2 ${className}`}>
         <div className="flex items-center gap-2 text-orange-700">
           <Zap className="h-4 w-4" />
-          <span className="text-sm font-semibold">Boosts actifs ({(boosts as any[]).length})</span>
+          <span className="text-sm font-semibold">Boosts actifs ({boosts.length})</span>
         </div>
         <div className="grid gap-2">
-          {(boosts as any[]).map((boost) => (
+          {boosts.map((boost) => (
             <Tooltip key={boost.id}>
               <TooltipTrigger asChild>
                 <div className={`bg-gradient-to-r ${getBoostColor(boost.effect_type)} border rounded-lg px-3 py-2 cursor-help hover:shadow-sm transition-all`}>
