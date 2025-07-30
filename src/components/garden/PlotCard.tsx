@@ -86,7 +86,7 @@ export const PlotCard = memo(({
   }, [isPlanting, plot.unlocked, plantState, isAutoHarvestPlot]);
 
   const cardClasses = useMemo(() => {
-    const baseClasses = "bg-white/80 backdrop-blur-sm rounded-lg p-3 h-full flex flex-col items-center justify-center relative border transition-all duration-200 transform-gpu";
+    const baseClasses = "bg-white/80 backdrop-blur-sm rounded-lg p-2 sm:p-3 h-full flex flex-col items-center justify-center relative border transition-all duration-200 transform-gpu";
     
     if (!plot.unlocked) {
       return `${baseClasses} border-gray-200/50 opacity-60`;

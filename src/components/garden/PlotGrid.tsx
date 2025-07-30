@@ -128,7 +128,7 @@ export const PlotGrid = ({
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-4">
         {plotsData.map(({ plot, plantType, isAutoHarvestPlot, robotAtCapacity }) => (
           <PlotCard
             key={plot.id}
