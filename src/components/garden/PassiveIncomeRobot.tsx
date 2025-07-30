@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Coins, Sparkles, Zap } from 'lucide-react';
 import { useGameData } from '@/hooks/useGameData';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 interface PassiveIncomeRobotProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,6 +15,8 @@ export const PassiveIncomeRobot = ({
   isOpen,
   onClose
 }: PassiveIncomeRobotProps) => {
+  // Bouton retour Android : fermer la modale
+  useAndroidBackButton(isOpen, onClose);
   const {
     data: gameData
   } = useGameData();
@@ -42,7 +45,7 @@ export const PassiveIncomeRobot = ({
     setRealTimeAccumulation(0);
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+      <DialogContent className="max-w-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 max-h-[90vh] max-h-[90dvh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-green-800 flex items-center gap-2">
             <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
@@ -60,7 +63,7 @@ export const PassiveIncomeRobot = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea className="max-h-[60vh] max-h-[60dvh]">
           <div className="space-y-4 pr-4">
             {/* État actuel du robot */}
             {robotPlantType && <div className="bg-green-100 border border-green-300 rounded-lg p-4 space-y-3">

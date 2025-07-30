@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trophy, Coins, Crown, Star, TrendingUp, Medal, Award } from 'lucide-react';
 import { useLadder } from '@/hooks/useLadder';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 interface LadderModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,6 +17,8 @@ export const LadderModal = ({
   onClose
 }: LadderModalProps) => {
   const [activeTab, setActiveTab] = useState('harvests');
+  // Fermer la modale via le bouton « Retour » Android
+  useAndroidBackButton(isOpen, onClose);
   const {
     harvestLeaders,
     coinsLeaders,
@@ -132,7 +135,7 @@ export const LadderModal = ({
       </Card>;
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] max-h-[85dvh] bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-500" />

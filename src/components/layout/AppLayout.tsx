@@ -9,7 +9,7 @@ interface AppLayoutProps {
 export const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen garden-background relative">
+      <div className="min-h-dvh flex flex-col garden-background relative">
         {/* Floating particles for ambiance */}
         <div className="floating-particles">
           <div className="particle"></div>
@@ -20,7 +20,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
         
         {/* Main content with padding for sticky navigation */}
-        <div className="relative z-10 pb-20 px-px my-0 mx-0 py-0">
+        <div className="flex-1 relative z-10 pb-[calc(5rem+env(safe-area-inset-bottom))] px-px">
           {children}
         </div>
         
