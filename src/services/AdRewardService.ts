@@ -76,11 +76,10 @@ export class AdRewardService {
         if (normalizedType === 'coins' || normalizedType === 'gems') {
           description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
         } else if (normalizedType === 'growth_speed') {
-          // Afficher la réduction de temps en pourcentage pour plus de clarté
-          const reductionPercent = Math.round((1 - (1 / amount)) * 100);
-          description = `Boost Croissance -${reductionPercent}% (${config.duration_minutes}min)`;
+          // Afficher x2 pour les boosts de croissance
+          description = `Boost Croissance x${amount}`;
         } else if (normalizedType.includes('boost')) {
-          description = `${config.display_name} x${amount} (${config.duration_minutes}min)`;
+          description = `${config.display_name} x${amount}`;
         }
 
         return {
