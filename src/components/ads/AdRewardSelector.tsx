@@ -107,19 +107,11 @@ export function AdRewardSelector({
                       </div>
                     )}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {reward.amount > 1 && (
-                      <span className="font-medium">+{reward.amount.toLocaleString()}</span>
-                    )}
-                    {reward.multiplier && (
-                      <span className="font-medium">×{reward.multiplier}</span>
-                    )}
-                    {reward.duration && (
-                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                        {reward.duration}min
-                      </span>
-                    )}
-                  </div>
+                  {reward.duration && (
+                    <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full mt-1 inline-block">
+                      Durée: {reward.duration}min
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
