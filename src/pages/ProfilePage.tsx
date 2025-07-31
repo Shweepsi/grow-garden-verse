@@ -42,8 +42,7 @@ export const ProfilePage = () => {
   }
 
   // Calculer les statistiques
-  const activePlants = gameState.plots.filter(plot => plot.plant_type && plot.planted_at).length;
-  const totalPlants = gameState.plantTypes.length;
+  // Statistiques détaillées supprimées, seulement les récoltes totales sont affichées.
   return <div className="min-h-screen garden-background">
       {/* Sticky header */}
       <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
@@ -53,24 +52,23 @@ export const ProfilePage = () => {
       {/* Content with padding to avoid overlap */}
       <div className="px-3 pb-6 space-y-4">
 
-          {/* Carte des classements */}
-          <div className="glassmorphism rounded-xl p-4 shadow-lg">
-            <div className="space-y-3">
-              <div>
-                <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Classements</h3>
-                
-              </div>
-              
-              <Button onClick={() => setShowLadder(true)} variant="outline" size="lg" className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0">
-                <Trophy className="h-4 w-4 mr-2" />
-                Voir le Classement
-              </Button>
-            </div>
-          </div>
-        
         <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
-        
-        <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
+
+        <PlayerStats garden={gameState.garden} />
+
+        {/* Carte des classements */}
+        <div className="glassmorphism rounded-xl p-4 shadow-lg">
+          <div className="space-y-3">
+            <div>
+              <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Classements</h3>
+            </div>
+            
+            <Button onClick={() => setShowLadder(true)} variant="outline" size="lg" className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-500 hover:to-indigo-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0">
+              <Trophy className="h-4 w-4 mr-2" />
+              Voir le Classement
+            </Button>
+          </div>
+        </div>
         
         {/* Boutique Premium */}
         <PremiumStore />

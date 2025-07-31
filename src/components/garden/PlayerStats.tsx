@@ -1,65 +1,28 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
 import { PlayerGarden } from '@/types/game';
-import { Trophy, Star, Coins, TrendingUp, Clock, Target } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+
 interface PlayerStatsProps {
   garden: PlayerGarden | null;
-  totalPlants: number;
-  activePlants: number;
 }
-export const PlayerStats = ({
-  garden,
-  totalPlants,
-  activePlants
-}: PlayerStatsProps) => {
+
+export const PlayerStats = ({ garden }: PlayerStatsProps) => {
   if (!garden) return null;
 
-  // Calculer l'XP nécessaire pour le prochain niveau
-  const getXpForLevel = (level: number) => {
-    return Math.pow(level, 2) * 100;
-  };
-  const currentLevel = garden.level;
-  const currentXp = garden.experience;
-  const xpForCurrentLevel = getXpForLevel(currentLevel - 1);
-  const xpForNextLevel = getXpForLevel(currentLevel);
-  const xpProgress = currentXp - xpForCurrentLevel;
-  const xpNeeded = xpForNextLevel - xpForCurrentLevel;
-  const progressPercentage = Math.min(xpProgress / xpNeeded * 100, 100);
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-  return <div className="space-y-6">
-      {/* Niveau et Expérience */}
-      
-
-      {/* Statistiques de jeu */}
-      <div className="grid grid-cols-2 gap-4">
+  return (
+    <div className="space-y-6">
+      {/* Récoltes totales */}
+      <div className="grid grid-cols-1 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
             <Trophy className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-yellow-600">{garden.total_harvests}</p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {garden.total_harvests}
+            </p>
             <p className="text-xs text-gray-600">Récoltes totales</p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Coins className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-yellow-600">{garden.coins}</p>
-            <p className="text-xs text-gray-600">Pièces</p>
-          </CardContent>
-        </Card>
-
-        
-
-        
       </div>
-
-      {/* Informations du compte */}
-      
-    </div>;
+    </div>
+  );
 };
