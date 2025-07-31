@@ -1,17 +1,25 @@
 
 import { useEffect } from 'react';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
+import { useNavigate } from 'react-router-dom';
 import { GameHeader } from '@/components/garden/GameHeader';
 import { PlotGrid } from '@/components/garden/PlotGrid';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { Loader2 } from 'lucide-react';
 
 export const GardenPage = () => {
+  const navigate = useNavigate();
   const { 
     gameState, 
     loading, 
     harvestPlant, 
     unlockPlot 
   } = useRefactoredGame();
+
+  // Gestion du bouton retour Android : rester sur le jardin
+  useAndroidBackButton(true, () => {
+    navigate('/garden');
+  });
 
   useEffect(() => {
     // Réinitialiser le scroll en haut de la page
