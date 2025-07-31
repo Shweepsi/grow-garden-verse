@@ -102,13 +102,28 @@ export class EconomyService {
 
   // Calculer le niveau de robot maximum basé sur les améliorations
   static getRobotLevel(playerUpgrades: PlayerUpgrade[]): number {
-    let maxLevel = 1; // Niveau de base (pomme de terre)
+    let maxLevel = 1; // Niveau de base : autoharverst = niveau 1
+    
+    // Vérifier d'abord si l'auto harvest est débloqué
+    const hasAutoHarvest = playerUpgrades.some(upgrade => 
+      upgrade.level_upgrades?.effect_type === 'auto_harvest'
+    );
+    
+    if (!hasAutoHarvest) {
+      return 0; // Pas de robot si auto harvest pas débloqué
+    }
     
     playerUpgrades.forEach(upgrade => {
       const levelUpgrade = upgrade.level_upgrades;
       if (levelUpgrade?.effect_type === 'robot_level') {
         maxLevel = Math.max(maxLevel, Math.floor(levelUpgrade.effect_value));
       }
+    });
+    
+    console.log('🤖 Robot level calculation:', { 
+      hasAutoHarvest, 
+      robotUpgrades: playerUpgrades.filter(u => u.level_upgrades?.effect_type === 'robot_level').length, 
+      maxLevel 
     });
     
     return maxLevel;

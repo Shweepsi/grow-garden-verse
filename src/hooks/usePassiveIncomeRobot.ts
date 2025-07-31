@@ -92,62 +92,20 @@ export const usePassiveIncomeRobot = () => {
     return EconomyService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier);
   };
 
-  // Gestion de l'accumulation en temps réel
+  // Synchroniser le robot avec son niveau quand il change
   useEffect(() => {
-    if (!hasPassiveRobot || !robotPlantType || !robotState) {
-      if (accumulationIntervalRef.current) {
-        clearInterval(accumulationIntervalRef.current);
-        accumulationIntervalRef.current = null;
-      }
-      return;
+    if (!gameData?.garden) return;
+    
+    const currentRobotLevel = EconomyService.getRobotLevel(playerUpgrades);
+    
+    // Vérifier si le robot_level dans la DB correspond au niveau calculé
+    if (gameData.garden.robot_level !== currentRobotLevel) {
+      console.log(`🤖 Synchronisation robot level: ${gameData.garden.robot_level} -> ${currentRobotLevel}`);
+      // La synchronisation sera automatique grâce au trigger
     }
+  }, [gameData?.garden, playerUpgrades]);
 
-    const updateAccumulation = async () => {
-      try {
-        const coinsPerMinute = getCoinsPerMinute();
-        if (coinsPerMinute <= 0) return;
-
-        const now = new Date();
-        const lastCollected = new Date(robotState.lastCollected);
-        const minutesElapsed = Math.floor((now.getTime() - lastCollected.getTime()) / (1000 * 60));
-        
-        // Vérification de sécurité : pas plus de 24h d'accumulation
-        const maxMinutes = 24 * 60;
-        const safeMinutesElapsed = Math.min(minutesElapsed, maxMinutes);
-        
-        if (safeMinutesElapsed >= 1) {
-          const freshAccumulation = safeMinutesElapsed * coinsPerMinute;
-          const maxAccumulation = coinsPerMinute * maxMinutes;
-          const newAccumulation = Math.min(robotState.accumulatedCoins + freshAccumulation, maxAccumulation);
-
-          console.log(`🤖 Robot accumulation update: ${safeMinutesElapsed}min × ${coinsPerMinute} = ${newAccumulation} coins`);
-
-          // Mettre à jour UNIQUEMENT l'accumulation (pas le timestamp)
-          await supabase
-            .from('player_gardens')
-            .update({ 
-              robot_accumulated_coins: newAccumulation
-            })
-            .eq('user_id', user.id);
-
-          queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
-        }
-      } catch (error) {
-        console.error('Erreur lors de la mise à jour de l\'accumulation:', error);
-      }
-    };
-
-    // Mettre à jour l'accumulation toutes les minutes
-    accumulationIntervalRef.current = window.setInterval(updateAccumulation, 60000);
-
-    return () => {
-      if (accumulationIntervalRef.current) {
-        clearInterval(accumulationIntervalRef.current);
-      }
-    };
-  }, [hasPassiveRobot, robotPlantType, robotState?.lastCollected, user?.id]);
-
-  // Calcul de l'accumulation totale disponible (corrigé pour éviter le double calcul)
+  // Calcul de l'accumulation totale disponible (simplifié pour éviter le double calcul)
   const calculateCurrentAccumulation = () => {
     if (!robotState || !robotPlantType) return 0;
     
@@ -166,12 +124,11 @@ export const usePassiveIncomeRobot = () => {
       return robotState.accumulatedCoins;
     }
     
-    // Calcul simple : accumulation stockée + temps écoulé depuis la dernière collecte
+    // Calcul UNIQUEMENT des nouveaux revenus depuis la dernière collecte
     const freshAccumulation = safeMinutesElapsed * coinsPerMinute;
-    const totalAccumulation = robotState.accumulatedCoins + freshAccumulation;
+    const storedCoins = robotState.accumulatedCoins;
+    const totalAccumulation = storedCoins + freshAccumulation;
     const maxAccumulation = coinsPerMinute * maxMinutes;
-    
-    console.log(`🤖 Calcul accumulation: stockée(${robotState.accumulatedCoins}) + fraîche(${freshAccumulation}) = ${totalAccumulation} (max: ${maxAccumulation})`);
     
     return Math.min(totalAccumulation, maxAccumulation);
   };
@@ -244,7 +201,9 @@ export const usePassiveIncomeRobot = () => {
 
       const now = new Date().toISOString();
 
-      // Mettre à jour le jardin avec les revenus collectés et l'expérience
+      // Mettre à jour le niveau du robot pour être sûr qu'il correspond aux upgrades
+      const currentRobotLevel = EconomyService.getRobotLevel(playerUpgrades);
+      
       const { error } = await supabase
         .from('player_gardens')
         .update({
@@ -253,6 +212,7 @@ export const usePassiveIncomeRobot = () => {
           level: newLevel,
           robot_accumulated_coins: 0,
           robot_last_collected: now,
+          robot_level: currentRobotLevel,
           last_played: now
         })
         .eq('user_id', user.id);
