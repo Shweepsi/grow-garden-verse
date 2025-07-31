@@ -9,11 +9,10 @@ export const FloatingPackBubble = () => {
   const bubbleRef = useRef<HTMLDivElement>(null);
 
   // Initial position (persisted in localStorage)
-  const [position, setPosition] = useState<{ x: number; y: number }>(() => {
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => {
     const saved = localStorage.getItem('pack-bubble-pos');
     if (saved) return JSON.parse(saved);
-    // Default bottom-right: 16px from right, 92px from bottom (account for nav)
-    return { x: window.innerWidth - 80, y: window.innerHeight - 140 };
+    return null; // Use CSS bottom/right by default
   });
 
   // Drag state
@@ -47,8 +46,8 @@ export const FloatingPackBubble = () => {
     dragData.current = {
       startX: e.clientX,
       startY: e.clientY,
-      origX: position.x,
-      origY: position.y,
+      origX: position?.x || 0, // Use optional chaining
+      origY: position?.y || 0, // Use optional chaining
       dragging: true
     };
   };
@@ -63,14 +62,17 @@ export const FloatingPackBubble = () => {
     }
   };
 
+  const dynamicStyle = position ? { left: position.x, top: position.y } : {};
+
   return (
     <div
       ref={bubbleRef}
-      style={{ left: position.x, top: position.y }}
+      style={dynamicStyle}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
       className={cn(
         'fixed z-60 w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg flex items-center justify-center text-white active:scale-95 transition-transform select-none',
+        position ? 'cursor-pointer' : 'cursor-pointer bottom-24 right-4',
         'cursor-pointer'
       )}
     >

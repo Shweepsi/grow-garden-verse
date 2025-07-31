@@ -1,7 +1,7 @@
 
 import { BottomNavigation } from './BottomNavigation';
 import { ProtectedRoute } from './ProtectedRoute';
-import { useNavigate, useLocation } from 'react-router-dom';
+// No additional hooks needed here
 import { FloatingPackBubble } from './FloatingPackBubble';
 
 interface AppLayoutProps {
@@ -9,8 +9,6 @@ interface AppLayoutProps {
 }
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
 
   return (
     <ProtectedRoute>
