@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { GardenPage } from '@/pages/GardenPage';
 import { UpgradesPage } from '@/pages/UpgradesPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { StorePage } from '@/pages/StorePage';
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -12,6 +13,7 @@ const App = () => (
     <Route path="/garden" element={<AppLayout><GardenPage /></AppLayout>} />
     <Route path="/upgrades" element={<AppLayout><UpgradesPage /></AppLayout>} />
     <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
+    <Route path="/store" element={<AppLayout><StorePage /></AppLayout>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
