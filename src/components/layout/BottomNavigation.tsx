@@ -1,5 +1,6 @@
 
 import { Home, TrendingUp, User } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export const BottomNavigation = () => {
@@ -9,6 +10,7 @@ export const BottomNavigation = () => {
   const navigationItems = [
     { path: '/garden', icon: Home, label: 'Jardin' },
     { path: '/upgrades', icon: TrendingUp, label: 'Améliorations' },
+    { path: '/store', icon: ShoppingCart, label: 'Boutique' },
     { path: '/profile', icon: User, label: 'Profil' },
   ];
 

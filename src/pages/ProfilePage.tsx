@@ -2,12 +2,11 @@ import { GameHeader } from '@/components/garden/GameHeader';
 import { PlayerStats } from '@/components/garden/PlayerStats';
 import { PrestigeSystem } from '@/components/garden/PrestigeSystem';
 import { LadderModal } from '@/components/garden/LadderModal';
-import { PremiumStore } from '@/components/store/PremiumStore';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 import { Button } from '@/components/ui/button';
-import { Loader2, LogOut, Settings, Trophy } from 'lucide-react';
+import { Loader2, LogOut, Settings, Trophy, ShoppingCart } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +52,23 @@ export const ProfilePage = () => {
       {/* Content with padding to avoid overlap */}
       <div className="px-3 pb-6 space-y-4">
 
+          {/* Titre et Statistiques */}
+          <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
+          <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
+          {/* Accès Boutique Premium */}
+          <div className="glassmorphism rounded-xl p-4 shadow-lg">
+            <div className="space-y-3">
+              <div>
+                <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Boutique Premium</h3>
+              </div>
+              <Button onClick={() => navigate('/store')} variant="outline" size="lg" className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0">
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Accéder à la Boutique
+              </Button>
+            </div>
+          </div>
+          {/* Système de Prestige */}
+          {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
           {/* Carte des classements */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
             <div className="space-y-3">
@@ -68,16 +84,6 @@ export const ProfilePage = () => {
             </div>
           </div>
         
-        <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
-        
-        <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
-        
-        {/* Boutique Premium */}
-        <PremiumStore />
-        
-        {/* Système de Prestige */}
-        {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
-
         {/* Section Paramètres */}
         <div className="space-y-4">
           <h2 className="mobile-text-lg font-bold text-green-700 flex items-center gap-2">
