@@ -38,13 +38,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           {children}
         </div>
         
-        {/* Bouton flottant Starter Pack */}
+        {/* Bouton flottant Early Access Pack */}
         <Button
           onClick={handleStarterPackClick}
-          className="fixed z-50 bottom-[6rem] right-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg rounded-full px-4 py-3 flex items-center gap-2 animate-bounce touch-target"
+          className="fixed z-60 bottom-24 right-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg rounded-full px-4 py-3 flex items-center gap-2 animate-bounce touch-target"
         >
           <Sparkles className="h-5 w-5" />
-          Starter Pack
+          Early Access Pack
         </Button>
 
         {/* Sticky bottom navigation */}
