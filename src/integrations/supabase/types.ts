@@ -609,6 +609,10 @@ export type Database = {
         Args: { plot_number: number }
         Returns: number
       }
+      get_robot_plant_for_level: {
+        Args: { robot_level: number }
+        Returns: string
+      }
       get_user_coins_rank: {
         Args: { target_user_id: string }
         Returns: number
