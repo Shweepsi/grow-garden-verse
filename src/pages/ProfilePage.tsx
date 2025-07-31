@@ -53,6 +53,11 @@ export const ProfilePage = () => {
       {/* Content with padding to avoid overlap */}
       <div className="px-3 pb-6 space-y-4">
 
+          {/* Titre et Statistiques */}
+          <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
+          <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
+          {/* Système de Prestige */}
+          {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
           {/* Carte des classements */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
             <div className="space-y-3">
@@ -68,16 +73,9 @@ export const ProfilePage = () => {
             </div>
           </div>
         
-        <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
-        
-        <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
-        
         {/* Boutique Premium */}
         <PremiumStore />
         
-        {/* Système de Prestige */}
-        {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
-
         {/* Section Paramètres */}
         <div className="space-y-4">
           <h2 className="mobile-text-lg font-bold text-green-700 flex items-center gap-2">
