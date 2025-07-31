@@ -51,7 +51,7 @@ export const PremiumStore = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div id="premium-store" className="space-y-4">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
           Boutique Premium
