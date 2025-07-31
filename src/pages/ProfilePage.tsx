@@ -56,6 +56,8 @@ export const ProfilePage = () => {
           {/* Titre et Statistiques */}
           <h1 className="mobile-text-xl font-bold text-green-800">Profil du Jardinier</h1>
           <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
+          {/* Boutique Premium */}
+          <PremiumStore />
           {/* Système de Prestige */}
           {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
           {/* Carte des classements */}
@@ -72,9 +74,6 @@ export const ProfilePage = () => {
               </Button>
             </div>
           </div>
-        
-        {/* Boutique Premium */}
-        <PremiumStore />
         
         {/* Section Paramètres */}
         <div className="space-y-4">
