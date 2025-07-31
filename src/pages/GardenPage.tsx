@@ -44,7 +44,7 @@ export const GardenPage = () => {
       </div>
       
       {/* Content with padding to avoid overlap */}
-      <div className="px-3 pb-6 space-y-3 h-full overflow-y-auto">
+      <div className="px-3 pb-6 space-y-3 h-full overflow-y-auto pr-1">
         <PlotGrid
           plots={gameState.plots}
           plantTypes={gameState.plantTypes}

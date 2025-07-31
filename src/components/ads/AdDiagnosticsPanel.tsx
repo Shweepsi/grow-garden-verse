@@ -16,7 +16,7 @@ export function AdDiagnosticsPanel({ debugInfo, onTestConnectivity }: AdDiagnost
         <span className="font-semibold text-red-800">Diagnostics AdMob</span>
       </div>
       <div className="bg-white rounded-lg p-3 border border-red-100 shadow-sm">
-        <pre className="whitespace-pre-wrap overflow-x-auto text-xs text-gray-700 font-mono">
+        <pre className="whitespace-pre-wrap overflow-x-auto pb-1 text-xs text-gray-700 font-mono">
           {JSON.stringify(debugInfo, null, 2)}
         </pre>
       </div>
