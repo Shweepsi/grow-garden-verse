@@ -92,6 +92,34 @@ export const ProfilePage = () => {
               </Button>
             </div>
           </div>
+
+          {/* Informations légales - Section discrète */}
+          <div className="mt-8 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <div className="flex justify-center items-center gap-2 text-xs text-gray-400">
+                <button 
+                  onClick={() => navigate('/privacy')} 
+                  className="hover:text-gray-600 transition-colors"
+                >
+                  Confidentialité
+                </button>
+                <span>|</span>
+                <button 
+                  onClick={() => navigate('/terms')} 
+                  className="hover:text-gray-600 transition-colors"
+                >
+                  Conditions
+                </button>
+                <span>|</span>
+                <button 
+                  onClick={() => navigate('/about')} 
+                  className="hover:text-gray-600 transition-colors"
+                >
+                  À propos
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
