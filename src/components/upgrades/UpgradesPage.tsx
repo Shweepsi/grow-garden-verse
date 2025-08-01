@@ -22,7 +22,8 @@ export const UpgradesPage = () => {
     getCategoryProgress,
     getCategoryDisplayName,
     getCategoryTiers,
-    isPurchasing
+    isPurchasing,
+    playerUpgrades
   } = useUpgrades();
   const playerLevel = gameData?.garden?.level || 1;
   const coins = gameData?.garden?.coins || 0;
@@ -66,10 +67,39 @@ export const UpgradesPage = () => {
     return nextUpgrade || sortedUpgrades[sortedUpgrades.length - 1]; // Si tout est acheté, retourner la dernière
   };
 
-  // Fonction pour obtenir le niveau actuel (combien d'améliorations achetées + 1)
+  // Fonction pour obtenir le niveau actuel selon la catégorie
   const getCurrentLevel = (upgrades: LevelUpgrade[]) => {
-    const purchasedCount = upgrades.filter(upgrade => isUpgradePurchased(upgrade.id)).length;
-    return purchasedCount + 1;
+    const categoryKey = getCategoryKey(upgrades[0].effect_type);
+    
+    if (categoryKey === 'automatisation') {
+      // Pour l'automatisation, utiliser la même logique que EconomyService.getRobotLevel
+      const hasAutoHarvest = playerUpgrades.some(upgrade => 
+        upgrade.level_upgrades?.effect_type === 'auto_harvest'
+      );
+      
+      if (!hasAutoHarvest) {
+        return 0; // Pas de robot si auto harvest pas débloqué
+      }
+      
+      let maxLevel = 1; // Niveau de base : autoharvest = niveau 1
+      
+      // Compter les améliorations robot_level achetées
+      const robotUpgrades = playerUpgrades.filter(upgrade => 
+        upgrade.level_upgrades?.effect_type === 'robot_level'
+      );
+      
+      robotUpgrades.forEach(upgrade => {
+        if (upgrade.level_upgrades?.effect_value && upgrade.level_upgrades.effect_value > maxLevel) {
+          maxLevel = upgrade.level_upgrades.effect_value;
+        }
+      });
+      
+      return maxLevel;
+    } else {
+      // Pour les autres catégories, logique standard
+      const purchasedCount = upgrades.filter(upgrade => isUpgradePurchased(upgrade.id)).length;
+      return purchasedCount + 1;
+    }
   };
 
   // Fonction pour vérifier si toutes les améliorations d'une catégorie sont achetées
