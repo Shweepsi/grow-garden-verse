@@ -60,8 +60,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const col = cellIndex % 3; // 0,1,2
     const row = Math.floor(cellIndex / 3); // 0,1,2
 
-    // Petit décalage aléatoire pour briser la rigidité
-    const jitter = () => Math.floor((Math.random() - 0.5) * 12); // -6 … +6 px
+    const JITTER_RANGE = 20; // ±10px
+    const jitter = () => Math.floor((Math.random() - 0.5) * JITTER_RANGE); // -10 … +10 px
 
     return {
       id,
