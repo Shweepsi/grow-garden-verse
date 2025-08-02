@@ -5,8 +5,8 @@ export interface FloatingAnimation {
   amount: number;
   type: 'coins' | 'experience' | 'gems';
   timestamp: number;
-  offsetX?: number; // Décalage horizontal pour éviter le chevauchement
-  offsetY?: number; // Décalage vertical pour éviter le chevauchement
+  offsetX?: string; // Décalage horizontal (vw) pour éviter le chevauchement
+  offsetY?: number; // Décalage vertical (px) pour éviter le chevauchement
 }
 
 interface AnimationContextType {
@@ -34,10 +34,11 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const triggerCoinAnimation = useCallback((amount: number) => {
     setAnimations(current => {
       const id = `coin-${Date.now()}-${Math.random()}`;
-      const positionIndex = current.length % 9; // 0–8
+      const sameTypeCount = current.filter(a => a.type === 'coins').length;
+      const positionIndex = sameTypeCount % 9; // 0–8
       const col = positionIndex % 3; // 0,1,2
       const row = Math.floor(positionIndex / 3); // 0,1,2
-      const offsetX = (col - 1) * 30; // -30, 0, 30 px
+      const offsetX = `${(col - 1) * 33}vw`; // -33vw, 0, 33vw
       const offsetY = (row - 1) * 30; // -30, 0, 30 px
       return [...current, {
         id,
@@ -53,9 +54,11 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const triggerXpAnimation = useCallback((amount: number) => {
     setAnimations(current => {
       const id = `xp-${Date.now()}-${Math.random()}`;
-      const positionIndex = current.length % 9;
-      const row = Math.floor(positionIndex / 3); // 0,1,2
-      const offsetX = 30; // Toujours à droite pour éviter un chevauchement avec les gemmes
+      const sameTypeCount = current.filter(a => a.type === 'experience').length;
+      const positionIndex = sameTypeCount % 9;
+      const col = positionIndex % 3;
+      const row = Math.floor(positionIndex / 3);
+      const offsetX = `${(col - 1) * 33}vw`;
       const offsetY = (row - 1) * 30;
       return [...current, {
         id,
@@ -71,10 +74,11 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const triggerGemAnimation = useCallback((amount: number) => {
     setAnimations(current => {
       const id = `gem-${Date.now()}-${Math.random()}`;
-      const positionIndex = current.length % 9;
+      const sameTypeCount = current.filter(a => a.type === 'gems').length;
+      const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      const offsetX = (col - 1) * 30;
+      const offsetX = `${(col - 1) * 33}vw`;
       const offsetY = (row - 1) * 30;
       return [...current, {
         id,
