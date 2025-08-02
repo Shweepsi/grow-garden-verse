@@ -40,10 +40,25 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     current: FloatingAnimation[]
   ): FloatingAnimation => {
     const id = `${type}-${Date.now()}-${Math.random()}`;
-    const sameTypeCount = current.filter(a => a.type === type).length;
-    const positionIndex = sameTypeCount % 9; // 0–8
-    const col = positionIndex % 3; // 0,1,2
-    const row = Math.floor(positionIndex / 3); // 0,1,2
+
+    // Déterminer la position libre dans la grille (0-8)
+    const occupied = current
+      .filter(a => a.type === type)
+      .map(a => a.row * 3 + a.col);
+
+    let cellIndex = 0;
+    for (; cellIndex < 9; cellIndex++) {
+      if (!occupied.includes(cellIndex)) break;
+    }
+
+    // Si toutes les cellules sont occupées, on recycle en remplaçant la plus ancienne
+    if (cellIndex === 9) {
+      const oldestIndex = occupied[0] ?? 0;
+      cellIndex = oldestIndex;
+    }
+
+    const col = cellIndex % 3; // 0,1,2
+    const row = Math.floor(cellIndex / 3); // 0,1,2
 
     // Petit décalage aléatoire pour briser la rigidité
     const jitter = () => Math.floor((Math.random() - 0.5) * 12); // -6 … +6 px
