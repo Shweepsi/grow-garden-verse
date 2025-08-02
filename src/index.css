@@ -389,6 +389,10 @@
     color: #8b5cf6;
   }
 
+  .floating-number.negative.gems {
+    color: #dc2626; /* rouge cohérent avec le débit */
+  }
+
   .touch-target {
     min-height: 44px;
     min-width: 44px;

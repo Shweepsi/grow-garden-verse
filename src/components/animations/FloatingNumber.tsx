@@ -19,6 +19,18 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
   }, [animation.id, removeAnimation]);
 
   const isPositive = animation.amount > 0;
+
+  // Formatage lisible pour les grands montants (> 100 000)
+  const formatAmount = (value: number): string => {
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000) {
+      return `${(abs / 1_000_000).toFixed(1)}M`;
+    }
+    if (abs >= 100_000) {
+      return `${(abs / 1_000).toFixed(1)}K`;
+    }
+    return abs.toLocaleString();
+  };
   
   const renderIcon = () => {
     switch (animation.type) {
@@ -34,14 +46,14 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
   };
   
   return (
-    <div 
+    <div
       className={`floating-number ${animation.type} ${isPositive ? 'positive' : 'negative'}`}
       key={animation.id}
     >
       <div className="flex items-center space-x-1">
         {renderIcon()}
         <span className="font-bold mobile-text-sm">
-          {isPositive ? '+' : ''}{animation.amount.toLocaleString()}
+          {isPositive ? '+' : '-'}{formatAmount(animation.amount)}
         </span>
       </div>
     </div>
