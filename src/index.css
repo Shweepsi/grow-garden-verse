@@ -385,8 +385,16 @@
     color: #2563eb;
   }
 
+  .floating-number.negative.experience {
+    color: #dc2626;
+  }
+
   .floating-number.positive.gems {
     color: #8b5cf6;
+  }
+
+  .floating-number.negative.gems {
+    color: #dc2626; /* rouge cohérent avec le débit */
   }
 
   .touch-target {

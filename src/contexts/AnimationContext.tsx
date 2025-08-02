@@ -5,6 +5,8 @@ export interface FloatingAnimation {
   amount: number;
   type: 'coins' | 'experience' | 'gems';
   timestamp: number;
+  offsetX?: number; // Décalage horizontal pour éviter le chevauchement
+  offsetY?: number; // Décalage vertical pour éviter le chevauchement
 }
 
 interface AnimationContextType {
@@ -27,88 +29,61 @@ export const useAnimations = () => {
 
 export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [animations, setAnimations] = useState<FloatingAnimation[]>([]);
-  const [coinAccumulator, setCoinAccumulator] = useState<{ amount: number; timer: number | null }>({
-    amount: 0,
-    timer: null
-  });
-  const [xpAccumulator, setXpAccumulator] = useState<{ amount: number; timer: number | null }>({
-    amount: 0,
-    timer: null
-  });
-  const [gemAccumulator, setGemAccumulator] = useState<{ amount: number; timer: number | null }>({
-    amount: 0,
-    timer: null
-  });
+  // Chaque récolte déclenche sa propre animation. Aucune accumulation temporelle.
 
   const triggerCoinAnimation = useCallback((amount: number) => {
-    setCoinAccumulator(prev => {
-      if (prev.timer) {
-        clearTimeout(prev.timer);
-      }
-      
-      const newAmount = prev.amount + amount;
-      
-      const timer = window.setTimeout(() => {
-        const id = `coin-${Date.now()}-${Math.random()}`;
-        setAnimations(current => [...current, {
-          id,
-          amount: newAmount,
-          type: 'coins',
-          timestamp: Date.now()
-        }]);
-        
-        setCoinAccumulator({ amount: 0, timer: null });
-      }, 300);
-      
-      return { amount: newAmount, timer };
+    setAnimations(current => {
+      const id = `coin-${Date.now()}-${Math.random()}`;
+      const positionIndex = current.length % 9; // 0–8
+      const col = positionIndex % 3; // 0,1,2
+      const row = Math.floor(positionIndex / 3); // 0,1,2
+      const offsetX = (col - 1) * 30; // -30, 0, 30 px
+      const offsetY = (row - 1) * 30; // -30, 0, 30 px
+      return [...current, {
+        id,
+        amount,
+        type: 'coins',
+        timestamp: Date.now(),
+        offsetX,
+        offsetY
+      }];
     });
   }, []);
 
   const triggerXpAnimation = useCallback((amount: number) => {
-    setXpAccumulator(prev => {
-      if (prev.timer) {
-        clearTimeout(prev.timer);
-      }
-      
-      const newAmount = prev.amount + amount;
-      
-      const timer = window.setTimeout(() => {
-        const id = `xp-${Date.now()}-${Math.random()}`;
-        setAnimations(current => [...current, {
-          id,
-          amount: newAmount,
-          type: 'experience',
-          timestamp: Date.now()
-        }]);
-        
-        setXpAccumulator({ amount: 0, timer: null });
-      }, 300);
-      
-      return { amount: newAmount, timer };
+    setAnimations(current => {
+      const id = `xp-${Date.now()}-${Math.random()}`;
+      const positionIndex = current.length % 9;
+      const row = Math.floor(positionIndex / 3); // 0,1,2
+      const offsetX = 30; // Toujours à droite pour éviter un chevauchement avec les gemmes
+      const offsetY = (row - 1) * 30;
+      return [...current, {
+        id,
+        amount,
+        type: 'experience',
+        timestamp: Date.now(),
+        offsetX,
+        offsetY
+      }];
     });
   }, []);
 
   const triggerGemAnimation = useCallback((amount: number) => {
-    setGemAccumulator(prev => {
-      if (prev.timer) {
-        clearTimeout(prev.timer);
-      }
-      
-      const newAmount = prev.amount + amount;
-      
-      const timer = window.setTimeout(() => {
-        const id = `gem-${Date.now()}-${Math.random()}`;
-        setAnimations(current => [...current, {
-          id,
-          amount: newAmount,
-          type: 'gems',
-          timestamp: Date.now()
-        }]);
-        
-        setGemAccumulator({ amount: 0, timer: null });
-      }, 300);
-      
-      return { amount: newAmount, timer };
+    setAnimations(current => {
+      const id = `gem-${Date.now()}-${Math.random()}`;
+      const positionIndex = current.length % 9;
+      const col = positionIndex % 3;
+      const row = Math.floor(positionIndex / 3);
+      const offsetX = (col - 1) * 30;
+      const offsetY = (row - 1) * 30;
+      return [...current, {
+        id,
+        amount,
+        type: 'gems',
+        timestamp: Date.now(),
+        offsetX,
+        offsetY
+      }];
     });
   }, []);
 
