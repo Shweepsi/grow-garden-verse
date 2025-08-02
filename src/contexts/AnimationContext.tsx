@@ -38,7 +38,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9; // 0–8
       const col = positionIndex % 3; // 0,1,2
       const row = Math.floor(positionIndex / 3); // 0,1,2
-      const baseOffsetX = (col - 1) * 40; // -40, 0, 40 px
+      // Coins zone à gauche : uniquement décalage positif pour rester dans la zone
+      const baseOffsetX = col * 30; // 0, 30, 60 px
       const baseOffsetY = (row - 1) * 30; // -30, 0, 30 px
       const jitter = () => Math.floor((Math.random() - 0.5) * 12); // -6 … +6 px
       const offsetX = baseOffsetX + jitter();
@@ -61,7 +62,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      const baseOffsetX = (col - 1) * 40;
+      // XP zone à droite : uniquement décalage négatif pour rester dans la zone
+      const baseOffsetX = -col * 30; // 0, -30, -60 px
       const baseOffsetY = row * 30; // 0, 30, 60 px pour éviter chevauchement avec gemmes
       const jitter = () => Math.floor((Math.random() - 0.5) * 12);
       const offsetX = baseOffsetX + jitter();
@@ -84,7 +86,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      const baseOffsetX = (col - 1) * 40;
+      // Gemmes au centre : décalage symétrique
+      const baseOffsetX = (col - 1) * 30; // -30, 0, 30 px
       const baseOffsetY = (row - 1) * 30;
       const jitter = () => Math.floor((Math.random() - 0.5) * 12);
       const offsetX = baseOffsetX + jitter();
