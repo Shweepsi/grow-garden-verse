@@ -3,6 +3,7 @@ import { PlayerStats } from '@/components/garden/PlayerStats';
 import { PrestigeSystem } from '@/components/garden/PrestigeSystem';
 import { LadderModal } from '@/components/garden/LadderModal';
 import { FontSizeSelector } from '@/components/accessibility/FontSizeSelector';
+import { ResolutionSimulator } from '@/components/debug/ResolutionSimulator';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
@@ -81,6 +82,7 @@ export const ProfilePage = () => {
 
           {/* Sélecteur de taille de police */}
           <FontSizeSelector />
+          <ResolutionSimulator />
 
           {/* Carte de déconnexion */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
