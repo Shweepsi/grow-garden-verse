@@ -385,6 +385,10 @@
     color: #2563eb;
   }
 
+  .floating-number.negative.experience {
+    color: #dc2626;
+  }
+
   .floating-number.positive.gems {
     color: #8b5cf6;
   }
