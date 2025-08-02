@@ -235,10 +235,8 @@ export const usePassiveIncomeRobot = () => {
     },
     onSuccess: (result) => {
       if (result) {
+        // Conserver l’animation de pièces mais supprimer le toast visuel
         triggerCoinAnimation(result.totalAccumulated);
-        toast.success(`🤖 Revenus collectés !`, {
-          description: `+${result.totalAccumulated.toLocaleString()} 🪙 + ${result.expReward} EXP de ${result.plantName}`
-        });
       }
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
       queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
