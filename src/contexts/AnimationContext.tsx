@@ -54,9 +54,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setAnimations(current => {
       const id = `xp-${Date.now()}-${Math.random()}`;
       const positionIndex = current.length % 9;
-      const col = positionIndex % 3;
-      const row = Math.floor(positionIndex / 3);
-      const offsetX = (col - 1) * 30;
+      const row = Math.floor(positionIndex / 3); // 0,1,2
+      const offsetX = 30; // Toujours à droite pour éviter un chevauchement avec les gemmes
       const offsetY = (row - 1) * 30;
       return [...current, {
         id,
