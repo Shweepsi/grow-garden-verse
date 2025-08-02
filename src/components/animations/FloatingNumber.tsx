@@ -50,8 +50,9 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
       className={`floating-number ${animation.type} ${isPositive ? 'positive' : 'negative'}`}
       key={animation.id}
       style={{
-        marginLeft: animation.offsetX ?? 0,
-        marginTop: animation.offsetY ?? 0
+        gridRowStart: animation.row + 1,
+        gridColumnStart: animation.col + 1,
+        transform: `translate(${animation.jitterX}px, ${animation.jitterY}px)`
       }}
     >
       <div className="flex items-center space-x-1">

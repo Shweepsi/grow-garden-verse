@@ -5,8 +5,10 @@ export interface FloatingAnimation {
   amount: number;
   type: 'coins' | 'experience' | 'gems';
   timestamp: number;
-  offsetX?: number; // Décalage horizontal (px) pour éviter le chevauchement
-  offsetY?: number; // Décalage vertical (px) pour éviter le chevauchement
+  row: number; // 0-2
+  col: number; // 0-2
+  jitterX: number; // petit décalage aléatoire px
+  jitterY: number;
 }
 
 interface AnimationContextType {
@@ -49,8 +51,10 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         amount,
         type: 'coins',
         timestamp: Date.now(),
-        offsetX,
-        offsetY
+        row,
+        col,
+        jitterX: offsetX,
+        jitterY: offsetY
       }];
     });
   }, []);
@@ -73,8 +77,10 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         amount,
         type: 'experience',
         timestamp: Date.now(),
-        offsetX,
-        offsetY
+        row,
+        col,
+        jitterX: offsetX,
+        jitterY: offsetY
       }];
     });
   }, []);
@@ -97,8 +103,10 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         amount,
         type: 'gems',
         timestamp: Date.now(),
-        offsetX,
-        offsetY
+        row,
+        col,
+        jitterX: offsetX,
+        jitterY: offsetY
       }];
     });
   }, []);

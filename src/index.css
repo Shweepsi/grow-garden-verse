@@ -358,6 +358,11 @@
     /* Optimisation GPU */
     will-change: transform;
     transform: translateZ(0);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    justify-items: center;
+    align-items: center;
   }
 
   /* Animations des nombres flottants optimisées */
