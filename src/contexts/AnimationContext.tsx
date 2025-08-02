@@ -40,7 +40,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9; // 0–8
       const col = positionIndex % 3; // 0,1,2
       const row = Math.floor(positionIndex / 3); // 0,1,2
-      const jitter = () => Math.floor((Math.random() - 0.5) * 8); // -4 … +4 px
+      const jitter = () => Math.floor((Math.random() - 0.5) * 12); // -6 … +6 px
       const offsetX = jitter();
       const offsetY = jitter();
       return [...current, {
@@ -63,7 +63,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      const jitter = () => Math.floor((Math.random() - 0.5) * 8);
+      const jitter = () => Math.floor((Math.random() - 0.5) * 12);
       const offsetX = jitter();
       const offsetY = jitter();
       return [...current, {
@@ -86,7 +86,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      const jitter = () => Math.floor((Math.random() - 0.5) * 8);
+      const jitter = () => Math.floor((Math.random() - 0.5) * 12);
       const offsetX = jitter();
       const offsetY = jitter();
       return [...current, {
