@@ -21,7 +21,7 @@ type Resolution = (typeof resolutions)[number] | null;
  */
 export function ResolutionSimulator() {
   // Ne rien rendre en production
-  if (process.env.NODE_ENV !== 'development') {
+  if (!import.meta.env.DEV) {
     return null;
   }
 
