@@ -5,6 +5,8 @@ export interface FloatingAnimation {
   amount: number;
   type: 'coins' | 'experience' | 'gems';
   timestamp: number;
+  offsetX?: number; // Décalage horizontal pour éviter le chevauchement
+  offsetY?: number; // Décalage vertical pour éviter le chevauchement
 }
 
 interface AnimationContextType {
@@ -30,33 +32,60 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Chaque récolte déclenche sa propre animation. Aucune accumulation temporelle.
 
   const triggerCoinAnimation = useCallback((amount: number) => {
-    const id = `coin-${Date.now()}-${Math.random()}`;
-    setAnimations(current => [...current, {
-      id,
-      amount,
-      type: 'coins',
-      timestamp: Date.now()
-    }]);
+    setAnimations(current => {
+      const id = `coin-${Date.now()}-${Math.random()}`;
+      const positionIndex = current.length % 9; // 0–8
+      const col = positionIndex % 3; // 0,1,2
+      const row = Math.floor(positionIndex / 3); // 0,1,2
+      const offsetX = (col - 1) * 30; // -30, 0, 30 px
+      const offsetY = (row - 1) * 30; // -30, 0, 30 px
+      return [...current, {
+        id,
+        amount,
+        type: 'coins',
+        timestamp: Date.now(),
+        offsetX,
+        offsetY
+      }];
+    });
   }, []);
 
   const triggerXpAnimation = useCallback((amount: number) => {
-    const id = `xp-${Date.now()}-${Math.random()}`;
-    setAnimations(current => [...current, {
-      id,
-      amount,
-      type: 'experience',
-      timestamp: Date.now()
-    }]);
+    setAnimations(current => {
+      const id = `xp-${Date.now()}-${Math.random()}`;
+      const positionIndex = current.length % 9;
+      const col = positionIndex % 3;
+      const row = Math.floor(positionIndex / 3);
+      const offsetX = (col - 1) * 30;
+      const offsetY = (row - 1) * 30;
+      return [...current, {
+        id,
+        amount,
+        type: 'experience',
+        timestamp: Date.now(),
+        offsetX,
+        offsetY
+      }];
+    });
   }, []);
 
   const triggerGemAnimation = useCallback((amount: number) => {
-    const id = `gem-${Date.now()}-${Math.random()}`;
-    setAnimations(current => [...current, {
-      id,
-      amount,
-      type: 'gems',
-      timestamp: Date.now()
-    }]);
+    setAnimations(current => {
+      const id = `gem-${Date.now()}-${Math.random()}`;
+      const positionIndex = current.length % 9;
+      const col = positionIndex % 3;
+      const row = Math.floor(positionIndex / 3);
+      const offsetX = (col - 1) * 30;
+      const offsetY = (row - 1) * 30;
+      return [...current, {
+        id,
+        amount,
+        type: 'gems',
+        timestamp: Date.now(),
+        offsetX,
+        offsetY
+      }];
+    });
   }, []);
 
   const removeAnimation = useCallback((id: string) => {

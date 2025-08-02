@@ -49,6 +49,10 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
     <div
       className={`floating-number ${animation.type} ${isPositive ? 'positive' : 'negative'}`}
       key={animation.id}
+      style={{
+        marginLeft: animation.offsetX ?? 0,
+        marginTop: animation.offsetY ?? 0
+      }}
     >
       <div className="flex items-center space-x-1">
         {renderIcon()}
