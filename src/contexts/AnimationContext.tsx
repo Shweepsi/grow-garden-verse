@@ -33,74 +33,40 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [animations, setAnimations] = useState<FloatingAnimation[]>([]);
   // Chaque récolte déclenche sa propre animation. Aucune accumulation temporelle.
 
-  const triggerCoinAnimation = useCallback((amount: number) => {
-    setAnimations(current => {
-      const id = `coin-${Date.now()}-${Math.random()}`;
-      const sameTypeCount = current.filter(a => a.type === 'coins').length;
-      const positionIndex = sameTypeCount % 9; // 0–8
-      const col = positionIndex % 3; // 0,1,2
-      const row = Math.floor(positionIndex / 3); // 0,1,2
-      const jitter = () => Math.floor((Math.random() - 0.5) * 12); // -6 … +6 px
-      const offsetX = jitter();
-      const offsetY = jitter();
-      return [...current, {
-        id,
-        amount,
-        type: 'coins',
-        timestamp: Date.now(),
-        row,
-        col,
-        jitterX: offsetX,
-        jitterY: offsetY
-      }];
-    });
-  }, []);
+  // Facteur commun pour générer un FloatingAnimation
+  const createAnimation = (
+    type: FloatingAnimation['type'],
+    amount: number,
+    current: FloatingAnimation[]
+  ): FloatingAnimation => {
+    const id = `${type}-${Date.now()}-${Math.random()}`;
+    const sameTypeCount = current.filter(a => a.type === type).length;
+    const positionIndex = sameTypeCount % 9; // 0–8
+    const col = positionIndex % 3; // 0,1,2
+    const row = Math.floor(positionIndex / 3); // 0,1,2
 
-  const triggerXpAnimation = useCallback((amount: number) => {
-    setAnimations(current => {
-      const id = `xp-${Date.now()}-${Math.random()}`;
-      const sameTypeCount = current.filter(a => a.type === 'experience').length;
-      const positionIndex = sameTypeCount % 9;
-      const col = positionIndex % 3;
-      const row = Math.floor(positionIndex / 3);
-      const jitter = () => Math.floor((Math.random() - 0.5) * 12);
-      const offsetX = jitter();
-      const offsetY = jitter();
-      return [...current, {
-        id,
-        amount,
-        type: 'experience',
-        timestamp: Date.now(),
-        row,
-        col,
-        jitterX: offsetX,
-        jitterY: offsetY
-      }];
-    });
-  }, []);
+    // Petit décalage aléatoire pour briser la rigidité
+    const jitter = () => Math.floor((Math.random() - 0.5) * 12); // -6 … +6 px
 
-  const triggerGemAnimation = useCallback((amount: number) => {
-    setAnimations(current => {
-      const id = `gem-${Date.now()}-${Math.random()}`;
-      const sameTypeCount = current.filter(a => a.type === 'gems').length;
-      const positionIndex = sameTypeCount % 9;
-      const col = positionIndex % 3;
-      const row = Math.floor(positionIndex / 3);
-      const jitter = () => Math.floor((Math.random() - 0.5) * 12);
-      const offsetX = jitter();
-      const offsetY = jitter();
-      return [...current, {
-        id,
-        amount,
-        type: 'gems',
-        timestamp: Date.now(),
-        row,
-        col,
-        jitterX: offsetX,
-        jitterY: offsetY
-      }];
-    });
-  }, []);
+    return {
+      id,
+      amount,
+      type,
+      timestamp: Date.now(),
+      row,
+      col,
+      jitterX: jitter(),
+      jitterY: jitter()
+    };
+  };
+
+  // Générateur de fonctions déclencheurs pour chaque type
+  const makeTrigger = (type: FloatingAnimation['type']) =>
+    (amount: number) => setAnimations(prev => [...prev, createAnimation(type, amount, prev)]);
+
+  const triggerCoinAnimation = useCallback(makeTrigger('coins'), []);
+  const triggerXpAnimation = useCallback(makeTrigger('experience'), []);
+  const triggerGemAnimation = useCallback(makeTrigger('gems'), []);
 
   const removeAnimation = useCallback((id: string) => {
     setAnimations(current => current.filter(anim => anim.id !== id));
