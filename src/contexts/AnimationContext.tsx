@@ -62,8 +62,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      // XP zone à droite : uniquement décalage négatif pour rester dans la zone
-      const baseOffsetX = -col * 30; // 0, -30, -60 px
+      // XP zone à droite : décalage positif pour se placer à droite du centre
+      const baseOffsetX = col * 30; // 0, 30, 60 px
       const baseOffsetY = row * 30; // 0, 30, 60 px pour éviter chevauchement avec gemmes
       const jitter = () => Math.floor((Math.random() - 0.5) * 12);
       const offsetX = baseOffsetX + jitter();
