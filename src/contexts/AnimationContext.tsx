@@ -5,7 +5,7 @@ export interface FloatingAnimation {
   amount: number;
   type: 'coins' | 'experience' | 'gems';
   timestamp: number;
-  offsetX?: string; // Décalage horizontal (vw) pour éviter le chevauchement
+  offsetX?: number; // Décalage horizontal (px) pour éviter le chevauchement
   offsetY?: number; // Décalage vertical (px) pour éviter le chevauchement
 }
 
@@ -38,7 +38,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9; // 0–8
       const col = positionIndex % 3; // 0,1,2
       const row = Math.floor(positionIndex / 3); // 0,1,2
-      const offsetX = `${(col - 1) * 33}vw`; // -33vw, 0, 33vw
+      const offsetX = (col - 1) * 40; // -40, 0, 40 px
       const offsetY = (row - 1) * 30; // -30, 0, 30 px
       return [...current, {
         id,
@@ -58,7 +58,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      const offsetX = `${(col - 1) * 33}vw`;
+      const offsetX = (col - 1) * 40;
       const offsetY = (row - 1) * 30;
       return [...current, {
         id,
@@ -78,7 +78,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const positionIndex = sameTypeCount % 9;
       const col = positionIndex % 3;
       const row = Math.floor(positionIndex / 3);
-      const offsetX = `${(col - 1) * 33}vw`;
+      const offsetX = (col - 1) * 40;
       const offsetY = (row - 1) * 30;
       return [...current, {
         id,
