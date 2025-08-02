@@ -1,6 +1,7 @@
 
 import { BottomNavigation } from './BottomNavigation';
 import { ProtectedRoute } from './ProtectedRoute';
+import { NetworkStatusIndicator } from '@/components/network/NetworkStatusIndicator';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <ProtectedRoute>
       <div className="min-h-dvh flex flex-col garden-background relative">
+        <NetworkStatusIndicator />
+        
         {/* Floating particles for ambiance */}
         <div className="floating-particles">
           <div className="particle"></div>

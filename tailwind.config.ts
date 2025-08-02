@@ -17,6 +17,18 @@ export default {
 				'2xl': '1400px'
 			}
 		},
+		screens: {
+			// Android-optimized breakpoints
+			'xs': '360px',    // Small Android phones
+			'sm': '414px',    // Standard Android phones  
+			'md': '768px',    // Large phones/small tablets
+			'lg': '1024px',   // Tablets landscape
+			'xl': '1280px',   // Large tablets
+			'2xl': '1536px',  // Desktop
+			// Touch-specific breakpoints
+			'touch-sm': { 'raw': '(max-width: 767px) and (pointer: coarse)' },
+			'touch-lg': { 'raw': '(min-width: 768px) and (pointer: coarse)' },
+		},
 		extend: {
 			colors: {
 				border: 'hsl(var(--border))',

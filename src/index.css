@@ -3,6 +3,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Touch-friendly optimizations */
+@layer base {
+  html {
+    /* Safe area support for mobile devices */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* Disable tap highlight on WebKit */
+    -webkit-tap-highlight-color: transparent;
+    /* Improve touch scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  body {
+    /* Prevent zoom on double tap */
+    touch-action: manipulation;
+    /* Improve font rendering on mobile */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Custom scrollbar for touch devices */
+  @media (pointer: coarse) {
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: hsl(var(--muted));
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--muted-foreground) / 0.3);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--muted-foreground) / 0.5);
+    }
+  }
+}
+
+/* Touch-specific utilities */
+@layer utilities {
+  .tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  .scroll-smooth-touch {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Improved touch targets for small screens */
+  @media (max-width: 414px) {
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    .touch-target-lg {
+      min-height: 48px;
+      min-width: 48px;
+    }
+  }
+  
+  /* Android-specific optimizations */
+  @media screen and (max-width: 767px) and (pointer: coarse) {
+    .android-optimized {
+      /* Prevent accidental zooms */
+      font-size: 16px;
+    }
+    
+    .android-button {
+      /* Material Design touch targets */
+      min-height: 48px;
+      padding: 12px 16px;
+    }
+  }
+}
+
 /* Color palette */
 :root {
   --color-primary: #4ade80; /* Green-400 */
