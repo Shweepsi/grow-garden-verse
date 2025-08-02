@@ -460,19 +460,19 @@
 /* Animation plus fluide pour les nombres flottants */
 @keyframes floatUp {
   0% {
-    transform: translate(-50%, -50%) translateY(0px) translateZ(0);
+    transform: translate(-50%, 10px) translateZ(0); /* démarre légèrement sous la carte */
     opacity: 1;
     scale: 0.8;
   }
-  50% {
-    transform: translate(-50%, -50%) translateY(-20px) translateZ(0);
+  80% {
+    transform: translate(-50%, -10px) translateZ(0);
     opacity: 1;
     scale: 1;
   }
   100% {
-    transform: translate(-50%, -50%) translateY(-40px) translateZ(0);
+    transform: translate(-50%, -20px) translateZ(0); /* se termine sur la carte */
     opacity: 0;
-    scale: 1.1;
+    scale: 0.9;
   }
 }
 
