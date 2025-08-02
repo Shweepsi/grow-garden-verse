@@ -17,14 +17,9 @@ type Resolution = (typeof resolutions)[number] | null;
  *
  * Composant de debug qui permet de simuler différentes résolutions Android
  * en appliquant un scale CSS au conteneur racine de l'application.
- * Visible uniquement en environnement de développement.
+ * Accessible depuis tous les environnements (debug visible en production également).
  */
 export function ResolutionSimulator() {
-  // Ne rien rendre en production
-  if (!import.meta.env.DEV) {
-    return null;
-  }
-
   const [activeResolution, setActiveResolution] = React.useState<Resolution>(null);
 
   // Applique ou retire la simulation de résolution
