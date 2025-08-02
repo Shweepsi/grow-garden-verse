@@ -2,6 +2,7 @@ import { GameHeader } from '@/components/garden/GameHeader';
 import { PlayerStats } from '@/components/garden/PlayerStats';
 import { PrestigeSystem } from '@/components/garden/PrestigeSystem';
 import { LadderModal } from '@/components/garden/LadderModal';
+import { FontSizeSelector } from '@/components/accessibility/FontSizeSelector';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
@@ -77,6 +78,9 @@ export const ProfilePage = () => {
             <Settings className="h-5 w-5" />
             Paramètres
           </h2>
+
+          {/* Sélecteur de taille de police */}
+          <FontSizeSelector />
 
           {/* Carte de déconnexion */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
