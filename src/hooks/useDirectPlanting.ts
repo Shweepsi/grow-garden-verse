@@ -243,7 +243,8 @@ export const useDirectPlanting = () => {
           ),
           garden: {
             ...oldData.garden,
-            coins: Math.max(0, (oldData.garden.coins || 0) - data.actualCost)
+            // Les pièces ont déjà été déduites dans onMutate, ne pas les soustraire à nouveau
+            coins: oldData.garden.coins
           }
         };
       });
