@@ -15,7 +15,7 @@ export const usePlantActions = () => {
   const queryClient = useQueryClient();
   const { getCompleteMultipliers, applyGemsBoost, getCombinedBoostMultiplier } = useGameMultipliers();
   // getCombinedBoostMultiplier already includes permanent + active boosts
-  const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
+  const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
     // Optimistic update before the mutation executes
@@ -236,7 +236,6 @@ export const usePlantActions = () => {
       // Déclencher les animations de récompense
       // Les pièces ont déjà le boost appliqué via harvestReward
       triggerCoinAnimation(harvestReward);
-      triggerXpAnimation(expReward);
       const boostedGems = applyGemsBoost(gemReward);
       if (boostedGems > 0) {
         triggerGemAnimation(boostedGems);
