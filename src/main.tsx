@@ -10,6 +10,13 @@ import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import App from './App.tsx'
 import './index.css'
 
+import.meta.env.PROD && (() => {
+  const noop = () => {};
+  console.log = noop;
+  console.debug = noop;
+  console.info = noop;
+})();
+
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
