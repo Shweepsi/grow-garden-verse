@@ -20,7 +20,6 @@ export const useGameData = () => {
     
     const channel = supabase
       .channel(channelName)
-      // Changements sur les parcelles
       .on(
         'postgres_changes',
         {
@@ -29,36 +28,11 @@ export const useGameData = () => {
           table: 'garden_plots',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
-          // Mise à jour granulaire pour éviter un refetch complet
-          queryClient.setQueryData(['gameData', user.id], (old: any) => {
-            if (!old) return old;
-
-            switch (payload.eventType) {
-              case 'INSERT':
-              case 'UPDATE': {
-                const updatedPlot = payload.new;
-                return {
-                  ...old,
-                  plots: old.plots.map((p: any) =>
-                    p.id === updatedPlot.id ? { ...p, ...updatedPlot } : p
-                  ),
-                };
-              }
-              case 'DELETE': {
-                const deletedId = payload.old.id;
-                return {
-                  ...old,
-                  plots: old.plots.filter((p: any) => p.id !== deletedId),
-                };
-              }
-              default:
-                return old;
-            }
-          });
+        () => {
+          // Invalider et refetch les données quand une parcelle change
+          queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
         }
       )
-      // Changements sur le jardin global
       .on(
         'postgres_changes',
         {
@@ -67,18 +41,9 @@ export const useGameData = () => {
           table: 'player_gardens',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
-          queryClient.setQueryData(['gameData', user.id], (old: any) => {
-            if (!old) return old;
-            if (payload.eventType === 'DELETE') return old; // Garden row shouldn't be deleted
-            return {
-              ...old,
-              garden: {
-                ...old.garden,
-                ...payload.new,
-              },
-            };
-          });
+        () => {
+          // Invalider et refetch les données quand le jardin change
+          queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
         }
       )
       .subscribe();
@@ -118,8 +83,6 @@ export const useGameData = () => {
       };
     },
     enabled: !!user?.id,
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
     // Optimisation : intervalles plus fréquents pour une meilleure réactivité
     refetchInterval: (query) => {
       const data = query.state.data;

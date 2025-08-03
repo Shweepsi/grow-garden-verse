@@ -18,38 +18,6 @@ export const useDirectPlanting = () => {
   const { triggerCoinAnimation } = useAnimations();
 
   const plantDirectMutation = useMutation({
-    // Optimistic UI update before the mutation executes
-    onMutate: async ({ plotNumber, plantTypeId, expectedCost }) => {
-      await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
-
-      const previousData = queryClient.getQueryData(['gameData', user?.id]);
-
-      if (previousData) {
-        const optimisticData: any = {
-          ...(previousData as any),
-          plots: (previousData as any).plots.map((plot: any) =>
-            plot.plot_number === plotNumber
-              ? {
-                  ...plot,
-                  plant_type: plantTypeId,
-                  // Use current time for instant feedback; final value replaced on success
-                  planted_at: new Date().toISOString(),
-                  growth_time_seconds: null,
-                  updated_at: new Date().toISOString(),
-                }
-              : plot
-          ),
-          garden: {
-            ...(previousData as any).garden,
-            coins: Math.max(0, ((previousData as any).garden.coins || 0) - expectedCost),
-          },
-        };
-
-        queryClient.setQueryData(['gameData', user?.id], optimisticData);
-      }
-
-      return { previousData };
-    },
     mutationFn: async ({ plotNumber, plantTypeId, expectedCost }: {
       plotNumber: number;
       plantTypeId: string;
@@ -243,8 +211,7 @@ export const useDirectPlanting = () => {
           ),
           garden: {
             ...oldData.garden,
-            // Les pièces ont déjà été déduites dans onMutate, ne pas les soustraire à nouveau
-            coins: oldData.garden.coins
+            coins: Math.max(0, (oldData.garden.coins || 0) - data.actualCost)
           }
         };
       });
@@ -255,12 +222,7 @@ export const useDirectPlanting = () => {
       // Réinitialiser l'état de plantation
       setPlantingPlotNumber(null);
     },
-    onError: (error: any, _variables: any, context: any) => {
-      // Rollback optimistic update if the mutation fails
-      if (context?.previousData) {
-        queryClient.setQueryData(['gameData', user?.id], context.previousData);
-      }
-
+    onError: (error: any) => {
       console.error('💥 Erreur lors de la plantation directe:', error);
       toast.error(error.message || 'Erreur lors de la plantation');
       

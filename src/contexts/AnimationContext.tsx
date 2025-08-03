@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 export interface FloatingAnimation {
   id: string;
   amount: number;
-  type: 'coins' | 'gems';
+  type: 'coins' | 'experience' | 'gems';
   timestamp: number;
   row: number; // 0-2
   col: number; // 0-2
@@ -14,6 +14,7 @@ export interface FloatingAnimation {
 interface AnimationContextType {
   animations: FloatingAnimation[];
   triggerCoinAnimation: (amount: number) => void;
+  triggerXpAnimation: (amount: number) => void;
   triggerGemAnimation: (amount: number) => void;
   removeAnimation: (id: string) => void;
 }
@@ -69,6 +70,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Ajout d'un offset basé sur le type pour éviter les superpositions
     const typeOffset = {
       'coins': { x: 0, y: 0 },
+      'experience': { x: 5, y: 5 },
       'gems': { x: -5, y: -5 }
     };
 
@@ -87,10 +89,15 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Générateur de fonctions déclencheurs pour chaque type
   const makeTrigger = (type: FloatingAnimation['type']) =>
     (amount: number) => {
+      if (type === 'experience') {
+        // XP animations are disabled. We keep the API surface so calls remain harmless.
+        return;
+      }
       setAnimations(prev => [...prev, createAnimation(type, amount, prev)]);
     };
 
   const triggerCoinAnimation = useCallback(makeTrigger('coins'), []);
+  const triggerXpAnimation = useCallback(makeTrigger('experience'), []);
   const triggerGemAnimation = useCallback(makeTrigger('gems'), []);
 
   const removeAnimation = useCallback((id: string) => {
@@ -101,6 +108,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <AnimationContext.Provider value={{
       animations,
       triggerCoinAnimation,
+      triggerXpAnimation,
       triggerGemAnimation,
       removeAnimation
     }}>
