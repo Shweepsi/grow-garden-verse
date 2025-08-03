@@ -88,7 +88,13 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Générateur de fonctions déclencheurs pour chaque type
   const makeTrigger = (type: FloatingAnimation['type']) =>
-    (amount: number) => setAnimations(prev => [...prev, createAnimation(type, amount, prev)]);
+    (amount: number) => {
+      if (type === 'experience') {
+        // XP animations are disabled. We keep the API surface so calls remain harmless.
+        return;
+      }
+      setAnimations(prev => [...prev, createAnimation(type, amount, prev)]);
+    };
 
   const triggerCoinAnimation = useCallback(makeTrigger('coins'), []);
   const triggerXpAnimation = useCallback(makeTrigger('experience'), []);
