@@ -5,6 +5,10 @@ export interface FloatingAnimation {
   amount: number;
   type: 'coins' | 'experience' | 'gems';
   timestamp: number;
+  row: number; // 0-2
+  col: number; // 0-2
+  jitterX: number; // petit décalage aléatoire px
+  jitterY: number;
 }
 
 interface AnimationContextType {
@@ -27,90 +31,57 @@ export const useAnimations = () => {
 
 export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [animations, setAnimations] = useState<FloatingAnimation[]>([]);
-  const [coinAccumulator, setCoinAccumulator] = useState<{ amount: number; timer: number | null }>({
-    amount: 0,
-    timer: null
-  });
-  const [xpAccumulator, setXpAccumulator] = useState<{ amount: number; timer: number | null }>({
-    amount: 0,
-    timer: null
-  });
-  const [gemAccumulator, setGemAccumulator] = useState<{ amount: number; timer: number | null }>({
-    amount: 0,
-    timer: null
-  });
+  // Chaque récolte déclenche sa propre animation. Aucune accumulation temporelle.
 
-  const triggerCoinAnimation = useCallback((amount: number) => {
-    setCoinAccumulator(prev => {
-      if (prev.timer) {
-        clearTimeout(prev.timer);
-      }
-      
-      const newAmount = prev.amount + amount;
-      
-      const timer = window.setTimeout(() => {
-        const id = `coin-${Date.now()}-${Math.random()}`;
-        setAnimations(current => [...current, {
-          id,
-          amount: newAmount,
-          type: 'coins',
-          timestamp: Date.now()
-        }]);
-        
-        setCoinAccumulator({ amount: 0, timer: null });
-      }, 300);
-      
-      return { amount: newAmount, timer };
-    });
-  }, []);
+  // Facteur commun pour générer un FloatingAnimation
+  const createAnimation = (
+    type: FloatingAnimation['type'],
+    amount: number,
+    current: FloatingAnimation[]
+  ): FloatingAnimation => {
+    const id = `${type}-${Date.now()}-${Math.random()}`;
 
-  const triggerXpAnimation = useCallback((amount: number) => {
-    setXpAccumulator(prev => {
-      if (prev.timer) {
-        clearTimeout(prev.timer);
-      }
-      
-      const newAmount = prev.amount + amount;
-      
-      const timer = window.setTimeout(() => {
-        const id = `xp-${Date.now()}-${Math.random()}`;
-        setAnimations(current => [...current, {
-          id,
-          amount: newAmount,
-          type: 'experience',
-          timestamp: Date.now()
-        }]);
-        
-        setXpAccumulator({ amount: 0, timer: null });
-      }, 300);
-      
-      return { amount: newAmount, timer };
-    });
-  }, []);
+    // Déterminer la position libre dans la grille (0-8)
+    const occupied = current
+      .filter(a => a.type === type)
+      .map(a => a.row * 3 + a.col);
 
-  const triggerGemAnimation = useCallback((amount: number) => {
-    setGemAccumulator(prev => {
-      if (prev.timer) {
-        clearTimeout(prev.timer);
-      }
-      
-      const newAmount = prev.amount + amount;
-      
-      const timer = window.setTimeout(() => {
-        const id = `gem-${Date.now()}-${Math.random()}`;
-        setAnimations(current => [...current, {
-          id,
-          amount: newAmount,
-          type: 'gems',
-          timestamp: Date.now()
-        }]);
-        
-        setGemAccumulator({ amount: 0, timer: null });
-      }, 300);
-      
-      return { amount: newAmount, timer };
-    });
-  }, []);
+    let cellIndex = 0;
+    for (; cellIndex < 9; cellIndex++) {
+      if (!occupied.includes(cellIndex)) break;
+    }
+
+    // Si toutes les cellules sont occupées, on recycle en remplaçant la plus ancienne
+    if (cellIndex === 9) {
+      const oldestIndex = occupied[0] ?? 0;
+      cellIndex = oldestIndex;
+    }
+
+    const col = cellIndex % 3; // 0,1,2
+    const row = Math.floor(cellIndex / 3); // 0,1,2
+
+    const JITTER_RANGE = 60; // ±30px
+    const jitter = () => Math.floor((Math.random() - 0.5) * JITTER_RANGE); // -10 … +10 px
+
+    return {
+      id,
+      amount,
+      type,
+      timestamp: Date.now(),
+      row,
+      col,
+      jitterX: jitter(),
+      jitterY: jitter()
+    };
+  };
+
+  // Générateur de fonctions déclencheurs pour chaque type
+  const makeTrigger = (type: FloatingAnimation['type']) =>
+    (amount: number) => setAnimations(prev => [...prev, createAnimation(type, amount, prev)]);
+
+  const triggerCoinAnimation = useCallback(makeTrigger('coins'), []);
+  const triggerXpAnimation = useCallback(makeTrigger('experience'), []);
+  const triggerGemAnimation = useCallback(makeTrigger('gems'), []);
 
   const removeAnimation = useCallback((id: string) => {
     setAnimations(current => current.filter(anim => anim.id !== id));
