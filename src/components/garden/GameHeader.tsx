@@ -165,10 +165,6 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                     Niv. {xpStats.currentLevel}
                   </span>
                 </div>
-                {/* Zone d'animation pour l'XP */}
-                <div className="animation-zone">
-                  {animations.filter(anim => anim.type === 'experience').map(anim => <FloatingNumber key={anim.id} animation={anim} />)}
-                </div>
               </div>
 
               {/* Bouton Publicité - FIXED: using safe state setter */}
