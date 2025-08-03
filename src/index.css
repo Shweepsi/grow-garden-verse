@@ -363,7 +363,7 @@
     grid-template-rows: repeat(3, 1fr);
     justify-items: center;
     align-items: center;
-    gap: 40px; /* espacement augmenté pour plus de cohérence */
+    gap: 25px; /* espacement réduit pour plus de densité */
   }
 
   /* Animations des nombres flottants optimisées */
