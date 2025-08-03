@@ -95,7 +95,6 @@ export const useDirectPlanting = () => {
       // Obtenir les multiplicateurs complets (permanent + boosts)
       let multipliers;
       try {
-        const { getCompleteMultipliers } = useGameMultipliers();
         multipliers = getCompleteMultipliers();
         console.log('💪 Multiplicateurs complets (permanent + boosts):', multipliers);
       } catch (error) {
