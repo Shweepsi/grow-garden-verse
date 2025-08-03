@@ -363,7 +363,7 @@
     grid-template-rows: repeat(3, 1fr);
     justify-items: center;
     align-items: center;
-    gap: 30px; /* espacement entre les animations */
+    gap: 40px; /* espacement augmenté pour plus de cohérence */
   }
 
   /* Animations des nombres flottants optimisées */
@@ -374,9 +374,11 @@
     transform: translate(-50%, -50%) translateZ(0);
     pointer-events: none;
     z-index: 20;
-    animation: floatUp 2s ease-out forwards;
+    animation: floatUpImproved 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     /* Optimisation GPU */
     will-change: transform, opacity;
+    white-space: nowrap;
+    font-weight: 600;
   }
 
   .floating-number.positive.coins {
@@ -458,7 +460,26 @@
   50% { background-position: 100% 50%; }
 }
 
-/* Animation plus fluide pour les nombres flottants */
+/* Animation plus fluide et cohérente pour les nombres flottants */
+@keyframes floatUpImproved {
+  0% {
+    transform: translate(-50%, -50%) translateY(10px) scale(0.8) translateZ(0);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -50%) translateY(0px) scale(1) translateZ(0);
+    opacity: 1;
+  }
+  85% {
+    transform: translate(-50%, -50%) translateY(-30px) scale(1) translateZ(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(-50px) scale(0.9) translateZ(0);
+    opacity: 0;
+  }
+}
+
 @keyframes floatUp {
   0% {
     transform: translate(-50%, 30px) translateZ(0); /* démarre 30px sous la carte */

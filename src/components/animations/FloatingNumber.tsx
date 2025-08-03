@@ -55,10 +55,10 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
         transform: `translate(${animation.jitterX}px, ${animation.jitterY}px)`
       }}
     >
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center space-x-1 font-semibold text-sm">
         {renderIcon()}
-        <span className="font-bold mobile-text-sm">
-          {isPositive ? '+' : '-'}{formatAmount(animation.amount)}
+        <span className="mobile-text-sm">
+          {isPositive ? '+' : ''}{formatAmount(animation.amount)}
         </span>
       </div>
     </div>
