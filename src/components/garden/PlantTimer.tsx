@@ -1,8 +1,9 @@
 
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { Clock } from 'lucide-react';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
+import { useGardenClock } from '@/contexts/GardenClockContext';
 
 interface PlantTimerProps {
   plantedAt: string | null;
@@ -12,35 +13,16 @@ interface PlantTimerProps {
 
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: PlantTimerProps) => {
   const { getCombinedBoostMultiplier } = useGameMultipliers();
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [isReady, setIsReady] = useState(false);
+  const now = useGardenClock();
 
-  // Calculer l'intervalle optimal avec useMemo pour éviter les recalculs
-  const updateInterval = useMemo(() => {
-    if (!plantedAt) return 1000;
-    return PlantGrowthService.getOptimalUpdateInterval();
-  }, [plantedAt, growthTimeSeconds]);
-
-  useEffect(() => {
-    if (!plantedAt) return;
-
-    const updateTimer = () => {
-      const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-      
-      const remaining = PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts);
-      const ready = PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts);
-      
-      setTimeRemaining(remaining);
-      setIsReady(ready);
+  const { timeRemaining, isReady } = useMemo(() => {
+    if (!plantedAt) return { timeRemaining: 0, isReady: false };
+    const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
+    return {
+      timeRemaining: PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts),
+      isReady: PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts)
     };
-
-    updateTimer();
-    
-    // Utiliser l'intervalle de mise à jour optimisé
-    const interval = setInterval(updateTimer, updateInterval);
-
-    return () => clearInterval(interval);
-  }, [plantedAt, growthTimeSeconds, updateInterval, getCombinedBoostMultiplier]);
+  }, [now, plantedAt, growthTimeSeconds, getCombinedBoostMultiplier]);
 
   if (!plantedAt || isReady) return null;
 
