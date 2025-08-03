@@ -18,6 +18,32 @@ export const usePlantActions = () => {
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
+    // Optimistic update before the mutation executes
+    onMutate: async (plotNumber: number) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['gameData', user?.id]);
+
+      // Optimistically update the cache: clear the harvested plot immediately
+      if (previousData) {
+        // We cast because TanStack Query can't infer the type here
+        const optimisticData: any = {
+          ...(previousData as any),
+          plots: (previousData as any).plots.map((plot: any) =>
+            plot.plot_number === plotNumber
+              ? { ...plot, plant_type: null, planted_at: null, growth_time_seconds: null, updated_at: new Date().toISOString() }
+              : plot
+          ),
+        };
+
+        queryClient.setQueryData(['gameData', user?.id], optimisticData);
+      }
+
+      // Return context with previous data for potential rollback
+      return { previousData };
+    },
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
@@ -306,7 +332,11 @@ export const usePlantActions = () => {
         };
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, _variables: any, context: any) => {
+      // Rollback to previous cache state if available
+      if (context?.previousData) {
+        queryClient.setQueryData(['gameData', user?.id], context.previousData);
+      }
       console.error('💥 Erreur lors de la récolte:', error);
       toast.error(error.message || 'Erreur lors de la récolte');
     }
