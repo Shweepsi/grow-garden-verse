@@ -363,7 +363,7 @@
     grid-template-rows: repeat(3, 1fr);
     justify-items: center;
     align-items: center;
-    gap: 15px; /* espacement entre les animations */
+    gap: 30px; /* espacement entre les animations */
   }
 
   /* Animations des nombres flottants optimisées */
