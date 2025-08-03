@@ -463,19 +463,19 @@
 /* Animation plus fluide et cohérente pour les nombres flottants */
 @keyframes floatUpImproved {
   0% {
-    transform: translate(-50%, -50%) translateY(10px) scale(0.8) translateZ(0);
+    transform: translate(-50%, -50%) translateY(30px) scale(0.8) translateZ(0);
     opacity: 0;
   }
-  15% {
-    transform: translate(-50%, -50%) translateY(0px) scale(1) translateZ(0);
+  20% {
+    transform: translate(-50%, -50%) translateY(15px) scale(1) translateZ(0);
     opacity: 1;
   }
-  85% {
-    transform: translate(-50%, -50%) translateY(-30px) scale(1) translateZ(0);
+  80% {
+    transform: translate(-50%, -50%) translateY(5px) scale(1) translateZ(0);
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, -50%) translateY(-50px) scale(0.9) translateZ(0);
+    transform: translate(-50%, -50%) translateY(0px) scale(1) translateZ(0);
     opacity: 0;
   }
 }
