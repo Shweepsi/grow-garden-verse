@@ -59,7 +59,7 @@ export class PlantGrowthService {
     // A multiplier of 2.0 = 100% faster = time reduced by factor of 2.0
     const adjustedTime = Math.floor(baseTime / growthBoostMultiplier);
     
-    console.log(`🌱 Growth boost applied: ${baseTime}s -> ${adjustedTime}s (multiplier: x${growthBoostMultiplier})`);
+    // Removed verbose console.log to avoid excessive logging every progress update
     return Math.max(adjustedTime, 1); // Minimum 1 seconde
   }
 
