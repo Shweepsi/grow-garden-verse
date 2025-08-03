@@ -5,10 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 import { EconomyService } from '@/services/EconomyService';
+import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useUpgrades = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
 
   const { data: availableUpgrades = [], isLoading: upgradesLoading } = useQuery({
     queryKey: ['levelUpgrades'],
@@ -122,9 +124,18 @@ export const useUpgrades = () => {
           });
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['playerUpgrades'] });
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      
+      // Animations de soustraction pour les coûts
+      if (variables.costCoins > 0) {
+        triggerCoinAnimation(-variables.costCoins);
+      }
+      if (variables.costGems > 0) {
+        triggerGemAnimation(-variables.costGems);
+      }
+      
       toast.success('Amélioration achetée !', {
         description: 'Votre bonus est maintenant actif'
       });

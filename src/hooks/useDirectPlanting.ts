@@ -8,12 +8,14 @@ import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
 import { useState } from 'react';
+import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useDirectPlanting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: gameData } = useGameData();
   const [plantingPlotNumber, setPlantingPlotNumber] = useState<number | null>(null);
+  const { triggerCoinAnimation } = useAnimations();
 
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, expectedCost }: {
@@ -214,6 +216,9 @@ export const useDirectPlanting = () => {
         };
       });
 
+      // Animation de soustraction des pièces
+      triggerCoinAnimation(-data.actualCost);
+      
       // Réinitialiser l'état de plantation
       setPlantingPlotNumber(null);
     },

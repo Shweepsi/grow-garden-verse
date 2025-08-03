@@ -5,11 +5,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { EconomyService } from '@/services/EconomyService';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useGameEconomy = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { getBoostMultiplier } = useActiveBoosts();
+  const { triggerCoinAnimation } = useAnimations();
 
   const unlockPlotMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
@@ -54,9 +56,15 @@ export const useGameEconomy = () => {
           transaction_type: 'unlock',
           description: `Déblocage parcelle ${plotNumber}`
         });
+      
+      return { cost };
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      
+      // Animation de soustraction des pièces pour le déblocage
+      triggerCoinAnimation(-data.cost);
+      
       toast.success('Parcelle débloquée !');
     },
     onError: (error: any) => {
