@@ -1,9 +1,10 @@
-import { useEffect, useState, memo } from 'react';
+import { memo, useMemo } from 'react';
 import { PlantType } from '@/types/game';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
 import { Progress } from '@/components/ui/progress';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
+import { useGardenClock } from '@/contexts/GardenClockContext';
 
 interface PlantDisplayProps {
   plantType: PlantType;
@@ -17,42 +18,20 @@ export const PlantDisplay = memo(({
   growthTimeSeconds
 }: PlantDisplayProps) => {
   const { getCombinedBoostMultiplier } = useGameMultipliers();
-  const [progress, setProgress] = useState(0);
-  const [isReady, setIsReady] = useState(false);
+  const now = useGardenClock();
 
-  // Validation des props
-  if (!plantType) {
-    return <div className="text-center">
-        <div className="text-2xl mb-1">❌</div>
-        <p className="text-xs text-red-500">Erreur: plante invalide</p>
-      </div>;
-  }
-  
-  useEffect(() => {
-    if (!plantedAt) return;
-    
-    const updateProgress = () => {
-      const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-      // CRITICAL: Utiliser le temps de base de la plante plutôt que le temps stocké
-      // pour que les boosts s'appliquent aux plantes existantes
-      const baseGrowthTime = plantType.base_growth_seconds || 60;
-      
-      const currentProgress = PlantGrowthService.calculateGrowthProgress(plantedAt, baseGrowthTime, boosts);
-      const ready = PlantGrowthService.isPlantReady(plantedAt, baseGrowthTime, boosts);
-      
-      setProgress(currentProgress);
-      setIsReady(ready);
-    };
+  // Recalculate progress on every shared clock tick – no local setInterval needed.
+  const { progress, isReady } = useMemo(() => {
+    if (!plantedAt) return { progress: 0, isReady: false };
 
-    updateProgress();
-
-    // Utiliser l'intervalle optimisé pour des mises à jour fluides
+    const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
     const baseGrowthTime = plantType.base_growth_seconds || 60;
-    const updateInterval = PlantGrowthService.getOptimalUpdateInterval(baseGrowthTime);
-    const interval = setInterval(updateProgress, updateInterval);
-    
-    return () => clearInterval(interval);
-  }, [plantedAt, plantType.base_growth_seconds, getCombinedBoostMultiplier]);
+
+    return {
+      progress: PlantGrowthService.calculateGrowthProgress(plantedAt, baseGrowthTime, boosts),
+      isReady: PlantGrowthService.isPlantReady(plantedAt, baseGrowthTime, boosts)
+    };
+  }, [now, plantedAt, plantType.base_growth_seconds, getCombinedBoostMultiplier]);
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
       case 'mythic':

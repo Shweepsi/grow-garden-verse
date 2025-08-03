@@ -30,15 +30,17 @@ export const useGameMultipliers = () => {
     const gemBoost = getBoostMultiplier('gem_boost');
     const growthBoost = getBoostMultiplier('growth_speed');
     
-    console.log('🔧 Game Multipliers DEBUG:', {
-      permanent: permanentMultipliers,
-      activeBoosts: { coinBoost, gemBoost, growthBoost },
-      allBoosts: boosts, // Debug: voir tous les boosts récupérés
-      combined: {
-        harvest: permanentMultipliers.harvest * coinBoost,
-        growth: permanentMultipliers.growth * growthBoost
-      }
-    });
+    if (import.meta.env.DEV) {
+      // Only log detailed multiplier information while developing.
+      console.debug('[DEBUG] Game Multipliers:', {
+        permanent: permanentMultipliers,
+        activeBoosts: { coinBoost, gemBoost, growthBoost },
+        combined: {
+          harvest: permanentMultipliers.harvest * coinBoost,
+          growth: permanentMultipliers.growth * growthBoost
+        }
+      });
+    }
     
     return {
       // Multiplicateurs combinés permanents + temporaires
