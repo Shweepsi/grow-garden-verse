@@ -11,48 +11,8 @@ export const useGameData = () => {
   const queryClient = useQueryClient();
   const { getCombinedBoostMultiplier } = useGameMultipliers();
 
-  // Configuration du realtime pour garden_plots et player_gardens
-  useEffect(() => {
-    if (!user?.id) return;
-
-    // Create a unique channel name to prevent conflicts
-    const channelName = `garden_realtime_${user.id}`;
-    
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'garden_plots',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          // Invalider et refetch les données quand une parcelle change
-          queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'player_gardens',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          // Invalider et refetch les données quand le jardin change
-          queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      // Ensure proper cleanup of the channel
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]); // Remove queryClient from dependencies as it's stable
+  // OPTIMISATION: Réduire les invalidations automatiques pour éviter les conflits avec les mises à jour optimistes
+  // Les real-time subscriptions sont désactivées car nous gérons manuellement les mises à jour via optimistic updates
 
   // Periodic cache cleanup to prevent memory leaks
   useEffect(() => {
@@ -83,10 +43,10 @@ export const useGameData = () => {
       };
     },
     enabled: !!user?.id,
-    // Optimisation : intervalles plus fréquents pour une meilleure réactivité
+    // OPTIMISATION: Polling adaptatif pour réduire les requêtes inutiles
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data?.plots) return 5000; // 5 secondes par défaut
+      if (!data?.plots) return 10000; // 10 secondes par défaut
       
       // Créer un objet boosts pour PlantGrowthService
       const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
@@ -102,41 +62,27 @@ export const useGameData = () => {
         return !PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
       });
       
-      // Vérifier s'il y a des plantes prêtes à être récoltées (en tenant compte des boosts)
-      const hasReadyPlants = data.plots.some(plot => {
-        if (!plot.planted_at || !plot.plant_type) return false;
-        
-        const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
-        if (!plantType) return false;
-        
-        const baseGrowthTime = plantType.base_growth_seconds || 60;
-        return PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
-      });
-      
-      // Intervalles adaptatifs basés sur l'état des plantes
-      if (hasReadyPlants && growingPlants.length === 0) return 10000; // 10 secondes si toutes sont prêtes
-      
-      if (growingPlants.length > 0) {
-        // Calculer le temps restant le plus court en tenant compte des boosts
-        const shortestTimeRemaining = Math.min(
-          ...growingPlants.map(plot => {
-            const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
-            if (!plantType) return Infinity;
-            
-            const baseGrowthTime = plantType.base_growth_seconds || 60;
-            return PlantGrowthService.getTimeRemaining(plot.planted_at!, baseGrowthTime, boosts);
-          }).filter(time => time !== Infinity)
-        );
-        
-        // Intervalles optimisés pour la réactivité
-        if (shortestTimeRemaining < 10) return 1000;   // 1s pour < 10s restantes
-        if (shortestTimeRemaining < 60) return 2000;  // 2s pour < 1min restantes
-        if (shortestTimeRemaining < 300) return 5000; // 5s pour < 5min restantes
-        return 10000; // 10s pour le reste
+      // OPTIMISATION: Réduire drastiquement le polling quand il n'y a pas d'activité
+      if (growingPlants.length === 0) {
+        return 60000; // 1 minute si aucune plante ne pousse
       }
       
-      // Pas de plantes actives, intervalles moins fréquents
-      return 30000; // 30 secondes
+      // Calculer le temps restant le plus court en tenant compte des boosts
+      const shortestTimeRemaining = Math.min(
+        ...growingPlants.map(plot => {
+          const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
+          if (!plantType) return Infinity;
+          
+          const baseGrowthTime = plantType.base_growth_seconds || 60;
+          return PlantGrowthService.getTimeRemaining(plot.planted_at!, baseGrowthTime, boosts);
+        }).filter(time => time !== Infinity)
+      );
+      
+      // Intervalles adaptatifs mais moins agressifs
+      if (shortestTimeRemaining < 5) return 1000;    // 1s pour < 5s restantes
+      if (shortestTimeRemaining < 30) return 3000;   // 3s pour < 30s restantes  
+      if (shortestTimeRemaining < 120) return 10000; // 10s pour < 2min restantes
+      return 30000; // 30s pour le reste
     },
     // Optimisation : réactivité accrue
     structuralSharing: true,

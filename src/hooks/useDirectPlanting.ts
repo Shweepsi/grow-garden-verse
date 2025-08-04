@@ -35,17 +35,59 @@ export const useDirectPlanting = () => {
 
       console.log(`🌱 Début de la plantation directe sur la parcelle ${plotNumber}`);
 
-      // Récupérer les infos de la parcelle
-      const { data: plot, error: plotError } = await supabase
-        .from('garden_plots')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber)
-        .single();
+      // OPTIMISATION: Obtenir les données depuis le cache d'abord
+      const cachedData = queryClient.getQueryData(['gameData', user.id]) as any;
+      let plot, garden, plantType;
 
-      if (plotError) {
-        console.error('❌ Erreur parcelle:', plotError);
-        throw new Error(`Erreur lors de la récupération de la parcelle: ${plotError.message}`);
+      if (cachedData) {
+        plot = cachedData.plots?.find((p: any) => p.plot_number === plotNumber);
+        garden = cachedData.garden;
+        plantType = cachedData.plantTypes?.find((pt: any) => pt.id === plantTypeId);
+        
+        console.log('📋 Utilisation des données en cache pour la validation rapide');
+      }
+
+      // Fallback sur les requêtes réseau si les données ne sont pas en cache
+      if (!plot || !garden || !plantType) {
+        console.log('🌐 Données manquantes en cache, requête réseau...');
+        
+        // Obtenir les infos en parallèle pour plus de rapidité
+        const [plotResult, gardenResult, plantTypeResult] = await Promise.all([
+          supabase
+            .from('garden_plots')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('plot_number', plotNumber)
+            .single(),
+          supabase
+            .from('player_gardens')
+            .select('*')
+            .eq('user_id', user.id)
+            .single(),
+          supabase
+            .from('plant_types')
+            .select('*')
+            .eq('id', plantTypeId)
+            .single()
+        ]);
+
+        if (plotResult.error) {
+          console.error('❌ Erreur parcelle:', plotResult.error);
+          throw new Error(`Erreur lors de la récupération de la parcelle: ${plotResult.error.message}`);
+        }
+
+        if (gardenResult.error) {
+          console.error('❌ Erreur jardin:', gardenResult.error);
+          throw new Error(`Erreur lors de la récupération du jardin: ${gardenResult.error.message}`);
+        }
+
+        if (plantTypeResult.error || !plantTypeResult.data) {
+          throw new Error('Type de plante non trouvé');
+        }
+
+        plot = plotResult.data;
+        garden = gardenResult.data;
+        plantType = plantTypeResult.data;
       }
 
       if (!plot) {
@@ -60,27 +102,9 @@ export const useDirectPlanting = () => {
         throw new Error('Cette parcelle contient déjà une plante');
       }
 
-      // Récupérer le type de plante
-      const { data: plantType, error: plantTypeError } = await supabase
-        .from('plant_types')
-        .select('*')
-        .eq('id', plantTypeId)
-        .single();
-
-      if (plantTypeError || !plantType) {
-        throw new Error('Type de plante non trouvé');
-      }
-
       console.log('🌱 Type de plante:', plantType.display_name);
 
-      // Obtenir les données du jardin
-      const { data: garden, error: gardenError } = await supabase
-        .from('player_gardens')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (gardenError || !garden) {
+      if (!garden) {
         throw new Error('Jardin non trouvé');
       }
 
@@ -190,38 +214,60 @@ export const useDirectPlanting = () => {
         plantedAt: now
       };
     },
-    onSuccess: (data) => {
-      // Mise à jour optimiste de la parcelle plantée uniquement
+    onMutate: async ({ plotNumber, plantTypeId, expectedCost }) => {
+      // OPTIMISATION CRITIQUE: Mise à jour optimiste immédiate
+      await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
+      
+      const previousData = queryClient.getQueryData(['gameData', user?.id]);
+      const now = new Date().toISOString();
+      
+      // Mise à jour optimiste instantanée
       queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
         if (!oldData) return oldData;
         
+        const plot = oldData.plots?.find((p: any) => p.plot_number === plotNumber);
+        const plantType = oldData.plantTypes?.find((pt: any) => pt.id === plantTypeId);
+        
+        if (!plot || !plot.unlocked || plot.plant_type || !plantType) return oldData;
+        
         return {
           ...oldData,
-          plots: oldData.plots.map((plot: any) => 
-            plot.plot_number === data.plotNumber
+          plots: oldData.plots.map((p: any) => 
+            p.plot_number === plotNumber
               ? {
-                  ...plot,
-                  plant_type: data.plantTypeId,
-                  planted_at: data.plantedAt,
-                  growth_time_seconds: data.adjustedGrowthTime, // Utilise le temps de base maintenant
-                  updated_at: data.plantedAt
+                  ...p,
+                  plant_type: plantTypeId,
+                  planted_at: now,
+                  growth_time_seconds: plantType.base_growth_seconds,
+                  updated_at: now
                 }
-              : plot
+              : p
           ),
           garden: {
             ...oldData.garden,
-            coins: Math.max(0, (oldData.garden.coins || 0) - data.actualCost)
+            coins: Math.max(0, (oldData.garden.coins || 0) - expectedCost)
           }
         };
       });
 
-      // Animation de soustraction des pièces
-      triggerCoinAnimation(-data.actualCost);
+      // Animation immédiate
+      triggerCoinAnimation(-expectedCost);
+      
+      return { previousData };
+    },
+    onSuccess: (data) => {
+      // Confirmation serveur - les données sont déjà à jour grâce à onMutate
+      console.log('✅ Plantation confirmée par le serveur');
       
       // Réinitialiser l'état de plantation
       setPlantingPlotNumber(null);
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      // Rollback en cas d'erreur
+      if (context?.previousData) {
+        queryClient.setQueryData(['gameData', user?.id], context.previousData);
+      }
+      
       console.error('💥 Erreur lors de la plantation directe:', error);
       toast.error(error.message || 'Erreur lors de la plantation');
       
