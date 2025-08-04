@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-// Update frequency for the shared garden clock (ms). Adjust if needed for performance/precision balance.
-const DEFAULT_CLOCK_INTERVAL = 500;
+// Update frequency for the shared garden clock (ms). Optimized for performance.
+const DEFAULT_CLOCK_INTERVAL = 1000;
 
 /**
  * Context storing the last timestamp emitted by the shared garden clock.

@@ -140,22 +140,30 @@ export const usePlantActions = () => {
       const newGems = Math.max(0, (garden.gems || 0) + gemReward);
       const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
 
-      // Use atomic transaction for better data consistency
+      // Utiliser la fonction atomique SQL pour une meilleure cohérence des données
       try {
-        // Call the database function directly using raw SQL
-        const { error: transactionError } = await supabase
-          .from('garden_plots')
-          .select('id')
-          .limit(1)
-          .then(async () => {
-            // Since we can't call custom RPC functions easily, use individual updates
-            throw new Error('Use fallback approach');
-          });
-      } catch (error) {
-        // Fallback to original approach
-        console.log('🔄 Utilisation de l\'approche de fallback pour la récolte');
+        console.log('🚀 Utilisation de la transaction atomique harvest_plant_transaction');
         
-        // Update garden first (more critical)
+        const { error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
+          p_user_id: user.id,
+          p_plot_number: plotNumber,
+          p_new_coins: newCoins,
+          p_new_gems: newGems,
+          p_new_exp: newExp,
+          p_new_level: newLevel,
+          p_new_harvests: newHarvests
+        });
+
+        if (transactionError) {
+          console.error('❌ Erreur transaction atomique:', transactionError);
+          throw new Error(`Erreur lors de la transaction: ${transactionError.message}`);
+        }
+
+        console.log('✅ Transaction atomique réussie');
+      } catch (error) {
+        console.error('❌ Échec de la transaction atomique, utilisation du fallback:', error);
+        
+        // Fallback à l'approche originale si la fonction RPC échoue
         const { error: updateGardenError } = await supabase
           .from('player_gardens')
           .update({
@@ -173,7 +181,7 @@ export const usePlantActions = () => {
           throw new Error(`Erreur lors de la mise à jour du jardin: ${updateGardenError.message}`);
         }
 
-        // Then clear the plot
+        // Ensuite vider la parcelle
         const { error: updatePlotError } = await supabase
           .from('garden_plots')
           .update({
@@ -187,19 +195,7 @@ export const usePlantActions = () => {
 
         if (updatePlotError) {
           console.error('❌ Erreur mise à jour parcelle:', updatePlotError);
-          // Try to revert the garden update if plot update fails
-          await supabase
-            .from('player_gardens')
-            .update({
-              coins: garden.coins,
-              gems: garden.gems,
-              experience: garden.experience,
-              level: garden.level,
-              total_harvests: garden.total_harvests,
-              last_played: garden.last_played
-            })
-            .eq('user_id', user.id);
-          throw new Error(`Erreur lors de la vidange de la parcelle: ${updatePlotError.message}`);
+          throw new Error(`Erreur lors de la mise à jour de la parcelle: ${updatePlotError.message}`);
         }
 
         console.log('✅ Récolte effectuée avec succès via fallback');

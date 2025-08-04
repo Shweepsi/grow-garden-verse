@@ -2,15 +2,15 @@
 import { memo, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { GardenPlot, PlantType } from '@/types/game';
-import { Lock, Sprout, Gift } from 'lucide-react';
-import { PlantDisplay } from './PlantDisplay';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { Lock, Sprout } from 'lucide-react';
+import { MemoizedPlantDisplay } from './PlantDisplay';
 import { EconomyService } from '@/services/EconomyService';
-import { useGameMultipliers } from '@/hooks/useGameMultipliers';
+import { PlantState } from '@/hooks/usePlantStates';
 
 interface PlotCardProps {
   plot: GardenPlot;
   plantType?: PlantType;
+  plantState: PlantState;
   plantTypesCount: number;
   coins: number;
   isPlanting: boolean;
@@ -23,6 +23,7 @@ interface PlotCardProps {
 export const PlotCard = memo(({
   plot,
   plantType,
+  plantState,
   plantTypesCount,
   coins,
   isPlanting,
@@ -31,18 +32,6 @@ export const PlotCard = memo(({
   onPlotClick,
   onUnlockPlot
 }: PlotCardProps) => {
-  const { getCombinedBoostMultiplier } = useGameMultipliers();
-  
-  // Memoiser le calcul de l'état de la plante pour éviter les recalculs
-  const plantState = useMemo(() => {
-    if (!plot.plant_type || !plantType) return 'empty';
-    const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-    
-    // CRITICAL: Utiliser le temps de base de la plante pour que les boosts s'appliquent
-    const baseGrowthTime = plantType.base_growth_seconds || 60;
-    const isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
-    return isReady ? 'ready' : 'growing';
-  }, [plot.plant_type, plot.planted_at, plantType?.base_growth_seconds, getCombinedBoostMultiplier]);
 
   // Memoiser le calcul du coût de déblocage
   const unlockCost = useMemo(() => {
@@ -78,12 +67,12 @@ export const PlotCard = memo(({
       return `${baseClasses} pointer-events-none opacity-50`;
     }
     
-    if (plot.unlocked && (plantState === 'ready' || isAutoHarvestPlot)) {
+    if (plot.unlocked && (plantState.status === 'ready' || isAutoHarvestPlot)) {
       return `${baseClasses} hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg`;
     }
     
     return `${baseClasses} active:scale-[0.98]`;
-  }, [isPlanting, plot.unlocked, plantState, isAutoHarvestPlot]);
+  }, [isPlanting, plot.unlocked, plantState.status, isAutoHarvestPlot]);
 
   const cardClasses = useMemo(() => {
     const baseClasses = "bg-white/80 backdrop-blur-sm rounded-lg p-2 sm:p-3 h-full flex flex-col items-center justify-center relative border transition-all duration-200 transform-gpu";
@@ -98,12 +87,12 @@ export const PlotCard = memo(({
         'border-blue-300/60 bg-blue-50/40 shadow-blue-100/50'} shadow-lg`;
     }
     
-    if (plantState === 'ready') {
+    if (plantState.status === 'ready') {
       return `${baseClasses} border-yellow-300/60 bg-yellow-50/40 shadow-yellow-100/50 shadow-lg`;
     }
     
     return `${baseClasses} border-gray-200/50 hover:border-gray-300/60 hover:bg-white/90 hover:shadow-md`;
-  }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState]);
+  }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState.status]);
 
   return (
     <div className={containerClasses} onClick={handleClick} data-plot={plot.plot_number}>
@@ -147,7 +136,7 @@ export const PlotCard = memo(({
                   </p>
                 )}
               </>
-            ) : plantState === 'empty' ? (
+            ) : plantState.status === 'empty' ? (
               <>
                 <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300">
                   <Sprout className="h-5 w-5 text-white" />
@@ -160,10 +149,12 @@ export const PlotCard = memo(({
             ) : (
               <>
                 {plantType ? (
-                  <PlantDisplay 
+                  <MemoizedPlantDisplay 
                     plantType={plantType} 
                     plantedAt={plot.planted_at} 
                     growthTimeSeconds={plantType.base_growth_seconds || 60}
+                    progress={plantState.progress}
+                    isReady={plantState.isReady}
                   />
                 ) : (
                   <div className="text-center">

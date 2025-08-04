@@ -1,37 +1,22 @@
 import { memo, useMemo } from 'react';
 import { PlantType } from '@/types/game';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { PlantTimer } from './PlantTimer';
-import { Progress } from '@/components/ui/progress';
-import { useGameMultipliers } from '@/hooks/useGameMultipliers';
-import { useGardenClock } from '@/contexts/GardenClockContext';
 
 interface PlantDisplayProps {
   plantType: PlantType;
   plantedAt: string | null;
   growthTimeSeconds: number;
+  progress: number;
+  isReady: boolean;
 }
 
 export const PlantDisplay = memo(({
   plantType,
   plantedAt,
-  growthTimeSeconds
+  growthTimeSeconds,
+  progress,
+  isReady
 }: PlantDisplayProps) => {
-  const { getCombinedBoostMultiplier } = useGameMultipliers();
-  const now = useGardenClock();
-
-  // Recalculate progress on every shared clock tick – no local setInterval needed.
-  const { progress, isReady } = useMemo(() => {
-    if (!plantedAt) return { progress: 0, isReady: false };
-
-    const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-    const baseGrowthTime = plantType.base_growth_seconds || 60;
-
-    return {
-      progress: PlantGrowthService.calculateGrowthProgress(plantedAt, baseGrowthTime, boosts),
-      isReady: PlantGrowthService.isPlantReady(plantedAt, baseGrowthTime, boosts)
-    };
-  }, [now, plantedAt, plantType.base_growth_seconds, getCombinedBoostMultiplier]);
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
       case 'mythic':
@@ -97,3 +82,14 @@ export const PlantDisplay = memo(({
     </div>;
 });
 PlantDisplay.displayName = 'PlantDisplay';
+
+// Comparaison personnalisée pour éviter les re-renders inutiles
+export const MemoizedPlantDisplay = memo(PlantDisplay, (prevProps, nextProps) => {
+  return (
+    prevProps.plantType.id === nextProps.plantType.id &&
+    prevProps.plantedAt === nextProps.plantedAt &&
+    prevProps.growthTimeSeconds === nextProps.growthTimeSeconds &&
+    Math.floor(prevProps.progress) === Math.floor(nextProps.progress) &&
+    prevProps.isReady === nextProps.isReady
+  );
+});

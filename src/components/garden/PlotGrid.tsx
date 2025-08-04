@@ -6,6 +6,7 @@ import { PlantSelector } from './PlantSelector';
 import { PassiveIncomeRobot } from './PassiveIncomeRobot';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
+import { usePlantStates } from '@/hooks/usePlantStates';
 import { toast } from 'sonner';
 import { PlantGrowthService } from '@/services/PlantGrowthService';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
@@ -31,6 +32,7 @@ export const PlotGrid = ({
   
   const { plantDirect, isPlantingPlot } = useDirectPlanting();
   const { getCombinedBoostMultiplier } = useGameMultipliers();
+  const { plantStates, getPlantState } = usePlantStates(plots, plantTypes);
   const { 
     hasPassiveRobot, 
     robotPlantType,
@@ -68,28 +70,17 @@ export const PlotGrid = ({
       return;
     }
     
-    const hasPlant = !!plot.plant_type;
-    
-    // Utiliser PlantGrowthService avec les boosts pour vérifier si la plante est prête
-    let isReady = false;
-    if (hasPlant && plot.planted_at) {
-      const plantType = plantTypeMap.get(plot.plant_type || '');
-      if (plantType) {
-        const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-        const baseGrowthTime = plantType.base_growth_seconds || 60;
-        
-        isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
-      }
-    }
+    const plantState = getPlantState(plot.plot_number);
+    const hasPlant = plantState.status !== 'empty';
     
     if (!hasPlant) {
       setSelectedPlot(plot.plot_number);
       setShowPlantSelector(true);
-    } else if (isReady) {
+    } else if (plantState.isReady) {
       // Feedback immédiat optimiste
       onHarvestPlant(plot.plot_number);
     }
-  }, [hasPassiveRobot, onHarvestPlant, plantTypeMap, getCombinedBoostMultiplier]);
+  }, [hasPassiveRobot, onHarvestPlant, getPlantState]);
 
   // Optimiser les handlers de sélection
   const handlePlantSelection = useCallback((plotNumber: number, plantTypeId: string, cost: number) => {
@@ -117,23 +108,27 @@ export const PlotGrid = ({
       const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
         currentAccumulation >= (coinsPerMinute * 24 * 60);
       
+      const plantState = getPlantState(plot.plot_number);
+      
       return {
         plot,
         plantType,
+        plantState,
         isAutoHarvestPlot,
         robotAtCapacity
       };
     });
-  }, [plots, hasPassiveRobot, robotPlantType, plantTypeMap, coinsPerMinute, currentAccumulation]);
+  }, [plots, hasPassiveRobot, robotPlantType, plantTypeMap, coinsPerMinute, currentAccumulation, getPlantState]);
 
   return (
     <>
       <div className="grid grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-4">
-        {plotsData.map(({ plot, plantType, isAutoHarvestPlot, robotAtCapacity }) => (
+        {plotsData.map(({ plot, plantType, plantState, isAutoHarvestPlot, robotAtCapacity }) => (
           <PlotCard
             key={plot.id}
             plot={plot}
             plantType={plantType}
+            plantState={plantState}
             plantTypesCount={plantTypes.length}
             coins={coins}
             isPlanting={isPlantingPlot(plot.plot_number)}
