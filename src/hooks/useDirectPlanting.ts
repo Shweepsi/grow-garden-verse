@@ -215,20 +215,41 @@ export const useDirectPlanting = () => {
       };
     },
     onMutate: async ({ plotNumber, plantTypeId, expectedCost }) => {
-      // OPTIMISATION CRITIQUE: Mise à jour optimiste immédiate
+      // OPTIMISATION CRITIQUE: Mise à jour optimiste immédiate avec validation stricte
       await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
       
       const previousData = queryClient.getQueryData(['gameData', user?.id]);
+      
+      // Validation stricte AVANT la mise à jour optimiste
+      const currentData = previousData as any;
+      if (!currentData) return { previousData };
+      
+      const plot = currentData.plots?.find((p: any) => p.plot_number === plotNumber);
+      const plantType = currentData.plantTypes?.find((pt: any) => pt.id === plantTypeId);
+      
+      // CRITICAL: Vérifier rigoureusement l'état de la parcelle
+      if (!plot || !plot.unlocked || plot.plant_type || !plantType) {
+        console.warn('❌ Validation optimiste échouée:', { 
+          plot: !!plot, 
+          unlocked: plot?.unlocked, 
+          hasPlant: !!plot?.plant_type, 
+          plantType: !!plantType 
+        });
+        
+        // Ne pas faire de mise à jour optimiste si la validation échoue
+        throw new Error(
+          !plot ? 'Parcelle non trouvée' :
+          !plot.unlocked ? 'Parcelle verrouillée' :
+          plot.plant_type ? 'Cette parcelle contient déjà une plante' :
+          'Type de plante invalide'
+        );
+      }
+      
       const now = new Date().toISOString();
       
-      // Mise à jour optimiste instantanée
+      // Mise à jour optimiste SEULEMENT si la validation passe
       queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
         if (!oldData) return oldData;
-        
-        const plot = oldData.plots?.find((p: any) => p.plot_number === plotNumber);
-        const plantType = oldData.plantTypes?.find((pt: any) => pt.id === plantTypeId);
-        
-        if (!plot || !plot.unlocked || plot.plant_type || !plantType) return oldData;
         
         return {
           ...oldData,
@@ -250,7 +271,7 @@ export const useDirectPlanting = () => {
         };
       });
 
-      // Animation immédiate
+      // Animation immédiate seulement après validation réussie
       triggerCoinAnimation(-expectedCost);
       
       return { previousData };

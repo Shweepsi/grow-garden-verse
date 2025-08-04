@@ -230,35 +230,8 @@ export const usePlantActions = () => {
       };
     },
     onMutate: async (plotNumber: number) => {
-      // OPTIMISATION CRITIQUE: Mise à jour optimiste immédiate
-      await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
-      
-      const previousData = queryClient.getQueryData(['gameData', user?.id]);
-      
-      // Mise à jour optimiste instantanée
-      queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
-        if (!oldData) return oldData;
-        
-        const plot = oldData.plots?.find((p: any) => p.plot_number === plotNumber);
-        if (!plot?.plant_type) return oldData;
-        
-        return {
-          ...oldData,
-          plots: oldData.plots.map((p: any) => 
-            p.plot_number === plotNumber
-              ? {
-                  ...p,
-                  plant_type: null,
-                  planted_at: null,
-                  growth_time_seconds: null,
-                  updated_at: new Date().toISOString()
-                }
-              : p
-          )
-        };
-      });
-
-      // Animation de récolte immédiate
+      // DÉSACTIVATION TEMPORAIRE des mises à jour optimistes pour éviter les conflits
+      // Animation de récolte immédiate sans modification des données
       const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`) as HTMLElement;
       if (plotElement) {
         plotElement.style.transform = 'scale(1.05)';
@@ -272,25 +245,11 @@ export const usePlantActions = () => {
         }, 150);
       }
       
-      return { previousData };
+      return { previousData: null };
     },
     onSuccess: (data) => {
-      // Mise à jour des stats du jardin après confirmation serveur
-      queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
-        if (!oldData) return oldData;
-        
-        return {
-          ...oldData,
-          garden: {
-            ...oldData.garden,
-            coins: data.newCoins,
-            gems: data.newGems,
-            experience: data.newExp,
-            level: data.newLevel,
-            total_harvests: data.newHarvests
-          }
-        };
-      });
+      // Force un refetch complet pour éviter les incohérences
+      queryClient.invalidateQueries({ queryKey: ['gameData', user?.id] });
     },
     onError: (error: any, variables, context) => {
       // Rollback en cas d'erreur

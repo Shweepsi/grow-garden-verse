@@ -26,7 +26,10 @@ export const useAndroidBackButton = (
     });
 
     return () => {
-      listener?.remove();
+      // Protection contre les erreurs si listener n'a pas de méthode remove
+      if (listener && typeof listener.remove === 'function') {
+        listener.remove();
+      }
     };
   }, [enabled, handler]);
 };
