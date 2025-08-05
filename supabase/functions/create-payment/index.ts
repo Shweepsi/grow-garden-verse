@@ -53,6 +53,9 @@ serve(async (req) => {
       console.log(`🆕 Nouveau client Stripe pour: ${user.email}`);
     }
 
+    // Déterminer l’URL de base pour la redirection (prod > origin > localhost)
+    const baseUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "http://localhost:3000";
+
     // Créer la session de paiement pour Early Access (100 gemmes - 9,99€)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -71,8 +74,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/profile?payment=success`,
-      cancel_url: `${req.headers.get("origin")}/profile?payment=cancelled`,
+      success_url: `${baseUrl}/profile?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/profile?payment=cancelled`,
       metadata: {
         user_id: user.id,
         product_type: "gems",
