@@ -210,6 +210,9 @@ export const useDirectPlanting = () => {
 
       console.log('✅ Plantation directe terminée avec succès');
       
+      // Déclencher l'animation de déduction des pièces
+      triggerCoinAnimation(-actualCost);
+      
       // Retourner les données nécessaires pour la mise à jour optimiste
       return {
         plotNumber,
