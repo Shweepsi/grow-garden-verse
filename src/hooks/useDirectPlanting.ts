@@ -228,8 +228,11 @@ export const useDirectPlanting = () => {
       return { previousData };
     },
     onSuccess: (data) => {
-      // Confirmation serveur - les données sont déjà à jour grâce à onMutate
+      // Confirmation serveur - forcer un refresh complet
       console.log('✅ Plantation confirmée par le serveur');
+      
+      // Invalider et refetch pour synchroniser avec la DB
+      queryClient.invalidateQueries({ queryKey: ['gameData', user?.id] });
       
       // Réinitialiser l'état de plantation
       setPlantingPlotNumber(null);
