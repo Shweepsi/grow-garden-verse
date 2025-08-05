@@ -84,7 +84,7 @@ export const PremiumStore = () => {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold">10,00 €</div>
+              <div className="text-2xl font-bold">9,99 €</div>
               <div className="text-sm text-muted-foreground">Achat unique</div>
             </div>
           </div>

@@ -53,7 +53,7 @@ serve(async (req) => {
       console.log(`🆕 Nouveau client Stripe pour: ${user.email}`);
     }
 
-    // Créer la session de paiement pour Early Access (100 gemmes - 10€)
+    // Créer la session de paiement pour Early Access (100 gemmes - 9,99€)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
