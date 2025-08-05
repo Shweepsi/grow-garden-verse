@@ -35,60 +35,55 @@ export const useDirectPlanting = () => {
 
       console.log(`🌱 Début de la plantation directe sur la parcelle ${plotNumber}`);
 
-      // OPTIMISATION: Obtenir les données depuis le cache d'abord
-      const cachedData = queryClient.getQueryData(['gameData', user.id]) as any;
-      let plot, garden, plantType;
+      // FORCER un refresh complet du cache avant validation
+      console.log('🔄 Invalidation forcée du cache pour éviter les conflits');
+      await queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
+      await new Promise(resolve => setTimeout(resolve, 200)); // Délai pour garantir la mise à jour
 
-      if (cachedData) {
-        plot = cachedData.plots?.find((p: any) => p.plot_number === plotNumber);
-        garden = cachedData.garden;
-        plantType = cachedData.plantTypes?.find((pt: any) => pt.id === plantTypeId);
-        
-        console.log('📋 Utilisation des données en cache pour la validation rapide');
+      // VALIDATION DIRECTE via DB (ignorer le cache pour la validation)
+      console.log('🔍 Récupération des données fraîches depuis la DB');
+      const [plotResult, gardenResult, plantTypeResult] = await Promise.all([
+        supabase
+          .from('garden_plots')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('plot_number', plotNumber)
+          .single(),
+        supabase
+          .from('player_gardens')
+          .select('*')
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('plant_types')
+          .select('*')
+          .eq('id', plantTypeId)
+          .single()
+      ]);
+
+      if (plotResult.error) {
+        console.error('❌ Erreur parcelle:', plotResult.error);
+        throw new Error(`Erreur lors de la récupération de la parcelle: ${plotResult.error.message}`);
       }
 
-      // Fallback sur les requêtes réseau si les données ne sont pas en cache
-      if (!plot || !garden || !plantType) {
-        console.log('🌐 Données manquantes en cache, requête réseau...');
-        
-        // Obtenir les infos en parallèle pour plus de rapidité
-        const [plotResult, gardenResult, plantTypeResult] = await Promise.all([
-          supabase
-            .from('garden_plots')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('plot_number', plotNumber)
-            .single(),
-          supabase
-            .from('player_gardens')
-            .select('*')
-            .eq('user_id', user.id)
-            .single(),
-          supabase
-            .from('plant_types')
-            .select('*')
-            .eq('id', plantTypeId)
-            .single()
-        ]);
-
-        if (plotResult.error) {
-          console.error('❌ Erreur parcelle:', plotResult.error);
-          throw new Error(`Erreur lors de la récupération de la parcelle: ${plotResult.error.message}`);
-        }
-
-        if (gardenResult.error) {
-          console.error('❌ Erreur jardin:', gardenResult.error);
-          throw new Error(`Erreur lors de la récupération du jardin: ${gardenResult.error.message}`);
-        }
-
-        if (plantTypeResult.error || !plantTypeResult.data) {
-          throw new Error('Type de plante non trouvé');
-        }
-
-        plot = plotResult.data;
-        garden = gardenResult.data;
-        plantType = plantTypeResult.data;
+      if (gardenResult.error) {
+        console.error('❌ Erreur jardin:', gardenResult.error);
+        throw new Error(`Erreur lors de la récupération du jardin: ${gardenResult.error.message}`);
       }
+
+      if (plantTypeResult.error || !plantTypeResult.data) {
+        throw new Error('Type de plante non trouvé');
+      }
+
+      const plot = plotResult.data;
+      const garden = gardenResult.data;
+      const plantType = plantTypeResult.data;
+
+      console.log('📊 Données fraîches récupérées:', { 
+        plot: { number: plot.plot_number, unlocked: plot.unlocked, plant_type: plot.plant_type, planted_at: plot.planted_at },
+        garden: { coins: garden.coins, level: garden.level },
+        plantType: { name: plantType.display_name, level_required: plantType.level_required }
+      });
 
       if (!plot) {
         throw new Error('Parcelle non trouvée');
@@ -98,8 +93,18 @@ export const useDirectPlanting = () => {
         throw new Error('Cette parcelle n\'est pas encore débloquée');
       }
 
-      if (plot.plant_type) {
-        throw new Error('Cette parcelle contient déjà une plante');
+      // VALIDATION STRICTE: vérifier que la parcelle est vraiment vide
+      const isEmpty = plot.plant_type === null && plot.planted_at === null;
+      console.log('🔍 Vérification stricte de la parcelle:', { 
+        plotNumber, 
+        plant_type: plot.plant_type, 
+        planted_at: plot.planted_at,
+        isEmpty 
+      });
+
+      if (!isEmpty) {
+        console.error('❌ Parcelle occupée (DB):', plot);
+        throw new Error(`Cette parcelle contient déjà une plante (type: ${plot.plant_type})`);
       }
 
       console.log('🌱 Type de plante:', plantType.display_name);
@@ -215,65 +220,11 @@ export const useDirectPlanting = () => {
       };
     },
     onMutate: async ({ plotNumber, plantTypeId, expectedCost }) => {
-      // OPTIMISATION CRITIQUE: Mise à jour optimiste immédiate avec validation stricte
-      await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
+      console.log('🔄 DÉSACTIVATION TEMPORAIRE des mises à jour optimistes pour debug');
       
+      // DÉSACTIVER temporairement les mises à jour optimistes
+      // pour éliminer les conflits cache/DB et identifier la source du problème
       const previousData = queryClient.getQueryData(['gameData', user?.id]);
-      
-      // Validation stricte AVANT la mise à jour optimiste
-      const currentData = previousData as any;
-      if (!currentData) return { previousData };
-      
-      const plot = currentData.plots?.find((p: any) => p.plot_number === plotNumber);
-      const plantType = currentData.plantTypes?.find((pt: any) => pt.id === plantTypeId);
-      
-      // CRITICAL: Vérifier rigoureusement l'état de la parcelle
-      if (!plot || !plot.unlocked || plot.plant_type || !plantType) {
-        console.warn('❌ Validation optimiste échouée:', { 
-          plot: !!plot, 
-          unlocked: plot?.unlocked, 
-          hasPlant: !!plot?.plant_type, 
-          plantType: !!plantType 
-        });
-        
-        // Ne pas faire de mise à jour optimiste si la validation échoue
-        throw new Error(
-          !plot ? 'Parcelle non trouvée' :
-          !plot.unlocked ? 'Parcelle verrouillée' :
-          plot.plant_type ? 'Cette parcelle contient déjà une plante' :
-          'Type de plante invalide'
-        );
-      }
-      
-      const now = new Date().toISOString();
-      
-      // Mise à jour optimiste SEULEMENT si la validation passe
-      queryClient.setQueryData(['gameData', user?.id], (oldData: any) => {
-        if (!oldData) return oldData;
-        
-        return {
-          ...oldData,
-          plots: oldData.plots.map((p: any) => 
-            p.plot_number === plotNumber
-              ? {
-                  ...p,
-                  plant_type: plantTypeId,
-                  planted_at: now,
-                  growth_time_seconds: plantType.base_growth_seconds,
-                  updated_at: now
-                }
-              : p
-          ),
-          garden: {
-            ...oldData.garden,
-            coins: Math.max(0, (oldData.garden.coins || 0) - expectedCost)
-          }
-        };
-      });
-
-      // Animation immédiate seulement après validation réussie
-      triggerCoinAnimation(-expectedCost);
-      
       return { previousData };
     },
     onSuccess: (data) => {

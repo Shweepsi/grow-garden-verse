@@ -30,17 +30,32 @@ export const useGameData = () => {
     queryFn: async () => {
       if (!user?.id) return null;
 
+      console.log('🔄 Fetching fresh game data for user:', user.id);
+
       const [gardenResult, plotsResult, plantTypesResult] = await Promise.all([
         supabase.from('player_gardens').select('*').eq('user_id', user.id).single(),
         supabase.from('garden_plots').select('*').eq('user_id', user.id).order('plot_number'),
         supabase.from('plant_types').select('*')
       ]);
 
-      return {
+      const result = {
         garden: gardenResult.data,
         plots: plotsResult.data || [],
         plantTypes: plantTypesResult.data || [],
       };
+
+      // LOG détaillé de l'état des parcelles pour debug
+      console.log('📊 Game data fetched - Plots status:', 
+        result.plots.map(p => ({
+          plot: p.plot_number,
+          unlocked: p.unlocked,
+          plant_type: p.plant_type,
+          planted_at: p.planted_at,
+          isEmpty: p.plant_type === null && p.planted_at === null
+        }))
+      );
+
+      return result;
     },
     enabled: !!user?.id,
     // OPTIMISATION: Polling adaptatif pour réduire les requêtes inutiles
