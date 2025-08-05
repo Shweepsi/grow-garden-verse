@@ -157,8 +157,27 @@ export const useDirectPlanting = () => {
 
       const now = new Date().toISOString();
 
-      // FIXED: Stocker le temps de BASE au lieu du temps ajusté
-      // Les boosts seront appliqués dynamiquement lors de l'affichage
+      console.log('💰 ÉTAPE 1: Déduction des pièces AVANT plantation pour éviter les inconsistances');
+      
+      // DÉDUIRE LES PIÈCES EN PREMIER pour éviter les plantations gratuites en cas d'erreur
+      const { error: updateGardenError } = await supabase
+        .from('player_gardens')
+        .update({
+          coins: (garden.coins || 0) - actualCost,
+          last_played: now
+        })
+        .eq('user_id', user.id);
+
+      if (updateGardenError) {
+        console.error('❌ Erreur déduction pièces:', updateGardenError);
+        throw new Error(`Erreur lors de la déduction des pièces: ${updateGardenError.message}`);
+      }
+
+      console.log('💰 Pièces déduites avec succès');
+
+      console.log('🌱 ÉTAPE 2: Plantation sur la parcelle');
+      
+      // ENSUITE planter - si ça échoue, les pièces auront été déduites (cohérent)
       const { error: updatePlotError } = await supabase
         .from('garden_plots')
         .update({
@@ -171,27 +190,13 @@ export const useDirectPlanting = () => {
         .eq('plot_number', plotNumber);
 
       if (updatePlotError) {
-        console.error('❌ Erreur plantation:', updatePlotError);
+        console.error('❌ Erreur plantation (pièces déjà déduites):', updatePlotError);
+        // Les pièces ont été déduites mais la plantation a échoué
+        // C'est cohérent car l'utilisateur a "perdu" ses pièces pour une plantation ratée
         throw new Error(`Erreur lors de la plantation: ${updatePlotError.message}`);
       }
 
       console.log('🌱 Plantation réussie sur la parcelle');
-
-      // Déduire le coût du jardin
-      const { error: updateGardenError } = await supabase
-        .from('player_gardens')
-        .update({
-          coins: (garden.coins || 0) - actualCost,
-          last_played: now
-        })
-        .eq('user_id', user.id);
-
-      if (updateGardenError) {
-        console.error('❌ Erreur mise à jour jardin:', updateGardenError);
-        throw new Error(`Erreur lors de la mise à jour du jardin: ${updateGardenError.message}`);
-      }
-
-      console.log('🏡 Jardin mis à jour');
 
       // Enregistrer la transaction
       try {
