@@ -65,7 +65,7 @@ serve(async (req) => {
               name: "🚀 Early Access Pack",
               description: "100 Gemmes Premium pour débloquer des fonctionnalités exclusives"
             },
-            unit_amount: 1000, // 10€ en centimes
+            unit_amount: 999, // 9,99€ en centimes
           },
           quantity: 1,
         },
@@ -92,7 +92,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         stripe_session_id: session.id,
-        amount: 1000,
+        amount: 999,
         currency: "eur",
         status: "pending",
         product_type: "gems",
