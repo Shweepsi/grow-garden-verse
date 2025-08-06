@@ -55,12 +55,21 @@ export const PremiumStore = () => {
     if (Capacitor.isNativePlatform() && result.sessionId) {
       const listener = await Browser.addListener('browserFinished', async () => {
         setIsVerifying(true);
-        const verification = await verifyPayment(result.sessionId!);
-        if (verification.verified) {
-          queryClient.invalidateQueries({ queryKey: ['gameData'] });
-        }
-        setIsVerifying(false);
-        await listener.remove();
+        const attemptVerification = async (retries = 3) => {
+          const verification = await verifyPayment(result.sessionId!);
+          if (verification.verified) {
+            queryClient.invalidateQueries({ queryKey: ['gameData'] });
+            setIsVerifying(false);
+            await listener.remove();
+          } else if (retries > 0) {
+            // Attendre 3 secondes puis réessayer
+            setTimeout(() => attemptVerification(retries - 1), 3000);
+          } else {
+            setIsVerifying(false);
+            await listener.remove();
+          }
+        };
+        attemptVerification();
       });
     }
   };
