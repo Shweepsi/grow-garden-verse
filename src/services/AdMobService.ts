@@ -267,7 +267,7 @@ export class AdMobService {
           return { 
             success: false, 
             rewarded: false,
-            error: this.state.lastError || 'Failed to load ad' 
+            error: this.state.lastError || 'Échec du chargement de la publicité' 
           };
         }
       }
