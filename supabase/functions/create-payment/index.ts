@@ -38,6 +38,9 @@ serve(async (req) => {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
+    
+    // URL de redirection statique après paiement (affiche un message invitant à fermer la fenêtre)
+    const redirectBase = Deno.env.get("REDIRECT_BASE_URL") ?? "https://idlegrow.pages.dev";
 
     // Vérifier si le client Stripe existe
     const customers = await stripe.customers.list({ 
@@ -71,8 +74,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/profile?payment=success`,
-      cancel_url: `${req.headers.get("origin")}/profile?payment=cancelled`,
+      success_url: `${redirectBase}/stripe-success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${redirectBase}/stripe-cancel.html`,
       metadata: {
         user_id: user.id,
         product_type: "gems",
