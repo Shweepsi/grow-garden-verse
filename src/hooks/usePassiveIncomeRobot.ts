@@ -16,6 +16,22 @@ export const usePassiveIncomeRobot = () => {
   const { triggerCoinAnimation } = useAnimations();
   const accumulationIntervalRef = useRef<number | null>(null);
 
+  /**
+   * Affiche une erreur liée au robot.
+   * – En développement : toast visuel + stack complète pour faciliter le debug.
+   * – En production   : simple warning dans la console afin d'éviter de
+   *                     polluer l'expérience utilisateur (une nouvelle
+   *                     collecte règle généralement le problème).
+   */
+  const showRobotError = (message: string) => {
+    if (import.meta.env.DEV) {
+      toast.error(message);
+    } else {
+      // Log minimal pour monitoring sans alerter l'utilisateur final.
+      console.warn(`[Robot] ${message}`);
+    }
+  };
+  
   // Récupérer les améliorations du joueur
   const { data: playerUpgrades = [] } = useQuery({
     queryKey: ['playerUpgrades', user?.id],
@@ -242,7 +258,7 @@ export const usePassiveIncomeRobot = () => {
       queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la collecte');
+      showRobotError(error.message || 'Erreur lors de la collecte');
     }
   });
 
@@ -286,7 +302,7 @@ export const usePassiveIncomeRobot = () => {
       queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la réclamation');
+      showRobotError(error.message || 'Erreur lors de la réclamation');
     }
   });
 
