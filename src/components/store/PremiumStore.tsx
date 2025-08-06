@@ -105,9 +105,19 @@ export const PremiumStore = () => {
             <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
               <Zap className="h-5 w-5 text-yellow-400" />
               <div className="flex-1">
-                <div className="font-medium">Accès anticipé</div>
+                <div className="font-medium">Désactivation des publicités</div>
                 <div className="text-sm text-muted-foreground">
-                  Débloquez des fonctionnalités avant tout le monde
+                  Plus de pubs, récompenses automatiques
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
+              <Sparkles className="h-5 w-5 text-pink-400" />
+              <div className="flex-1">
+                <div className="font-medium">Badge Premium</div>
+                <div className="text-sm text-muted-foreground">
+                  Badge spécial visible dans le profil et classement
                 </div>
               </div>
             </div>
