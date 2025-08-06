@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 export const useStripePayment = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,8 +27,12 @@ export const useStripePayment = () => {
 
       console.log('✅ URL de paiement reçue, ouverture de Stripe...');
       
-      // Ouvrir Stripe dans un nouvel onglet
-      window.open(data.url, '_blank');
+      // Ouvrir Stripe dans un navigateur in-app sur Android (Capacitor) ou dans un nouvel onglet Web
+      if (Capacitor.isNativePlatform()) {
+        await Browser.open({ url: data.url, presentationStyle: 'fullscreen' });
+      } else {
+        window.open(data.url, '_blank');
+      }
       
       toast({
         title: "Redirection vers Stripe",
