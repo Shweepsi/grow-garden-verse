@@ -7,6 +7,8 @@ import { useStripePayment } from '@/hooks/useStripePayment';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 export const PremiumStore = () => {
   const { createPayment, verifyPayment, isLoading } = useStripePayment();
@@ -47,6 +49,19 @@ export const PremiumStore = () => {
     const result = await createPayment();
     if (!result.success) {
       console.error('Échec du paiement:', result.error);
+      return;
+    }
+    // Sur mobile natif, déclencher la vérification lorsque l'utilisateur ferme le navigateur Stripe
+    if (Capacitor.isNativePlatform() && result.sessionId) {
+      const listener = await Browser.addListener('browserFinished', async () => {
+        setIsVerifying(true);
+        const verification = await verifyPayment(result.sessionId!);
+        if (verification.verified) {
+          queryClient.invalidateQueries({ queryKey: ['gameData'] });
+        }
+        setIsVerifying(false);
+        await listener.remove();
+      });
     }
   };
 
