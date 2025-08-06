@@ -71,8 +71,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/store?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/store?payment=cancelled`,
+      success_url: `https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=cancelled`,
       metadata: {
         user_id: user.id,
         product_type: "gems",

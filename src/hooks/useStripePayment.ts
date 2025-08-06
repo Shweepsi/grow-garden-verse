@@ -30,7 +30,7 @@ export const useStripePayment = () => {
       
       toast({
         title: "Redirection vers Stripe",
-        description: "Complétez votre paiement dans le nouvel onglet",
+        description: "Complétez votre paiement",
       });
 
       return { success: true, sessionId: data.sessionId };
