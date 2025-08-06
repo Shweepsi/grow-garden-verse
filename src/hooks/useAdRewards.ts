@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
@@ -8,6 +9,7 @@ import { Capacitor } from '@capacitor/core';
 
 export const useAdRewards = () => {
   const { user } = useAuth();
+  const { isPremium } = usePremiumStatus();
   const mounted = useRef(true);
   const [adState, setAdState] = useState<AdState>({
     available: false,
@@ -151,19 +153,31 @@ export const useAdRewards = () => {
     }
   }, []);
 
-  // Formater le message d'état des publicités  
+  // Formater le message d'état des publicités avec logique premium
   const getAdStatusMessage = useCallback((): string => {
+    if (isPremium) {
+      return "🚫 Premium: Publicités désactivées - Récompenses automatiques";
+    }
+    
     if (adState.dailyCount >= adState.maxDaily) {
       const timeFormatted = formatTimeUntilNext(adState.timeUntilNext);
       return `Limite quotidienne atteinte. Reset dans ${timeFormatted}`;
     }
     
     return `Pubs regardées: ${adState.dailyCount}/${adState.maxDaily}`;
-  }, [adState, formatTimeUntilNext]);
+  }, [adState, formatTimeUntilNext, isPremium]);
 
-  // Fonction pour regarder une pub avec validation serveur et diagnostic amélioré
+  // Fonction pour regarder une pub avec logique premium
   const watchAd = async (rewardType: string, rewardAmount: number) => {
     if (!user?.id || !mounted.current) return { success: false, error: 'Not authenticated' };
+
+    // Si l'utilisateur est premium, donner les récompenses automatiquement
+    if (isPremium) {
+      return { 
+        success: true, 
+        message: "Récompense premium automatique accordée !" 
+      };
+    }
 
     try {
       if (mounted.current) {

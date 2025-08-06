@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trophy, Coins, Crown, Star, TrendingUp, Medal, Award } from 'lucide-react';
 import { useLadder } from '@/hooks/useLadder';
+import { PremiumBadge } from '@/components/premium/PremiumBadge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 interface LadderModalProps {
@@ -80,9 +81,12 @@ export const LadderModal = ({
                 {getRankIcon(rank)}
               </div>
               <div>
-                <p className="font-semibold text-gray-800">
-                  {player.username || 'Jardinier Anonyme'}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-gray-800">
+                    {player.username || 'Jardinier Anonyme'}
+                  </p>
+                  {player.premium_status && <PremiumBadge variant="leaderboard" />}
+                </div>
                 <div className="flex items-center space-x-1 text-sm text-gray-600">
                   {icon}
                   <span>{formatNumber(value)}{suffix}</span>

@@ -429,6 +429,8 @@ export type Database = {
           last_played: string
           level: number | null
           permanent_multiplier: number | null
+          premium_purchased_at: string | null
+          premium_status: boolean | null
           prestige_level: number | null
           prestige_points: number | null
           robot_accumulated_coins: number | null
@@ -448,6 +450,8 @@ export type Database = {
           last_played?: string
           level?: number | null
           permanent_multiplier?: number | null
+          premium_purchased_at?: string | null
+          premium_status?: boolean | null
           prestige_level?: number | null
           prestige_points?: number | null
           robot_accumulated_coins?: number | null
@@ -467,6 +471,8 @@ export type Database = {
           last_played?: string
           level?: number | null
           permanent_multiplier?: number | null
+          premium_purchased_at?: string | null
+          premium_status?: boolean | null
           prestige_level?: number | null
           prestige_points?: number | null
           robot_accumulated_coins?: number | null

@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 import { Trophy, Star, Coins, TrendingUp, Clock, Target } from 'lucide-react';
+import { PremiumBadge } from '@/components/premium/PremiumBadge';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 interface PlayerStatsProps {
   garden: PlayerGarden | null;
   totalPlants: number;
@@ -12,6 +14,7 @@ export const PlayerStats = ({
   totalPlants,
   activePlants
 }: PlayerStatsProps) => {
+  const { isPremium } = usePremiumStatus();
   if (!garden) return null;
 
   // Calculer l'XP nécessaire pour le prochain niveau
@@ -33,9 +36,41 @@ export const PlayerStats = ({
     });
   };
   return <div className="space-y-6">
-      {/* Niveau et Expérience */}
-      
+      {/* Niveau et Expérience avec Badge Premium */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center justify-between text-lg">
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-blue-500" />
+              Niveau {currentLevel}
+              {isPremium && <PremiumBadge variant="compact" />}
+            </div>
+            <span className="text-sm font-normal text-muted-foreground">
+              {Math.round(progressPercentage)}%
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-2">
+            <Progress value={progressPercentage} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {xpProgress.toLocaleString()} / {xpNeeded.toLocaleString()} XP
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Badge Premium si applicable */}
+      {isPremium && (
+        <Card className="border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-orange-500/5">
+          <CardContent className="p-4 text-center">
+            <PremiumBadge />
+            <p className="text-xs text-muted-foreground mt-2">
+              Merci pour votre soutien ! Profitez de vos avantages premium.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       {/* Statistiques de jeu */}
       <div className="grid grid-cols-2 gap-4">
         <Card>

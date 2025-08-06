@@ -25,8 +25,8 @@ export const useStripePayment = () => {
 
       console.log('✅ URL de paiement reçue, ouverture de Stripe...');
       
-      // Ouvrir Stripe dans un nouvel onglet
-      window.open(data.url, '_blank');
+      // Rediriger vers Stripe dans le même onglet pour mobile
+      window.location.href = data.url;
       
       toast({
         title: "Redirection vers Stripe",

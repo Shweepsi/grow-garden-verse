@@ -12,6 +12,7 @@ interface LeaderboardPlayer {
   prestige_level: number;
   experience?: number;
   is_bot?: boolean;
+  premium_status?: boolean;
 }
 
 export const useLadder = () => {
@@ -21,10 +22,10 @@ export const useLadder = () => {
   const { data: harvestLeaders = [], isLoading: harvestLoading } = useQuery({
     queryKey: ['leaderboard', 'harvests'],
     queryFn: async () => {
-      // Récupérer les joueurs réels avec leurs profils
+      // Récupérer les joueurs réels avec leurs profils et statut premium
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, total_harvests, created_at');
+        .select('user_id, total_harvests, premium_status, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -51,6 +52,7 @@ export const useLadder = () => {
           coins: 0,
           level: 0,
           prestige_level: 0,
+          premium_status: g.premium_status || false,
           is_bot: false,
           created_at: g.created_at
         })),

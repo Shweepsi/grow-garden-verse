@@ -77,13 +77,30 @@ serve(async (req) => {
       );
     }
 
-    // Attribuer les gemmes au joueur
+    // Attribuer les gemmes et le statut premium au joueur
     const rewardGems = purchase.reward_data?.gems || 100;
+    
+    // D'abord récupérer les gemmes actuelles
+    const { data: currentGarden, error: gardenError } = await supabaseService
+      .from("player_gardens")
+      .select("gems")
+      .eq("user_id", purchase.user_id)
+      .single();
+
+    if (gardenError) {
+      console.error("❌ Erreur récupération jardin:", gardenError);
+      throw new Error("Erreur lors de la récupération du jardin");
+    }
+
+    const currentGems = currentGarden?.gems || 0;
+    const newGemsTotal = currentGems + rewardGems;
     
     const { error: updateGemsError } = await supabaseService
       .from("player_gardens")
       .update({ 
-        gems: supabaseService.sql`gems + ${rewardGems}` 
+        gems: newGemsTotal,
+        premium_status: true,
+        premium_purchased_at: new Date().toISOString()
       })
       .eq("user_id", purchase.user_id);
 
