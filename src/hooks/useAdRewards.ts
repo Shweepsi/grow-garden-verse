@@ -173,10 +173,46 @@ export const useAdRewards = () => {
 
     // Si l'utilisateur est premium, donner les récompenses automatiquement
     if (isPremium) {
-      return { 
-        success: true, 
-        message: "Récompense premium automatique accordée !" 
-      };
+      try {
+        // Importer le service de distribution des récompenses
+        const { AdRewardDistributionService } = await import('@/services/ads/AdRewardDistributionService');
+        
+        // Créer l'objet reward approprié
+        const reward = {
+          type: rewardType as any,
+          amount: rewardAmount,
+          description: `Récompense premium automatique`,
+          emoji: '👑'
+        };
+        
+        // Distribuer la récompense
+        const result = await AdRewardDistributionService.distributeReward(user.id, reward);
+        
+        if (result.success) {
+          // Rafraîchir l'état pour refléter les changements
+          setTimeout(() => {
+            if (mounted.current) {
+              refreshAdState(true);
+            }
+          }, 500);
+          
+          return { 
+            success: true, 
+            message: "Récompense premium automatique accordée !" 
+          };
+        } else {
+          return { 
+            success: false, 
+            error: result.error || "Erreur lors de l'attribution de la récompense premium" 
+          };
+        }
+      } catch (error) {
+        console.error('Erreur lors de la distribution de la récompense premium:', error);
+        return { 
+          success: false, 
+          error: "Erreur lors de l'attribution de la récompense premium" 
+        };
+      }
     }
 
     try {

@@ -18,17 +18,30 @@ export const useAndroidBackButton = (
   useEffect(() => {
     if (!enabled) return;
 
-    const listener = CapacitorApp.addListener('backButton', (event) => {
-      // On empêche l'action par défaut (navigation ou fermeture de l'app)
-      // et on exécute la callback fournie.
-      event && (event as any).preventDefault?.();
-      handler();
+    const setupListener = async () => {
+      const listener = await CapacitorApp.addListener('backButton', (event) => {
+        // On empêche l'action par défaut (navigation ou fermeture de l'app)
+        // et on exécute la callback fournie.
+        event && (event as any).preventDefault?.();
+        handler();
+      });
+
+      return () => {
+        // Protection contre les erreurs si listener n'a pas de méthode remove
+        if (listener && typeof listener.remove === 'function') {
+          listener.remove();
+        }
+      };
+    };
+
+    let cleanup: (() => void) | undefined;
+    setupListener().then(cleanupFn => {
+      cleanup = cleanupFn;
     });
 
     return () => {
-      // Protection contre les erreurs si listener n'a pas de méthode remove
-      if (listener && typeof listener.remove === 'function') {
-        listener.remove();
+      if (cleanup) {
+        cleanup();
       }
     };
   }, [enabled, handler]);

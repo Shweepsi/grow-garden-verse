@@ -46,7 +46,10 @@ export class EconomyService {
     const levelBonus = 1 + (playerLevel * 0.02); // 2% par niveau du joueur
     
     const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
-    return Math.floor(finalReward * harvestMultiplier * permanentMultiplier);
+    const result = Math.floor(finalReward * harvestMultiplier * permanentMultiplier);
+    
+    // Protection contre l'overflow - plafonner à 2 milliards pour integer 32-bit
+    return Math.min(result, 2000000000);
   }
 
   // Expérience avec multiplicateur d'amélioration
@@ -97,7 +100,10 @@ export class EconomyService {
     const baseIncome = 50; // Revenu de base par minute
     const levelMultiplier = Math.pow(plantLevel, 1.5); // Progression exponentielle douce
     
-    return Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
+    const result = Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
+    
+    // Protection contre l'overflow - plafonner à 2 milliards pour integer 32-bit  
+    return Math.min(result, 2000000000);
   }
 
   // Calculer le niveau de robot maximum basé sur les améliorations
@@ -168,7 +174,10 @@ export class EconomyService {
   // Méthodes pour les récompenses publicitaires
   static getAdCoinReward(baseAmount: number, playerLevel: number, permanentMultiplier: number): number {
     const levelBonus = 1 + (Math.max(0, playerLevel - 1) * 0.05); // 5% par niveau après le niveau 1
-    return Math.floor(baseAmount * levelBonus * permanentMultiplier);
+    const result = Math.floor(baseAmount * levelBonus * permanentMultiplier);
+    
+    // Protection contre l'overflow - plafonner à 2 milliards pour integer 32-bit
+    return Math.min(result, 2000000000);
   }
 
   static getAdGemReward(playerLevel: number): number {
