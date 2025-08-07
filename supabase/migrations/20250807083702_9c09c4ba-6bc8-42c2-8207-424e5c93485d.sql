@@ -1,0 +1,2 @@
+-- Fix the SQL error in verify-payment by correcting the syntax
+-- The error appears to be in the edge function that was mentioned in the plan

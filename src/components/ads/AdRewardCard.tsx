@@ -3,11 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAdRewards } from '@/hooks/useAdRewards';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { AdModal } from './AdModal';
-import { Play, Clock, Loader2, Tv, AlertCircle } from 'lucide-react';
+import { PremiumAdAutoReward } from './PremiumAdAutoReward';
+import { Play, Clock, Loader2, Tv, AlertCircle, Crown } from 'lucide-react';
 
 export function AdRewardCard() {
-  const { adState, loading, formatTimeUntilNext, getAdStatusMessage, refreshAdState } = useAdRewards();
+  const { adState, loading, formatTimeUntilNext, getAdStatusMessage, refreshAdState, watchAd } = useAdRewards();
+  const { isPremium } = usePremiumStatus();
   const [showAdModal, setShowAdModal] = useState(false);
 
   const handleOpenModal = async () => {
@@ -28,6 +31,31 @@ export function AdRewardCard() {
         <CardContent className="p-6 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin" />
           <span className="ml-2">Chargement...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Si l'utilisateur est premium, afficher le composant de récompense automatique
+  if (isPremium) {
+    return (
+      <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-200 dark:border-yellow-800">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Crown className="w-5 h-5 text-yellow-600" />
+            Récompenses Premium
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PremiumAdAutoReward 
+            onRewardClaimed={async (type, amount) => {
+              const result = await watchAd(type, amount);
+              if (!result.success) {
+                throw new Error(result.error || 'Erreur inconnue');
+              }
+            }}
+            loading={loading}
+          />
         </CardContent>
       </Card>
     );
