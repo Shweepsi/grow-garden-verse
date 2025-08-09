@@ -7,6 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from '@/hooks/useAuth';
 import { AnimationProvider } from '@/contexts/AnimationContext';
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
+import { DeepLinkListener } from '@/components/navigation/DeepLinkListener';
 import App from './App.tsx'
 import './index.css'
 
@@ -27,6 +28,8 @@ createRoot(document.getElementById("root")!).render(
           <AnimationProvider>
             <TooltipProvider>
               <App />
+              {/* Deep link listener for native return from Stripe */}
+              <DeepLinkListener />
               <Toaster />
               <Sonner />
             </TooltipProvider>

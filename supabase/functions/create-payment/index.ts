@@ -53,6 +53,18 @@ serve(async (req) => {
       console.log(`🆕 Nouveau client Stripe pour: ${user.email}`);
     }
 
+    // Déterminer les URLs de retour selon la plateforme
+    const body = await req.json().catch(() => ({}));
+    const platform = body?.platform ?? 'web';
+
+    const successUrl = platform === 'android'
+      ? 'idlegrow://payment/success?session_id={CHECKOUT_SESSION_ID}'
+      : 'https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=success&session_id={CHECKOUT_SESSION_ID}';
+
+    const cancelUrl = platform === 'android'
+      ? 'idlegrow://payment/cancelled'
+      : 'https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=cancelled';
+
     // Créer la session de paiement pour Early Access (100 gemmes - 10€)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -71,8 +83,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=cancelled`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         user_id: user.id,
         product_type: "gems",

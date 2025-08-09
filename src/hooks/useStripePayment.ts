@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 export const useStripePayment = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,11 +11,14 @@ export const useStripePayment = () => {
   const createPayment = async () => {
     try {
       setIsLoading(true);
-      
       console.log('🚀 Démarrage du processus de paiement...');
-      
-      const { data, error } = await supabase.functions.invoke('create-payment');
-      
+
+      const platform = Capacitor.getPlatform() === 'android' ? 'android' : 'web';
+
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { platform }
+      });
+
       if (error) {
         console.error('❌ Erreur lors de la création du paiement:', error);
         throw error;
@@ -23,27 +28,32 @@ export const useStripePayment = () => {
         throw new Error('URL de paiement non reçue');
       }
 
-      console.log('✅ URL de paiement reçue, ouverture de Stripe...');
-      
-      // Rediriger vers Stripe dans le même onglet pour mobile
-      window.location.href = data.url;
-      
+      console.log('✅ URL de paiement reçue, ouverture de Stripe...', { platform });
+
+      if (platform === 'android') {
+        // Ouvre dans le navigateur in-app et retour via deep link
+        await Browser.open({ url: data.url, presentationStyle: 'fullscreen' });
+      } else {
+        // Web: redirection classique
+        window.location.href = data.url;
+      }
+
       toast({
         title: "Redirection vers Stripe",
         description: "Complétez votre paiement",
       });
 
       return { success: true, sessionId: data.sessionId };
-      
+
     } catch (error: any) {
       console.error('❌ Erreur payment:', error);
-      
+
       toast({
         variant: "destructive",
         title: "Erreur de paiement",
         description: error.message || "Impossible de créer le paiement",
       });
-      
+
       return { success: false, error: error.message };
     } finally {
       setIsLoading(false);
