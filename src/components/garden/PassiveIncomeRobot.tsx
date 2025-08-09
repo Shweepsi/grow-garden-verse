@@ -24,6 +24,7 @@ export const PassiveIncomeRobot = ({
     coinsPerMinute,
     currentAccumulation,
     collectAccumulatedCoins,
+    collectAccumulatedCoinsAsync,
     isCollecting,
     robotLevel,
     robotPlantType
@@ -40,9 +41,16 @@ export const PassiveIncomeRobot = ({
       return () => clearInterval(interval);
     }
   }, [currentAccumulation, coinsPerMinute]);
-  const handleCollectCoins = () => {
-    collectAccumulatedCoins();
-    setRealTimeAccumulation(0);
+  const handleCollectCoins = async () => {
+    try {
+      const result = await collectAccumulatedCoinsAsync();
+      if (result) {
+        setRealTimeAccumulation(0);
+        onClose();
+      }
+    } catch (_) {
+      // Erreur déjà gérée dans le hook, ne pas fermer la modale
+    }
   };
 
   // Vérification de cohérence

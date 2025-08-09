@@ -337,6 +337,7 @@ export const usePassiveIncomeRobot = () => {
     currentAccumulation: calculateCurrentAccumulation(),
     robotLevel,
     collectAccumulatedCoins: () => collectAccumulatedCoinsMutation.mutate(),
+    collectAccumulatedCoinsAsync: () => collectAccumulatedCoinsMutation.mutateAsync(),
     claimOfflineRewards: () => claimOfflineRewardsMutation.mutate(),
     calculateOfflineRewards,
     syncRobotTimestamp,
