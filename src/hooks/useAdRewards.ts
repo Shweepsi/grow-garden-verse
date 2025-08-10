@@ -30,9 +30,10 @@ export const useAdRewards = () => {
     };
   }, []);
 
-  // Initialiser AdMob avec diagnostics améliorés
+  // Initialiser AdMob avec diagnostics améliorés (désactivé pour Premium)
   useEffect(() => {
     const initializeAdMob = async () => {
+      if (isPremium) return;
       if (Capacitor.isNativePlatform()) {
         console.log('AdMob: Initializing for production...');
         const initialized = await AdMobService.initialize();
@@ -53,7 +54,7 @@ export const useAdRewards = () => {
     return () => {
       AdMobService.cleanup();
     };
-  }, []);
+  }, [isPremium]);
 
   // Actualiser l'état des publicités avec gestion d'erreur améliorée - FIXED: stable function
   const refreshAdState = useCallback(async (force = false) => {

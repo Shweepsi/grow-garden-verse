@@ -25,8 +25,14 @@ export const PremiumStore = () => {
       
       verifyPayment(sessionId).then((result) => {
         if (result.verified) {
-          // Actualiser les données du jeu
+          // Actualiser les données du jeu et le statut premium
           queryClient.invalidateQueries({ queryKey: ['gameData'] });
+          queryClient.invalidateQueries({ queryKey: ['premiumStatus'] });
+          toast({
+            title: "Merci !",
+            description: "Premium activé. Les publicités sont désactivées.",
+            variant: "default"
+          });
         }
         
         // Nettoyer les paramètres URL

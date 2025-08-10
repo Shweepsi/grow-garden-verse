@@ -12,6 +12,8 @@ import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Zap, Clock } from 'lucide-react';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
+import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
@@ -21,6 +23,7 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
   const { animations } = useAnimations();
   const [showAdModal, setShowAdModal] = useState(false);
   const { availableRewards, adState } = useAdRewards();
+  const { isPremium } = usePremiumStatus();
   const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
   const mounted = useRef(true);
 
@@ -171,14 +174,20 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 </div>
               </div>
 
-              {/* Bouton Publicité - FIXED: using safe state setter */}
-              <Button
-                size="sm"
-                onClick={() => safeSetShowAdModal(true)}
-                className={adButtonState.className}
-              >
-                <Gift className="h-3 w-3 text-white" />
-              </Button>
+              {/* Bouton Publicité / Premium */}
+              {isPremium ? (
+                <div className="h-8 px-2.5 border-0 rounded-md flex items-center bg-gradient-to-r from-yellow-400 to-amber-400">
+                  <PremiumBadge variant="compact" />
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => safeSetShowAdModal(true)}
+                  className={adButtonState.className}
+                >
+                  <Gift className="h-3 w-3 text-white" />
+                </Button>
+              )}
             </div>
 
             {/* Ligne 2: Boosts actifs (si présents) */}

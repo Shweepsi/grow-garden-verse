@@ -17,6 +17,7 @@ import { useAdWatcher } from '@/hooks/useAdWatcher';
 import { useAdDiagnostics } from '@/hooks/useAdDiagnostics';
 import { useAdModalState } from '@/hooks/useAdModalState';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 interface AdModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,6 +38,7 @@ export function AdModal({
   const {
     adState
   } = useAdRewards();
+  const { isPremium } = usePremiumStatus();
   const mounted = useRef(true);
 
   // Hooks refactorisés
@@ -67,6 +69,13 @@ export function AdModal({
       mounted.current = false;
     };
   }, []);
+
+  // Fermer automatiquement si premium
+  useEffect(() => {
+    if (open && isPremium) {
+      onOpenChange(false);
+    }
+  }, [open, isPremium, onOpenChange]);
 
   // Charger les récompenses disponibles - FIXED: removed hook functions from dependencies
   useEffect(() => {
@@ -105,7 +114,7 @@ export function AdModal({
 
   // Précharger la publicité à l'ouverture - FIXED: removed debugInfo from dependencies
   useEffect(() => {
-    if (!open || !user?.id || !mounted.current) return;
+    if (!open || !user?.id || !mounted.current || isPremium) return;
     let cancelled = false;
     const preloadAd = async () => {
       console.log('AdMob: Preloading ad');
@@ -158,6 +167,7 @@ export function AdModal({
   };
   const isLoading = watchState.isWatching || watchState.isWaitingForReward;
   const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
+  if (isPremium) { return null; }
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] bg-white/95 backdrop-blur-xl border border-orange-200/50 shadow-2xl shadow-orange-500/20 animate-in fade-in-0 zoom-in-95 duration-300 overflow-hidden flex flex-col">
         <DialogHeader className="space-y-4 pb-6 shrink-0">

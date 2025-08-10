@@ -40,6 +40,24 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Vérifier le statut premium
+    const { data: garden, error: gardenError } = await supabaseClient
+      .from('player_gardens')
+      .select('premium_status')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (gardenError) {
+      console.error('Error fetching premium status:', gardenError)
+    }
+
+    if (garden?.premium_status === true) {
+      return new Response(
+        JSON.stringify({ success: true, premium: true, current_count: 0, max_daily: 999, message: 'Premium user - ads disabled' }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const today = new Date().toISOString().split('T')[0]
     const MAX_DAILY_ADS = 5
 
