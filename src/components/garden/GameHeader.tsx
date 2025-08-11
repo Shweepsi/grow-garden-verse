@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Zap, Clock } from 'lucide-react';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
+import { PremiumRewardsDialog } from '@/components/ads/PremiumRewardsDialog';
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
@@ -21,28 +22,35 @@ interface GameHeaderProps {
 
 export const GameHeader = ({ garden }: GameHeaderProps) => {
   const { animations } = useAnimations();
-  const [showAdModal, setShowAdModal] = useState(false);
-  const { availableRewards, adState } = useAdRewards();
+const [showAdModal, setShowAdModal] = useState(false);
+const [showPremiumDialog, setShowPremiumDialog] = useState(false);
+const { availableRewards, adState } = useAdRewards();
   const { isPremium } = usePremiumStatus();
   const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
   const mounted = useRef(true);
 
   // Track component mount/unmount to prevent state updates after unmount
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      // Close modal when component unmounts to prevent crashes
-      setShowAdModal(false);
-    };
-  }, []);
+useEffect(() => {
+  mounted.current = true;
+  return () => {
+    mounted.current = false;
+    // Close modals when component unmounts to prevent crashes
+    setShowAdModal(false);
+    setShowPremiumDialog(false);
+  };
+}, []);
 
-  // Safe modal state setter that checks if component is mounted
-  const safeSetShowAdModal = useCallback((show: boolean) => {
-    if (mounted.current) {
-      setShowAdModal(show);
-    }
-  }, []);
+// Safe modal state setter that checks if component is mounted
+const safeSetShowAdModal = useCallback((show: boolean) => {
+  if (mounted.current) {
+    setShowAdModal(show);
+  }
+}, []);
+const safeSetShowPremiumDialog = useCallback((show: boolean) => {
+  if (mounted.current) {
+    setShowPremiumDialog(show);
+  }
+}, []);
 
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
@@ -174,20 +182,25 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
                 </div>
               </div>
 
-              {/* Bouton Publicité / Premium */}
-              {isPremium ? (
-                <div className="h-8 px-2.5 border-0 rounded-md flex items-center bg-gradient-to-r from-yellow-400 to-amber-400">
-                  <PremiumBadge variant="compact" />
-                </div>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => safeSetShowAdModal(true)}
-                  className={adButtonState.className}
-                >
-                  <Gift className="h-3 w-3 text-white" />
-                </Button>
-              )}
+{/* Bouton Publicité / Premium */}
+{isPremium ? (
+  <Button
+    size="sm"
+    onClick={() => safeSetShowPremiumDialog(true)}
+    className="h-8 px-2.5 border-0 rounded-md flex items-center bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500"
+  >
+    <Gift className="h-3 w-3 text-white mr-1" />
+    <span className="text-white mobile-text-xs">Récompenses</span>
+  </Button>
+) : (
+  <Button
+    size="sm"
+    onClick={() => safeSetShowAdModal(true)}
+    className={adButtonState.className}
+  >
+    <Gift className="h-3 w-3 text-white" />
+  </Button>
+)}
             </div>
 
             {/* Ligne 2: Boosts actifs (si présents) */}
@@ -284,13 +297,20 @@ export const GameHeader = ({ garden }: GameHeaderProps) => {
         </div>
       </div>
 
-      {/* Modal des publicités - FIXED: using safe state setter and conditional rendering */}
-      {mounted.current && (
-        <AdModal 
-          open={showAdModal} 
-          onOpenChange={safeSetShowAdModal}
-        />
-      )}
+{/* Modals - using safe state setter and conditional rendering */}
+{mounted.current && (
+  <>
+    <AdModal 
+      open={showAdModal} 
+      onOpenChange={safeSetShowAdModal}
+    />
+    <PremiumRewardsDialog
+      open={showPremiumDialog}
+      onOpenChange={safeSetShowPremiumDialog}
+      playerLevel={xpStats.currentLevel}
+    />
+  </>
+)}
     </div>
   );
 };
