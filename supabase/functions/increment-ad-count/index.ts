@@ -51,18 +51,6 @@ Deno.serve(async (req) => {
       console.error('Error fetching premium status:', gardenError)
     }
 
-    if (garden?.premium_status === true) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          premium: true, 
-          new_count: 0, 
-          max_daily: 999,
-          message: 'Premium user - ads disabled' 
-        }), 
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     const today = new Date().toISOString().split('T')[0]
     const now = new Date().toISOString()

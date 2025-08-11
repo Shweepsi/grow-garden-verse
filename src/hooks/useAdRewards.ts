@@ -61,21 +61,6 @@ const refreshAdState = useCallback(async (force = false) => {
   if (!user?.id || !mounted.current) return;
 
   try {
-    // Premium: pas de limites ni de cooldown
-    if (isPremium) {
-      if (mounted.current) {
-        setAdState(prev => ({
-          ...prev,
-          available: true,
-          cooldownEnds: null,
-          timeUntilNext: 0,
-          dailyCount: 0,
-          maxDaily: Number.MAX_SAFE_INTEGER
-        }));
-      }
-      return; // Ne pas appeler le service de cooldown
-    }
-
     // Éviter les rechargements trop fréquents sauf si forcé
     if (!force && loading) return;
     
@@ -125,7 +110,7 @@ const refreshAdState = useCallback(async (force = false) => {
       setLoading(false);
     }
   }
-}, [user?.id, isPremium]); // inclure isPremium pour refléter le statut
+}, [user?.id]);
 
 
   // Timer pour actualiser le cooldown
@@ -191,6 +176,12 @@ const refreshAdState = useCallback(async (force = false) => {
     // Si l'utilisateur est premium, donner les récompenses automatiquement
     if (isPremium) {
       try {
+        // Vérifier la limite quotidienne avant d'attribuer
+        const limitInfo = await AdCooldownService.getCooldownInfo(user.id);
+        if (!limitInfo.available) {
+          return { success: false, error: 'Limite quotidienne atteinte' };
+        }
+
         // Importer le service de distribution des récompenses
         const { AdRewardDistributionService } = await import('@/services/ads/AdRewardDistributionService');
         
@@ -206,6 +197,13 @@ const refreshAdState = useCallback(async (force = false) => {
         const result = await AdRewardDistributionService.distributeReward(user.id, reward);
         
         if (result.success) {
+          // Incrémenter le compteur quotidien
+          try {
+            await AdCooldownService.updateAfterAdWatch(user.id);
+          } catch (incErr) {
+            console.warn('Incrément ad_count a échoué après attribution:', incErr);
+          }
+
           // Rafraîchir l'état pour refléter les changements
           setTimeout(() => {
             if (mounted.current) {
