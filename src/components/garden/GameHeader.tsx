@@ -188,9 +188,9 @@ const safeSetShowPremiumDialog = useCallback((show: boolean) => {
     size="sm"
     onClick={() => safeSetShowPremiumDialog(true)}
     className="h-8 px-2.5 border-0 rounded-md flex items-center bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500"
+    aria-label="Récompenses premium"
   >
-    <Gift className="h-3 w-3 text-white mr-1" />
-    <span className="text-white mobile-text-xs">Récompenses</span>
+    <Gift className="h-3 w-3 text-white" />
   </Button>
 ) : (
   <Button

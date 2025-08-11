@@ -57,60 +57,76 @@ export const useAdRewards = () => {
   }, [isPremium]);
 
   // Actualiser l'état des publicités avec gestion d'erreur améliorée - FIXED: stable function
-  const refreshAdState = useCallback(async (force = false) => {
-    if (!user?.id || !mounted.current) return;
+const refreshAdState = useCallback(async (force = false) => {
+  if (!user?.id || !mounted.current) return;
 
-    try {
-      // Éviter les rechargements trop fréquents sauf si forcé
-      if (!force && loading) return;
-      
+  try {
+    // Premium: pas de limites ni de cooldown
+    if (isPremium) {
       if (mounted.current) {
-        setLoading(true);
-      }
-      
-      const cooldownInfo = await AdCooldownService.getCooldownInfo(user.id);
-      
-      if (!mounted.current) return;
-      
-      // Seulement mettre à jour si les données ont réellement changé
-      setAdState(prev => {
-        const hasChanged = 
-          prev.available !== cooldownInfo.available ||
-          prev.dailyCount !== cooldownInfo.dailyCount ||
-          prev.maxDaily !== cooldownInfo.maxDaily ||
-          prev.timeUntilNext !== cooldownInfo.timeUntilNext;
-        
-        if (!hasChanged) return prev;
-        
-        return {
+        setAdState(prev => ({
           ...prev,
-          available: cooldownInfo.available,
-          cooldownEnds: cooldownInfo.cooldownEnds,
-          timeUntilNext: cooldownInfo.timeUntilNext,
-          dailyCount: cooldownInfo.dailyCount,
-          maxDaily: cooldownInfo.maxDaily
-        };
-      });
-
-      // Mettre à jour les diagnostics seulement si nécessaire
-      if (Capacitor.isNativePlatform() && mounted.current) {
-        const debugInfo = AdMobService.getDebugInfo();
-        setDiagnostics(prev => {
-          if (JSON.stringify(prev) !== JSON.stringify(debugInfo)) {
-            return debugInfo;
-          }
-          return prev;
-        });
+          available: true,
+          cooldownEnds: null,
+          timeUntilNext: 0,
+          dailyCount: 0,
+          maxDaily: Number.MAX_SAFE_INTEGER
+        }));
       }
-      
-    } catch (error) {
-      console.error('Error refreshing ad state:', error);
-    } finally {
-      if (mounted.current) {
-        setLoading(false);
-      }
+      return; // Ne pas appeler le service de cooldown
     }
-  }, [user?.id]); // FIXED: removed loading from dependencies to prevent loops
+
+    // Éviter les rechargements trop fréquents sauf si forcé
+    if (!force && loading) return;
+    
+    if (mounted.current) {
+      setLoading(true);
+    }
+    
+    const cooldownInfo = await AdCooldownService.getCooldownInfo(user.id);
+    
+    if (!mounted.current) return;
+    
+    // Seulement mettre à jour si les données ont réellement changé
+    setAdState(prev => {
+      const hasChanged = 
+        prev.available !== cooldownInfo.available ||
+        prev.dailyCount !== cooldownInfo.dailyCount ||
+        prev.maxDaily !== cooldownInfo.maxDaily ||
+        prev.timeUntilNext !== cooldownInfo.timeUntilNext;
+      
+      if (!hasChanged) return prev;
+      
+      return {
+        ...prev,
+        available: cooldownInfo.available,
+        cooldownEnds: cooldownInfo.cooldownEnds,
+        timeUntilNext: cooldownInfo.timeUntilNext,
+        dailyCount: cooldownInfo.dailyCount,
+        maxDaily: cooldownInfo.maxDaily
+      };
+    });
+
+    // Mettre à jour les diagnostics seulement si nécessaire
+    if (Capacitor.isNativePlatform() && mounted.current) {
+      const debugInfo = AdMobService.getDebugInfo();
+      setDiagnostics(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(debugInfo)) {
+          return debugInfo;
+        }
+        return prev;
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error refreshing ad state:', error);
+  } finally {
+    if (mounted.current) {
+      setLoading(false);
+    }
+  }
+}, [user?.id, isPremium]); // inclure isPremium pour refléter le statut
+
 
   // Timer pour actualiser le cooldown
   useEffect(() => {
