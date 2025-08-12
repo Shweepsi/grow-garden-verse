@@ -35,16 +35,14 @@ export function AdModal({
   const {
     data: gameData
   } = useGameData();
-  const {
-    adState
-  } = useAdRewards();
+  const { adState, watchAd: watchAdRewards } = useAdRewards();
   const { isPremium } = usePremiumStatus();
   const mounted = useRef(true);
 
   // Hooks refactorisés
   const {
     watchState,
-    watchAd
+    watchAd: watchAdStandard
   } = useAdWatcher();
   const {
     showDiagnostics,
@@ -70,12 +68,6 @@ export function AdModal({
     };
   }, []);
 
-  // Fermer automatiquement si premium
-  useEffect(() => {
-    if (open && isPremium) {
-      onOpenChange(false);
-    }
-  }, [open, isPremium, onOpenChange]);
 
   // Charger les récompenses disponibles - FIXED: removed hook functions from dependencies
   useEffect(() => {
@@ -141,7 +133,6 @@ export function AdModal({
     }
   }, [open]); // FIXED: removed reset function from dependencies
 
-  // FIXED: moved toast dependency inside the function to avoid re-renders
   const handleWatchAd = async () => {
     if (!selectedReward) {
       toast({
@@ -159,7 +150,22 @@ export function AdModal({
       });
       return;
     }
-    await watchAd(selectedReward, () => {
+
+    if (isPremium) {
+      const result = await watchAdRewards(selectedReward.type, selectedReward.amount);
+      if (result?.success) {
+        if (mounted.current) onOpenChange(false);
+      } else {
+        toast({
+          title: "Erreur",
+          description: result?.error || "Impossible de réclamer la récompense",
+          variant: "destructive"
+        });
+      }
+      return;
+    }
+
+    await watchAdStandard(selectedReward, () => {
       if (mounted.current) {
         onOpenChange(false);
       }
@@ -167,7 +173,7 @@ export function AdModal({
   };
   const isLoading = watchState.isWatching || watchState.isWaitingForReward;
   const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
-  if (isPremium) { return null; }
+  
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] bg-white/95 backdrop-blur-xl border border-orange-200/50 shadow-2xl shadow-orange-500/20 animate-in fade-in-0 zoom-in-95 duration-300 overflow-hidden flex flex-col">
         <DialogHeader className="space-y-4 pb-6 shrink-0">

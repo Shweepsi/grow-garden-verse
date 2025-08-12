@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Zap, Clock } from 'lucide-react';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
-import { PremiumRewardsDialog } from '@/components/ads/PremiumRewardsDialog';
+
 
 interface GameHeaderProps {
   garden: PlayerGarden | null;
@@ -23,7 +23,7 @@ interface GameHeaderProps {
 export const GameHeader = ({ garden }: GameHeaderProps) => {
   const { animations } = useAnimations();
 const [showAdModal, setShowAdModal] = useState(false);
-const [showPremiumDialog, setShowPremiumDialog] = useState(false);
+
 const { availableRewards, adState } = useAdRewards();
   const { isPremium } = usePremiumStatus();
   const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
@@ -36,7 +36,7 @@ useEffect(() => {
     mounted.current = false;
     // Close modals when component unmounts to prevent crashes
     setShowAdModal(false);
-    setShowPremiumDialog(false);
+    // setShowPremiumDialog(false);
   };
 }, []);
 
@@ -44,11 +44,6 @@ useEffect(() => {
 const safeSetShowAdModal = useCallback((show: boolean) => {
   if (mounted.current) {
     setShowAdModal(show);
-  }
-}, []);
-const safeSetShowPremiumDialog = useCallback((show: boolean) => {
-  if (mounted.current) {
-    setShowPremiumDialog(show);
   }
 }, []);
 
@@ -186,7 +181,7 @@ const safeSetShowPremiumDialog = useCallback((show: boolean) => {
 {isPremium ? (
   <Button
     size="sm"
-    onClick={() => safeSetShowPremiumDialog(true)}
+    onClick={() => safeSetShowAdModal(true)}
     className="h-8 px-2.5 border-0 rounded-md flex items-center bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500"
     aria-label="Récompenses premium"
   >
@@ -303,11 +298,6 @@ const safeSetShowPremiumDialog = useCallback((show: boolean) => {
     <AdModal 
       open={showAdModal} 
       onOpenChange={safeSetShowAdModal}
-    />
-    <PremiumRewardsDialog
-      open={showPremiumDialog}
-      onOpenChange={safeSetShowPremiumDialog}
-      playerLevel={xpStats.currentLevel}
     />
   </>
 )}
