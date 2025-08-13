@@ -171,6 +171,18 @@ export const useAdRewards = () => {
   const watchAd = async (rewardType: string, rewardAmount: number) => {
     if (!user?.id || !mounted.current) return { success: false, error: 'Not authenticated' };
 
+    // Vérifier le cooldown même pour les premiums
+    if (!adState.available) {
+      const timeFormatted = formatTimeUntilNext(adState.timeUntilNext);
+      const errorMessage = adState.dailyCount >= adState.maxDaily
+        ? `Limite quotidienne atteinte. Reset dans ${timeFormatted}.`
+        : `Cooldown actif. Prochaine récompense dans ${timeFormatted}.`;
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+
     // Si l'utilisateur est premium, donner les récompenses automatiquement
     if (isPremium) {
       try {
@@ -189,6 +201,9 @@ export const useAdRewards = () => {
         const result = await AdRewardDistributionService.distributeReward(user.id, reward);
         
         if (result.success) {
+          // Mettre à jour le cooldown après la distribution
+          await AdCooldownService.updateAfterAdWatch(user.id);
+
           // Rafraîchir l'état pour refléter les changements
           setTimeout(() => {
             if (mounted.current) {

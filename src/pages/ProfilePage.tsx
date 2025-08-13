@@ -53,9 +53,6 @@ export const ProfilePage = () => {
       {/* Content with padding to avoid overlap */}
       <div className="px-3 pb-6 space-y-4">
 
-          {/* Titre et Statistiques */}
-          
-          <PlayerStats garden={gameState.garden} totalPlants={totalPlants} activePlants={activePlants} />
           {/* Carte des classements */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
             <div className="space-y-3">
