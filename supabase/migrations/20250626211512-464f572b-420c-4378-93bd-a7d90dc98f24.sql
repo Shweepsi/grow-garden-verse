@@ -54,4 +54,11 @@ INSERT INTO level_upgrades (name, display_name, description, level_required, cos
 ('plant_cost_reduction_1', 'Économe I', 'Réduction de 10% du coût des plantations', 12, 8000, 0, 'plant_cost_reduction', 0.9, '💰'),
 ('plant_cost_reduction_2', 'Économe II', 'Réduction de 20% du coût des plantations', 22, 35000, 0, 'plant_cost_reduction', 0.8, '💎'),
 ('gem_finder_1', 'Chercheur de Gemmes I', 'Petite chance de trouver des gemmes en récoltant', 15, 12000, 0, 'gem_chance', 0.05, '💎'),
-('gem_finder_2', 'Chercheur de Gemmes II', 'Chance moyenne de trouver des gemmes en récoltant', 25, 50000, 0, 'gem_chance', 0.1, '💍');
+('gem_finder_2', 'Chercheur de Gemmes II', 'Chance moyenne de trouver des gemmes en récoltant', 25, 50000, 25, 'gem_chance', 0.1, '💍');
+
+-- Réajustement du coût de l'auto_harvest pour inclure les gemmes
+UPDATE public.level_upgrades
+SET
+  cost_coins = 500000,
+  cost_gems = 50
+WHERE name = 'auto_harvest';
