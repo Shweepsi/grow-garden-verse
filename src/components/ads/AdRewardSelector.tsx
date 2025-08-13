@@ -81,10 +81,10 @@ export function AdRewardSelector({
           return (
             <Card
               key={index}
-              className={`p-4 cursor-pointer transition-all duration-300 transform-gpu border-2 ${
+              className={`p-4 cursor-pointer transition-all duration-300 border-2 ${
                 isSelected 
-                  ? `bg-gradient-to-r ${selectedGradient} scale-105 shadow-lg` 
-                  : `bg-gradient-to-r ${baseGradient} hover:scale-102 hover:shadow-md`
+                  ? `bg-gradient-to-r ${selectedGradient} shadow-lg` 
+                  : `bg-gradient-to-r ${baseGradient} hover:shadow-md`
               }`}
               onClick={() => onSelectReward(reward)}
             >

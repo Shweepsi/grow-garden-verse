@@ -185,7 +185,7 @@ export function AdModal({
           <AdProgressBar dailyCount={adState.dailyCount} maxDaily={adState.maxDaily} onToggleDiagnostics={toggleDiagnostics} />
         </DialogHeader>
 
-        <div className="space-y-6 overflow-y-auto pr-1 flex-1">
+        <div className="space-y-6 overflow-y-auto overflow-x-hidden pr-1 flex-1">
           {/* Panel de diagnostics */}
           {showDiagnostics && <AdDiagnosticsPanel debugInfo={debugInfo} onTestConnectivity={runConnectivityTest} />}
 

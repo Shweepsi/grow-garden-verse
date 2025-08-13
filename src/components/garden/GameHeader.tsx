@@ -215,7 +215,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
                 
                 <TooltipProvider>
                   <div className="flex flex-wrap gap-1.5">
-                    {boosts.slice(0, 2).map((boost) => (
+                    {boosts.slice(0, 3).map((boost) => (
                       <Tooltip key={boost.id}>
                         <TooltipTrigger asChild>
                           <div className="flex items-center space-x-1.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 px-2.5 py-1.5 rounded-lg cursor-help hover:from-orange-100 hover:to-amber-100 hover:border-orange-300 transition-all duration-200 min-w-0 flex-1">
@@ -229,7 +229,8 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
                               </span>
                             </div>
                           </div>
-                        </TooltipTrigger>
+                        </TooltipTrigger
+                        >
                          <TooltipContent>
                            <div className="text-center">
                              <p className="font-semibold">{getBoostLabel(boost.effect_type, boost.effect_value)}</p>
@@ -240,19 +241,19 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
                         </TooltipContent>
                       </Tooltip>
                     ))}
-                    {boosts.length > 2 && (
+                    {boosts.length > 3 && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="flex items-center justify-center bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 px-2.5 py-1.5 rounded-lg cursor-help hover:from-gray-100 hover:to-slate-100 hover:border-gray-300 transition-all duration-200 min-w-[60px]">
                             <span className="mobile-text-xs font-semibold text-gray-700">
-                              +{boosts.length - 2}
+                              +{boosts.length - 3}
                             </span>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
                           <div className="space-y-2 max-w-48">
                             <p className="font-semibold text-center">Autres boosts actifs</p>
-                            {boosts.slice(2).map((boost) => (
+                            {boosts.slice(3).map((boost) => (
                               <div key={boost.id} className="flex items-center justify-between text-xs border-b border-gray-100 pb-1 last:border-b-0">
                                 <div className="flex items-center space-x-1">
                                   <span>{getBoostIcon(boost.effect_type)}</span>

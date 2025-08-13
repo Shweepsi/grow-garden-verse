@@ -55,7 +55,7 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
           <span className="text-xs font-medium text-orange-700">Boosts actifs:</span>
         </div>
         <div className="flex gap-1">
-          {boosts.slice(0, 2).map((boost) => (
+          {boosts.slice(0, 3).map((boost) => (
             <TooltipProvider key={boost.id}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -78,9 +78,9 @@ export function BoostStatusIndicator({ showInline = false, className = '' }: Boo
               </Tooltip>
             </TooltipProvider>
           ))}
-          {boosts.length > 2 && (
+          {boosts.length > 3 && (
             <Badge variant="outline" className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700">
-              +{boosts.length - 2}
+              +{boosts.length - 3}
             </Badge>
           )}
         </div>
