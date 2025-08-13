@@ -76,10 +76,17 @@ export const ProfilePage = () => {
 
         {/* Section Paramètres & Compte */}
         <div className="space-y-4">
-          <Button onClick={() => setShowSettingsModal(true)} variant="outline" className="w-full">
-            <Settings className="h-4 w-4 mr-2" />
-            Paramètres
-          </Button>
+          <div className="glassmorphism rounded-xl p-4 shadow-lg">
+            <div className="space-y-3">
+              <div>
+                <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Paramètres</h3>
+              </div>
+              <Button onClick={() => setShowSettingsModal(true)} variant="outline" size="lg" className="w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target border-0">
+                <Settings className="h-4 w-4 mr-2" />
+                Ouvrir les Paramètres
+              </Button>
+            </div>
+          </div>
 
           {/* Carte de déconnexion */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
