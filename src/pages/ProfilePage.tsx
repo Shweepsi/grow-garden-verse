@@ -1,8 +1,7 @@
 import { GameHeader } from '@/components/garden/GameHeader';
-import { PlayerStats } from '@/components/garden/PlayerStats';
 import { PrestigeSystem } from '@/components/garden/PrestigeSystem';
 import { LadderModal } from '@/components/garden/LadderModal';
-import { FontSizeSelector } from '@/components/accessibility/FontSizeSelector';
+import { SettingsModal } from '@/components/settings/SettingsModal';
 import { useRefactoredGame } from '@/hooks/useRefactoredGame';
 import { useAuth } from '@/hooks/useAuth';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
@@ -22,10 +21,17 @@ export const ProfilePage = () => {
   } = useAuth();
   const queryClient = useQueryClient();
   const [showLadder, setShowLadder] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Gestion du bouton retour Android
   useAndroidBackButton(true, () => {
-    navigate('/garden');
+    if (showLadder) {
+      setShowLadder(false);
+    } else if (showSettingsModal) {
+      setShowSettingsModal(false);
+    } else {
+      navigate('/garden');
+    }
   });
   const handlePrestige = () => {
     // Invalider les queries pour rafraîchir les données
@@ -67,24 +73,19 @@ export const ProfilePage = () => {
           </div>
           {/* Système de Prestige */}
           {gameState.garden && <PrestigeSystem garden={gameState.garden} onPrestige={handlePrestige} />}
-          {/* Carte des classements déplacée ci-dessus */}
-        
-        {/* Section Paramètres */}
-        <div className="space-y-4">
-          <h2 className="mobile-text-lg font-bold text-green-700 flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Paramètres
-          </h2>
 
-          {/* Sélecteur de taille de police */}
-          <FontSizeSelector />
+        {/* Section Paramètres & Compte */}
+        <div className="space-y-4">
+          <Button onClick={() => setShowSettingsModal(true)} variant="outline" className="w-full">
+            <Settings className="h-4 w-4 mr-2" />
+            Paramètres
+          </Button>
 
           {/* Carte de déconnexion */}
           <div className="glassmorphism rounded-xl p-4 shadow-lg">
             <div className="space-y-3">
               <div>
                 <h3 className="mobile-text-base font-semibold text-gray-800 mb-1">Compte</h3>
-                
               </div>
               
               <Button onClick={signOut} variant="destructive" size="lg" className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 touch-target">
@@ -117,5 +118,6 @@ export const ProfilePage = () => {
 
       {/* Modale des classements */}
       <LadderModal isOpen={showLadder} onClose={() => setShowLadder(false)} />
+      <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
     </div>;
 };
