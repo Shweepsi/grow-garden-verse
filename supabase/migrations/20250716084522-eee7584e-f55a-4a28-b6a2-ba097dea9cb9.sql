@@ -22,4 +22,4 @@ INSERT INTO public.level_upgrades (
   ('robot_level_7', 'Robot Niveau 7', 'Débloque la pastèque pour le robot passif', 25, 40000, 0, 'robot_level', 7, '🤖'),
   ('robot_level_8', 'Robot Niveau 8', 'Débloque la pomme pour le robot passif', 30, 80000, 0, 'robot_level', 8, '🤖'),
   ('robot_level_9', 'Robot Niveau 9', 'Débloque le raisin pour le robot passif', 35, 150000, 0, 'robot_level', 9, '🤖'),
-  ('robot_level_10', 'Robot Niveau 10', 'Débloque la fraise pour le robot passif', 40, 300000, 30, 'robot_level', 10, '🤖');
+  ('robot_level_10', 'Robot Niveau 10', 'Débloque la fraise pour le robot passif', 40, 300000, 0, 'robot_level', 10, '🤖');
