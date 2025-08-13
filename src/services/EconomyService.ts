@@ -9,8 +9,8 @@ export class EconomyService {
   // Système de coût progressif équilibré
   static getPlantDirectCost(plantLevel: number): number {
     if (!plantLevel || plantLevel < 1) return INITIAL_COINS;
-    // Progression douce : 100 * 1.5^(niveau-1)
-    return Math.floor(100 * Math.pow(1.5, plantLevel - 1));
+    // Progression adoucie : 100 * 1.42^(niveau-1) pour éviter un mur de progression
+    return Math.floor(100 * Math.pow(1.42, plantLevel - 1));
   }
 
   // Vérifier si l'achat d'une plante est possible (sans restriction)
@@ -98,7 +98,7 @@ export class EconomyService {
     
     // Progression exponentielle douce : plus le niveau est élevé, plus c'est rentable
     const baseIncome = 50; // Revenu de base par minute
-    const levelMultiplier = Math.pow(plantLevel, 1.5); // Progression exponentielle douce
+    const levelMultiplier = Math.pow(plantLevel, 1.6); // Progression exponentielle douce, buffée
     
     const result = Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
     
