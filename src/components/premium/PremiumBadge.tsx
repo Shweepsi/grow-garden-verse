@@ -17,13 +17,9 @@ export const PremiumBadge = ({ variant = 'default', className = '' }: PremiumBad
 
   if (variant === 'leaderboard') {
     return (
-      <Badge 
-        variant="secondary" 
-        className={`bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-600 border-yellow-500/30 text-xs ${className}`}
-      >
-        <Crown className="h-3 w-3 mr-1" />
-        PREMIUM
-      </Badge>
+      <div className={`inline-flex items-center gap-1 ${className}`}>
+        <Crown className="h-4 w-4 text-yellow-500" />
+      </div>
     );
   }
 

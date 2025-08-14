@@ -256,7 +256,7 @@ export const UpgradesPage = () => {
                         Niveau Maximum Atteint!
                       </h3>
                       <p className="text-green-600 text-xs">
-                        Toutes les améliorations de cette catégorie sont débloquées
+                        Vous avez débloqué toutes les améliorations de cette catégorie.
                       </p>
                     </div>)}
                 </CardContent>

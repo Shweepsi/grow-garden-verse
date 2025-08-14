@@ -73,7 +73,7 @@ export const LadderModal = ({
     nextPlayerValue?: number;
   }) => {
     const difference = nextPlayerValue ? nextPlayerValue - value : 0;
-    return <Card className={`transition-all duration-200 hover:shadow-md ${rank <= 3 ? 'ring-2 ring-opacity-50' : ''} ${rank === 1 ? 'ring-yellow-400 bg-gradient-to-r from-yellow-50 to-yellow-100' : rank === 2 ? 'ring-gray-400 bg-gradient-to-r from-gray-50 to-gray-100' : rank === 3 ? 'ring-amber-400 bg-gradient-to-r from-amber-50 to-amber-100' : 'bg-white'}`}>
+    return <Card className={`transition-all duration-200 hover:shadow-md ${rank <= 3 ? 'ring-2 ring-opacity-50 m-1' : ''} ${rank === 1 ? 'ring-yellow-400 bg-gradient-to-r from-yellow-50 to-yellow-100' : rank === 2 ? 'ring-gray-400 bg-gradient-to-r from-gray-50 to-gray-100' : rank === 3 ? 'ring-amber-400 bg-gradient-to-r from-amber-50 to-amber-100' : 'bg-white'}`}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -128,8 +128,8 @@ export const LadderModal = ({
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Crown className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-green-800">Votre position</span>
+              {rank.premium_status && <PremiumBadge variant="leaderboard" />}
             </div>
             <Badge className="bg-green-600 text-white">
               #{rank.rank}

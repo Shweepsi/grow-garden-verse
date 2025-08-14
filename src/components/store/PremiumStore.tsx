@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Gem, ShoppingCart, Sparkles, Zap } from 'lucide-react';
+import { Gem, ShoppingCart, Sparkles, Zap, Crown } from 'lucide-react';
 import { useStripePayment } from '@/hooks/useStripePayment';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -101,7 +101,7 @@ export const PremiumStore = () => {
             <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
               <Gem className="h-5 w-5 text-purple-400" />
               <div className="flex-1">
-                <div className="font-medium">100 Gemmes Premium</div>
+                <div className="font-medium">100 Gemmes</div>
                 <div className="text-sm text-muted-foreground">
                   Monnaie premium pour débloquer des améliorations
                 </div>
@@ -119,11 +119,11 @@ export const PremiumStore = () => {
             </div>
             
             <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
-              <Sparkles className="h-5 w-5 text-pink-400" />
+              <Crown className="h-5 w-5 text-yellow-400" />
               <div className="flex-1">
                 <div className="font-medium">Badge Premium</div>
                 <div className="text-sm text-muted-foreground">
-                  Badge spécial visible dans le profil et classement
+                  Badge spécial visible dans le classement
                 </div>
               </div>
             </div>
