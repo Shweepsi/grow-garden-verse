@@ -128,8 +128,8 @@ export const LadderModal = ({
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Crown className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-green-800">Votre position</span>
+              {rank.premium_status && <PremiumBadge variant="leaderboard" />}
             </div>
             <Badge className="bg-green-600 text-white">
               #{rank.rank}
