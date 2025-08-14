@@ -166,7 +166,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
                     <li>Parcelles → seule la première reste débloquée</li>
                   </ul>
                   <div className="font-semibold mt-2 text-green-700">
-                    ✓ Vous gardez : multiplicateur permanent X{nextMultiplier}
+                    ✓ Vous gardez : votre nouveau multiplicateur permanent.
                   </div>
                 </div>
               </div>
@@ -182,7 +182,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
               {isProcessing ? 'Prestige en cours...' : canPrestige ? (
                 <>
                   <Crown className="h-4 w-4 mr-2" />
-                  Effectuer le Prestige (X{nextMultiplier})
+                  Effectuer le Prestige
                 </>
               ) : 'Fonds insuffisants'}
             </Button>
@@ -191,12 +191,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
           <div className="text-center space-y-3">
             <div className="text-lg font-bold text-purple-700">🏆 Prestige Maximum Atteint !</div>
             <div className="text-purple-600">
-              Vous avez atteint le niveau de prestige maximum avec un multiplicateur permanent de X{garden.permanent_multiplier || 1}.
-            </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-              <div className="text-sm text-purple-800">
-                Félicitations ! Vous pouvez maintenant profiter pleinement de votre jardin avec le multiplicateur maximum.
-              </div>
+              Félicitations ! Vous avez atteint le niveau de prestige maximum et profitez maintenant d'un multiplicateur permanent de X{garden.permanent_multiplier || 1}.
             </div>
           </div>
         )}
