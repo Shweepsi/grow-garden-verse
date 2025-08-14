@@ -201,8 +201,12 @@ export const useAdRewards = () => {
         const result = await AdRewardDistributionService.distributeReward(user.id, reward);
         
         if (result.success) {
-          // Mettre à jour le cooldown après la distribution
-          await AdCooldownService.updateAfterAdWatch(user.id);
+          // Incrémenter le compteur quotidien
+          try {
+            await AdCooldownService.updateAfterAdWatch(user.id);
+          } catch (incErr) {
+            console.warn('Incrément ad_count a échoué après attribution:', incErr);
+          }
 
           // Rafraîchir l'état pour refléter les changements
           setTimeout(() => {
