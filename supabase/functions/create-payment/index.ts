@@ -59,11 +59,11 @@ serve(async (req) => {
 
     const successUrl = platform === 'android'
       ? 'idlegrow://payment/success?session_id={CHECKOUT_SESSION_ID}'
-      : 'https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=success&session_id={CHECKOUT_SESSION_ID}';
+      : `${req.headers.get("origin")}/store?payment=success&session_id={CHECKOUT_SESSION_ID}`;
 
     const cancelUrl = platform === 'android'
       ? 'idlegrow://payment/cancelled'
-      : 'https://28164eb9-0f8a-43bd-9b5c-dc8227ba1150.lovableproject.com/store?payment=cancelled';
+      : `${req.headers.get("origin")}/store?payment=cancelled`;
 
     // Créer la session de paiement pour Early Access (100 gemmes - 10€)
     const session = await stripe.checkout.sessions.create({
