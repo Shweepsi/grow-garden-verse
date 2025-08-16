@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Crown, Gift } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AdState } from '@/types/ads';
 
 interface PremiumAdAutoRewardProps {
   onRewardClaimed: (rewardType: string, amount: number) => void;
@@ -13,12 +14,14 @@ interface PremiumAdAutoRewardProps {
     description: string;
     emoji: string;
   }>;
+  adState?: AdState;
 }
 
 export const PremiumAdAutoReward = ({ 
   onRewardClaimed, 
   loading = false, 
-  availableRewards = [] 
+  availableRewards = [],
+  adState
 }: PremiumAdAutoRewardProps) => {
   const { toast } = useToast();
   const [claiming, setClaiming] = useState(false);
@@ -89,12 +92,12 @@ export const PremiumAdAutoReward = ({
             
             <Button
               onClick={() => handleClaimReward(reward.type, reward.amount)}
-              disabled={claiming || loading}
+              disabled={claiming || loading || !adState?.available}
               size="sm"
-              className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+              className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white disabled:opacity-50"
             >
               <Gift className="h-4 w-4 mr-1" />
-              {claiming ? 'Attribution...' : 'Réclamer'}
+              {claiming ? 'Attribution...' : (!adState?.available ? 'Cooldown actif' : 'Réclamer')}
             </Button>
           </div>
         ))}

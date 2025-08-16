@@ -13,7 +13,7 @@ interface PremiumRewardsDialogProps {
 
 export const PremiumRewardsDialog: React.FC<PremiumRewardsDialogProps> = ({ open, onOpenChange, playerLevel }) => {
   const [rewards, setRewards] = useState<Array<{ type: string; amount: number; description: string; emoji: string }>>([]);
-  const { watchAd, loading } = useAdRewards();
+  const { watchAd, loading, adState } = useAdRewards();
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +61,7 @@ export const PremiumRewardsDialog: React.FC<PremiumRewardsDialogProps> = ({ open
           onRewardClaimed={handleClaim}
           loading={loading}
           availableRewards={rewards}
+          adState={adState}
         />
       </DialogContent>
     </Dialog>
