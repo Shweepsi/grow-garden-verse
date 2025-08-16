@@ -55,6 +55,7 @@ export function AdRewardCard() {
               }
             }}
             loading={loading}
+            adState={adState}
           />
         </CardContent>
       </Card>
