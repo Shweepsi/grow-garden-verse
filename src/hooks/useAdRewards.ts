@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
+import { AdRewardDistributionService } from '@/services/ads/AdRewardDistributionService';
 import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
@@ -169,8 +170,8 @@ const refreshAdState = useCallback(async (force = false) => {
     return `Pubs regardées: ${adState.dailyCount}/${adState.maxDaily}`;
   }, [adState, formatTimeUntilNext, isPremium]);
 
-  // Fonction pour regarder une pub avec logique premium
-  const watchAd = async (rewardType: string, rewardAmount: number) => {
+  // Fonction pour réclamer une récompense avec logique premium améliorée
+  const claimAdReward = async (rewardType: string, rewardAmount: number) => {
     if (!user?.id || !mounted.current) return { success: false, error: 'Not authenticated' };
 
     // Vérifier le cooldown même pour les premiums
@@ -188,15 +189,6 @@ const refreshAdState = useCallback(async (force = false) => {
     // Si l'utilisateur est premium, donner les récompenses automatiquement
     if (isPremium) {
       try {
-        // Vérifier la limite quotidienne avant d'attribuer
-        const limitInfo = await AdCooldownService.getCooldownInfo(user.id);
-        if (!limitInfo.available) {
-          return { success: false, error: 'Limite quotidienne atteinte' };
-        }
-
-        // Importer le service de distribution des récompenses
-        const { AdRewardDistributionService } = await import('@/services/ads/AdRewardDistributionService');
-        
         // Créer l'objet reward approprié
         const reward = {
           type: rewardType as any,
@@ -304,7 +296,7 @@ const refreshAdState = useCallback(async (force = false) => {
     refreshAdState,
     formatTimeUntilNext,
     getAdStatusMessage,
-    watchAd,
+    watchAd: claimAdReward, // Nom plus clair pour la fonction
     testConnectivity,
     debug: { 
       adMobState: AdMobService.getState(),

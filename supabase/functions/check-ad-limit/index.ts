@@ -51,6 +51,8 @@ Deno.serve(async (req) => {
       console.error('Error fetching premium status:', gardenError)
     }
 
+    const isPremium = garden?.premium_status || false
+
 
     const today = new Date().toISOString().split('T')[0]
     const MAX_DAILY_ADS = 5
