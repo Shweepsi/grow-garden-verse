@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Crown, Gift } from 'lucide-react';
+import { Crown, Gift, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AdState } from '@/types/ads';
 
@@ -64,20 +64,38 @@ export const PremiumAdAutoReward = ({
   ];
 
   const rewards = availableRewards.length > 0 ? availableRewards : defaultRewards;
+  const isLimitReached = adState && adState.dailyCount >= adState.maxDaily;
 
   return (
     <div className="space-y-4 p-4 border border-primary/20 bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-950/20 dark:to-orange-950/20 rounded-lg">
-      <div className="flex items-center gap-2 mb-3">
-        <Crown className="h-5 w-5 text-yellow-500" />
-        <Badge variant="secondary" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-600 border-yellow-500/30">
-          PREMIUM
-        </Badge>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Crown className="h-5 w-5 text-yellow-500" />
+          <Badge variant="secondary" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-600 border-yellow-500/30">
+            PREMIUM
+          </Badge>
+        </div>
+        {adState && (
+          <div className="text-sm text-muted-foreground">
+            {adState.dailyCount}/{adState.maxDaily} aujourd'hui
+          </div>
+        )}
       </div>
       
       <h3 className="font-semibold text-foreground">Récompenses automatiques</h3>
-      <p className="text-sm text-muted-foreground">
-        En tant qu'utilisateur premium, réclamez vos récompenses instantanément sans publicité !
-      </p>
+      
+      {isLimitReached ? (
+        <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md">
+          <AlertCircle className="h-4 w-4 text-orange-500" />
+          <span className="text-sm text-orange-800 dark:text-orange-200">
+            Limite quotidienne atteinte - Revenez demain !
+          </span>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          En tant qu'utilisateur premium, réclamez vos récompenses instantanément sans publicité !
+        </p>
+      )}
       
       <div className="grid gap-2">
         {rewards.map((reward, index) => (
@@ -92,12 +110,14 @@ export const PremiumAdAutoReward = ({
             
             <Button
               onClick={() => handleClaimReward(reward.type, reward.amount)}
-              disabled={claiming || loading || !adState?.available}
+              disabled={claiming || loading || !adState?.available || isLimitReached}
               size="sm"
               className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white disabled:opacity-50"
             >
               <Gift className="h-4 w-4 mr-1" />
-              {claiming ? 'Attribution...' : (!adState?.available ? 'Cooldown actif' : 'Réclamer')}
+              {claiming ? 'Attribution...' : 
+               isLimitReached ? 'Limite atteinte' :
+               (!adState?.available ? 'Cooldown actif' : 'Réclamer')}
             </Button>
           </div>
         ))}
