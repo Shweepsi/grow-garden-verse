@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
+import { useGameData } from '@/hooks/useGameData';
 import { AdModal } from './AdModal';
 import { PremiumAdAutoReward } from './PremiumAdAutoReward';
+import { AdRewardService } from '@/services/AdRewardService';
+import { AdReward } from '@/types/ads';
 import { Play, Clock, Loader2, Tv, AlertCircle, Crown } from 'lucide-react';
 
 export function AdRewardCard() {
   const { adState, loading, formatTimeUntilNext, getAdStatusMessage, refreshAdState, watchAd } = useAdRewards();
   const { isPremium } = usePremiumStatus();
+  const { data: gameData } = useGameData();
   const [showAdModal, setShowAdModal] = useState(false);
+  const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
 
   const handleOpenModal = async () => {
     await refreshAdState();
@@ -24,6 +29,30 @@ export function AdRewardCard() {
     setShowAdModal(false);
     refreshAdState(); // Actualiser l'état après avoir regardé une pub
   };
+
+  // Charger les récompenses depuis la base de données pour les utilisateurs premium
+  useEffect(() => {
+    let cancelled = false;
+    const loadRewards = async () => {
+      if (!isPremium) return;
+      
+      try {
+        const playerLevel = gameData?.garden?.level || 1;
+        const rewards = await AdRewardService.getAvailableRewards(playerLevel);
+        if (!cancelled) {
+          setAvailableRewards(rewards);
+        }
+      } catch (error) {
+        console.error('Error loading premium rewards:', error);
+        // Fallback silencieux - le composant a des valeurs par défaut
+      }
+    };
+
+    loadRewards();
+    return () => {
+      cancelled = true;
+    };
+  }, [isPremium, gameData?.garden?.level]);
 
   if (loading) {
     return (
@@ -56,6 +85,7 @@ export function AdRewardCard() {
             }}
             loading={loading}
             adState={adState}
+            availableRewards={availableRewards}
           />
         </CardContent>
       </Card>
