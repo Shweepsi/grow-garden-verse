@@ -182,7 +182,12 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
   <Button
     size="sm"
     onClick={() => safeSetShowAdModal(true)}
-    className="h-8 px-2.5 border-0 rounded-md flex items-center bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500"
+    disabled={adState.dailyCount >= adState.maxDaily}
+    className={`h-8 px-2.5 border-0 rounded-md flex items-center transition-all duration-300 ${
+      adState.dailyCount >= adState.maxDaily
+        ? 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400 opacity-50'
+        : 'bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500'
+    }`}
     aria-label="Récompenses premium"
   >
     <Gift className="h-3 w-3 text-white" />
