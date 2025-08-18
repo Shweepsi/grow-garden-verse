@@ -9,6 +9,8 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
+import { useOptimisticGameData } from '@/hooks/useOptimisticGameData';
+import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Zap, Clock } from 'lucide-react';
@@ -20,7 +22,10 @@ interface GameHeaderProps {
   garden: PlayerGarden | null;
 }
 
-export const GameHeader = ({ garden }: GameHeaderProps) => {
+export const GameHeader = ({ garden: originalGarden }: GameHeaderProps) => {
+  // Use optimistic game data for instant updates
+  const { gameData: optimisticData, addOptimisticUpdate } = useOptimisticGameData();
+  const garden = optimisticData?.garden || originalGarden;
   const { animations } = useAnimations();
 const [showAdModal, setShowAdModal] = useState(false);
 
@@ -29,7 +34,7 @@ const { availableRewards, adState } = useAdRewards();
   const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
   const mounted = useRef(true);
 
-  // Track component mount/unmount to prevent state updates after unmount
+// Track component mount/unmount to prevent state updates after unmount
 useEffect(() => {
   mounted.current = true;
   return () => {
@@ -37,6 +42,27 @@ useEffect(() => {
     // Close modals when component unmounts to prevent crashes
     setShowAdModal(false);
     // setShowPremiumDialog(false);
+  };
+}, []);
+
+// Listen for reward claim events for instant visual feedback
+useEffect(() => {
+  const handleRewardClaimed = () => {
+    // Force component re-render for instant feedback
+    if (mounted.current) {
+      // The optimistic data hook will handle the actual display updates
+      console.log('🎉 Header notified of reward claim - will update display');
+    }
+  };
+
+  gameDataEmitter.on('reward-claimed', handleRewardClaimed);
+  gameDataEmitter.on('coins-claimed', handleRewardClaimed);
+  gameDataEmitter.on('gems-claimed', handleRewardClaimed);
+
+  return () => {
+    gameDataEmitter.off('reward-claimed', handleRewardClaimed);
+    gameDataEmitter.off('coins-claimed', handleRewardClaimed);
+    gameDataEmitter.off('gems-claimed', handleRewardClaimed);
   };
 }, []);
 

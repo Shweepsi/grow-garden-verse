@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { AdReward } from "@/types/ads";
+import { gameDataEmitter } from "@/hooks/useGameDataNotifier";
 
 export class AdRewardDistributionService {
   static async distributeReward(userId: string, reward: AdReward): Promise<{ success: boolean; error?: string }> {
@@ -64,6 +65,11 @@ export class AdRewardDistributionService {
       });
 
     console.log(`AdMob: Distributed ${amount} coins to user ${userId}. New total: ${newCoins}`);
+    
+    // Notify for instant UI updates
+    gameDataEmitter.emit('reward-claimed');
+    gameDataEmitter.emit('coins-claimed');
+    
     return { success: true };
   }
 
@@ -90,6 +96,11 @@ export class AdRewardDistributionService {
     }
 
     console.log(`AdMob: Distributed ${amount} gems to user ${userId}. New total: ${newGems}`);
+    
+    // Notify for instant UI updates
+    gameDataEmitter.emit('reward-claimed');
+    gameDataEmitter.emit('gems-claimed');
+    
     return { success: true };
   }
 
@@ -124,6 +135,10 @@ export class AdRewardDistributionService {
       }
 
       console.log(`AdMob: Extended coin boost by ${durationMinutes}min for user ${userId}. New expiry: ${newExpiresAt.toISOString()}`);
+      
+      // Notify for instant UI updates
+      gameDataEmitter.emit('reward-claimed');
+      gameDataEmitter.emit('boost-claimed');
     } else {
       // Créer un nouveau boost
       const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
@@ -143,6 +158,10 @@ export class AdRewardDistributionService {
       }
 
       console.log(`AdMob: Applied coin boost (x${multiplier} for ${durationMinutes}min) to user ${userId}`);
+      
+      // Notify for instant UI updates
+      gameDataEmitter.emit('reward-claimed');
+      gameDataEmitter.emit('boost-claimed');
     }
 
     return { success: true };

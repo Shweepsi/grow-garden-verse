@@ -99,9 +99,9 @@ export const useGameData = () => {
       if (shortestTimeRemaining < 120) return 10000; // 10s pour < 2min restantes
       return 30000; // 30s pour le reste
     },
-    // Optimisation : réactivité accrue
+    // Optimisation : réactivité accrue pour les récompenses
     structuralSharing: true,
-    staleTime: 2000, // 2 secondes pour une réactivité maximale
+    staleTime: 500, // 500ms pour une réactivité maximale après récompenses
     // Garder les données en cache plus longtemps
     gcTime: 300000, // 5 minutes
   });
