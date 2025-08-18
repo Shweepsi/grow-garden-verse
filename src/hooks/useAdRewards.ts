@@ -2,8 +2,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
+import { useGameData } from '@/hooks/useGameData';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { AdRewardDistributionService } from '@/services/ads/AdRewardDistributionService';
+import { AdRewardService } from '@/services/AdRewardService';
 import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
@@ -11,6 +13,7 @@ import { Capacitor } from '@capacitor/core';
 export const useAdRewards = () => {
   const { user } = useAuth();
   const { isPremium } = usePremiumStatus();
+  const { data: gameData } = useGameData();
   const mounted = useRef(true);
   const [adState, setAdState] = useState<AdState>({
     available: false,
@@ -189,13 +192,23 @@ const refreshAdState = useCallback(async (force = false) => {
     // Si l'utilisateur est premium, donner les récompenses automatiquement
     if (isPremium) {
       try {
-        // Créer l'objet reward approprié
+        // Récupérer la configuration complète de la base de données pour obtenir la durée
+        const playerLevel = gameData?.garden?.level || 1;
+        const availableRewards = await AdRewardService.getAvailableRewards(playerLevel);
+        const configuredReward = availableRewards.find(r => r.type === rewardType);
+        
+        console.log(`AdMob Premium: Creating reward for type ${rewardType} at level ${playerLevel}, found config:`, configuredReward);
+        
+        // Créer l'objet reward avec la durée de la configuration
         const reward = {
           type: rewardType as any,
           amount: rewardAmount,
+          duration: configuredReward?.duration, // Inclure la durée de la configuration
           description: `Récompense premium automatique`,
           emoji: '👑'
         };
+        
+        console.log('AdMob Premium: Final reward object:', reward);
         
         // Distribuer la récompense
         const result = await AdRewardDistributionService.distributeReward(user.id, reward);

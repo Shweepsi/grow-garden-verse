@@ -108,7 +108,8 @@ export class AdRewardService {
           type: 'coins' as const,
           amount: 1000 + (800 * (playerLevel - 1)),
           description: `${1000 + (800 * (playerLevel - 1))} pièces`,
-          emoji: '🪙'
+          emoji: '🪙',
+          duration: undefined // Pas de durée pour les coins
         }
       ];
       

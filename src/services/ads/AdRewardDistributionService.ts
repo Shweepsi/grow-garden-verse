@@ -22,8 +22,9 @@ export class AdRewardDistributionService {
           return await this.distributeGemBoost(userId, reward.amount, reward.duration || 30);
         
         case 'growth_speed':
-          console.log(`AdMob: Growth speed reward - duration: ${reward.duration}, using: ${reward.duration || 60}`);
-          return await this.distributeGrowthBoost(userId, reward.amount, reward.duration || 60);
+          const effectiveDuration = reward.duration || 60;
+          console.log(`AdMob: Growth speed reward - original duration: ${reward.duration}, effective duration: ${effectiveDuration}`);
+          return await this.distributeGrowthBoost(userId, reward.amount, effectiveDuration);
         
         default:
           return { success: false, error: `Type de récompense non supporté: ${reward.type}` };
