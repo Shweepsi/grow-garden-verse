@@ -3,9 +3,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { useGameData } from '@/hooks/useGameData';
+import { toast } from 'sonner';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
 import { AdRewardDistributionService } from '@/services/ads/AdRewardDistributionService';
 import { AdRewardService } from '@/services/AdRewardService';
+import { PremiumRewardService } from '@/services/ads/PremiumRewardService';
 import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
@@ -189,29 +191,37 @@ const refreshAdState = useCallback(async (force = false) => {
       };
     }
 
-    // Si l'utilisateur est premium, donner les récompenses automatiquement
+    // Si l'utilisateur est premium, utiliser le service sécurisé
     if (isPremium) {
       try {
+        // Vérifier les limites de sécurité premium
+        const limitsCheck = await PremiumRewardService.checkPremiumRewardLimits(user.id);
+        if (!limitsCheck.allowed) {
+          console.warn('Premium reward limits exceeded:', limitsCheck.error);
+          toast.error(limitsCheck.error || 'Limite de récompenses premium atteinte');
+          return { success: false, error: limitsCheck.error || 'Limite de récompenses premium atteinte' };
+        }
+
         // Récupérer la configuration complète de la base de données pour obtenir la durée
         const playerLevel = gameData?.garden?.level || 1;
         const availableRewards = await AdRewardService.getAvailableRewards(playerLevel);
         const configuredReward = availableRewards.find(r => r.type === rewardType);
         
-        console.log(`AdMob Premium: Creating reward for type ${rewardType} at level ${playerLevel}, found config:`, configuredReward);
+        console.log(`Premium: Creating reward for type ${rewardType} at level ${playerLevel}, found config:`, configuredReward);
         
         // Créer l'objet reward avec la durée de la configuration
         const reward = {
           type: rewardType as any,
           amount: rewardAmount,
-          duration: configuredReward?.duration, // Inclure la durée de la configuration
+          duration: configuredReward?.duration,
           description: `Récompense premium automatique`,
           emoji: '👑'
         };
         
-        console.log('AdMob Premium: Final reward object:', reward);
+        console.log('Premium: Final reward object:', reward);
         
-        // Distribuer la récompense
-        const result = await AdRewardDistributionService.distributeReward(user.id, reward);
+        // Utiliser le service premium sécurisé qui inclut validation et audit
+        const result = await PremiumRewardService.distributePremiumReward(user.id, reward);
         
         if (result.success) {
           // Incrémenter le compteur quotidien
