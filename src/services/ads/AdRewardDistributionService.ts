@@ -5,7 +5,8 @@ import { gameDataEmitter } from "@/hooks/useGameDataNotifier";
 export class AdRewardDistributionService {
   static async distributeReward(userId: string, reward: AdReward): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log(`AdMob: Distributing reward - Type: ${reward.type}, Amount: ${reward.amount}, User: ${userId}`);
+      console.log(`AdMob: Distributing reward - Type: ${reward.type}, Amount: ${reward.amount}, Duration: ${reward.duration}, User: ${userId}`);
+      console.log('AdMob: Full reward object:', reward);
       
       switch (reward.type) {
         case 'coins':
@@ -21,7 +22,8 @@ export class AdRewardDistributionService {
           return await this.distributeGemBoost(userId, reward.amount, reward.duration || 30);
         
         case 'growth_speed':
-          return await this.distributeGrowthBoost(userId, reward.amount, reward.duration || 30);
+          console.log(`AdMob: Growth speed reward - duration: ${reward.duration}, using: ${reward.duration || 60}`);
+          return await this.distributeGrowthBoost(userId, reward.amount, reward.duration || 60);
         
         default:
           return { success: false, error: `Type de récompense non supporté: ${reward.type}` };
