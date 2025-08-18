@@ -159,7 +159,7 @@ export class PremiumRewardService {
       if (error) throw error;
 
       const todayCount = data?.length || 0;
-      const maxDailyPremiumRewards = 100; // Reasonable limit
+      const maxDailyPremiumRewards = 5; // Même limite que les publicités normales
 
       if (todayCount >= maxDailyPremiumRewards) {
         return { 
