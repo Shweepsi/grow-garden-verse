@@ -11,6 +11,7 @@ import { PremiumRewardService } from '@/services/ads/PremiumRewardService';
 import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
+import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
 
 export const useAdRewards = () => {
   const { user } = useAuth();
@@ -237,6 +238,11 @@ const refreshAdState = useCallback(async (force = false) => {
               refreshAdState(true);
             }
           }, 100);
+
+          // Notifier explicitement le header pour rafraîchissement
+          gameDataEmitter.emit('reward-claimed');
+          gameDataEmitter.emit('coins-claimed');
+          gameDataEmitter.emit('gems-claimed');
           
           return { 
             success: true, 
@@ -275,6 +281,11 @@ const refreshAdState = useCallback(async (force = false) => {
             refreshAdState(true); // Force le rafraîchissement après succès
           }
         }, 100);
+
+        // Notifier explicitement le header pour rafraîchissement
+        gameDataEmitter.emit('reward-claimed');
+        gameDataEmitter.emit('coins-claimed');
+        gameDataEmitter.emit('gems-claimed');
         return { success: true };
       } else {
         console.error('AdMob: Ad watch failed:', result.error);
