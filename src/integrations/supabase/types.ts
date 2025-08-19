@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -587,14 +587,14 @@ export type Database = {
     }
     Functions: {
       calculate_ad_reward: {
-        Args: { reward_type_param: string; player_level_param: number }
+        Args: { player_level_param: number; reward_type_param: string }
         Returns: {
-          reward_type: string
-          display_name: string
-          description: string
-          emoji: string
           calculated_amount: number
+          description: string
+          display_name: string
           duration_minutes: number
+          emoji: string
+          reward_type: string
         }[]
       }
       cleanup_expired_effects: {
@@ -604,10 +604,10 @@ export type Database = {
       get_active_effects: {
         Args: { p_user_id: string }
         Returns: {
-          id: string
           effect_type: string
           effect_value: number
           expires_at: string
+          id: string
           source: string
         }[]
       }
@@ -637,27 +637,27 @@ export type Database = {
       }
       harvest_plant_transaction: {
         Args: {
-          p_user_id: string
-          p_plot_number: number
           p_new_coins: number
-          p_new_gems: number
           p_new_exp: number
-          p_new_level: number
+          p_new_gems: number
           p_new_harvests: number
+          p_new_level: number
+          p_plot_number: number
+          p_user_id: string
         }
         Returns: undefined
       }
       increment_ad_count_atomic: {
         Args: {
-          p_user_id: string
-          p_today: string
-          p_now: string
           p_max_ads?: number
+          p_now: string
+          p_today: string
+          p_user_id: string
         }
         Returns: Json
       }
       validate_robot_plant_level: {
-        Args: { p_robot_level: number; p_plant_type_id: string }
+        Args: { p_plant_type_id: string; p_robot_level: number }
         Returns: boolean
       }
     }
