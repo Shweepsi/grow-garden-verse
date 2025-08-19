@@ -11,7 +11,7 @@ import { useEffect, useRef } from 'react';
 export const usePassiveIncomeRobot = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { getCompleteMultipliers } = useGameMultipliers();
+  const { getPermanentMultipliersOnly } = useGameMultipliers();
   const { data: gameData } = useGameData();
   const { triggerCoinAnimation } = useAnimations();
   const accumulationIntervalRef = useRef<number | null>(null);
@@ -102,7 +102,8 @@ export const usePassiveIncomeRobot = () => {
   const getCoinsPerMinute = () => {
     if (!hasPassiveRobot || !robotPlantType) return 0;
     
-    const multipliers = getCompleteMultipliers();
+    // Utiliser uniquement les multiplicateurs permanents pour le robot
+    const multipliers = getPermanentMultipliersOnly();
     const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
     
     return EconomyService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier);

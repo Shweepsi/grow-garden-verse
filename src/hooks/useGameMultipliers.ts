@@ -21,6 +21,24 @@ export const useGameMultipliers = () => {
   const { getBoostMultiplier, boosts } = useActiveBoosts();
   const { applyCoinsBoost, applyGemsBoost } = useGameEconomy();
 
+  /**
+   * Retourne uniquement les multiplicateurs permanents (sans boosts temporaires)
+   * Utilisé par le robot passif pour éviter qu'il soit affecté par les boosts temporaires
+   */
+  const getPermanentMultipliersOnly = (): GameMultipliers => {
+    const permanentMultipliers = getActiveMultipliers();
+    
+    return {
+      harvest: permanentMultipliers.harvest,
+      growth: permanentMultipliers.growth,
+      exp: permanentMultipliers.exp,
+      plantCostReduction: permanentMultipliers.plantCostReduction,
+      gemChance: permanentMultipliers.gemChance,
+      coins: 1, // Pas de boost temporaire pour le robot
+      gems: 1   // Pas de boost temporaire pour le robot
+    };
+  };
+
   const getCompleteMultipliers = (): GameMultipliers => {
     // Récupérer les multiplicateurs permanents des améliorations
     const permanentMultipliers = getActiveMultipliers();
@@ -100,6 +118,7 @@ export const useGameMultipliers = () => {
 
   return {
     getCompleteMultipliers,
+    getPermanentMultipliersOnly,
     applyAllBoosts,
     // New unified helper so that external code (growth timers, etc.) can use
     // the same source of truth for multipliers.
