@@ -78,7 +78,7 @@ export const useActiveBoosts = () => {
     return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
   }
 
-  const formatTimeRemaining = (seconds: number): string => {
+  const formatTimeRemaining = (seconds: number, showSeconds: boolean = true): string => {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
     const secs = seconds % 60
@@ -86,9 +86,9 @@ export const useActiveBoosts = () => {
     if (hours > 0) {
       return `${hours}h ${minutes}m`
     } else if (minutes > 0) {
-      return `${minutes}m ${secs}s`
+      return showSeconds ? `${minutes}m ${secs}s` : `${minutes}m`
     } else {
-      return `${secs}s`
+      return showSeconds ? `${secs}s` : '<1m'
     }
   }
 

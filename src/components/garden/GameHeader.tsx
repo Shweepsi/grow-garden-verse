@@ -257,7 +257,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
                                 {getBoostLabel(boost.effect_type, boost.effect_value)}
                               </span>
                               <span className="mobile-text-xs text-orange-600">
-                                {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                                {formatTimeRemaining(getTimeRemaining(boost.expires_at), false)}
                               </span>
                             </div>
                           </div>
@@ -266,9 +266,9 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
                          <TooltipContent>
                            <div className="text-center">
                              <p className="font-semibold">{getBoostLabel(boost.effect_type, boost.effect_value)}</p>
-                             <p className="text-xs text-muted-foreground">
-                              {formatTimeRemaining(getTimeRemaining(boost.expires_at))} restant
-                            </p>
+                              <p className="text-xs text-muted-foreground">
+                               {formatTimeRemaining(getTimeRemaining(boost.expires_at), false)} restant
+                             </p>
                           </div>
                         </TooltipContent>
                       </Tooltip>
@@ -292,7 +292,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
                                   <span className="font-medium">{getBoostLabel(boost.effect_type, boost.effect_value)}</span>
                                 </div>
                                 <span className="text-muted-foreground">
-                                  {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                                  {formatTimeRemaining(getTimeRemaining(boost.expires_at), false)}
                                 </span>
                               </div>
                             ))}
