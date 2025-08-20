@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { useGameData } from '@/hooks/useGameData';
@@ -17,6 +18,7 @@ export const useAdRewards = () => {
   const { user } = useAuth();
   const { isPremium } = usePremiumStatus();
   const { data: gameData } = useGameData();
+  const queryClient = useQueryClient();
   const mounted = useRef(true);
   const [adState, setAdState] = useState<AdState>({
     available: false,
@@ -232,17 +234,13 @@ const refreshAdState = useCallback(async (force = false) => {
             console.warn('Incrément ad_count a échoué après attribution:', incErr);
           }
 
-          // Rafraîchir l'état pour refléter les changements (plus rapide)
-          setTimeout(() => {
-            if (mounted.current) {
-              refreshAdState(true);
-            }
-          }, 100);
+          // PHASE 1: Rafraîchissement immédiat sans délai + invalidation de cache
+          refreshAdState(true);
+          queryClient.invalidateQueries({ queryKey: ['gameData'] });
 
-          // Notifier explicitement le header pour rafraîchissement
-          gameDataEmitter.emit('reward-claimed');
-          gameDataEmitter.emit('coins-claimed');
-          gameDataEmitter.emit('gems-claimed');
+          // PHASE 1: Notifier avec payload pour optimistic updates
+          gameDataEmitter.emit('reward-claimed', { type: rewardType, amount: rewardAmount });
+          gameDataEmitter.emit(`${rewardType}-claimed`, { amount: rewardAmount });
           
           return { 
             success: true, 
@@ -275,17 +273,13 @@ const refreshAdState = useCallback(async (force = false) => {
       const result = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
       
       if (result.success && mounted.current) {
-        // Rafraîchir immédiatement avec un délai court pour permettre la propagation (plus rapide)
-        setTimeout(() => {
-          if (mounted.current) {
-            refreshAdState(true); // Force le rafraîchissement après succès
-          }
-        }, 100);
+        // PHASE 1: Rafraîchissement immédiat sans délai + invalidation de cache
+        refreshAdState(true);
+        queryClient.invalidateQueries({ queryKey: ['gameData'] });
 
-        // Notifier explicitement le header pour rafraîchissement
-        gameDataEmitter.emit('reward-claimed');
-        gameDataEmitter.emit('coins-claimed');
-        gameDataEmitter.emit('gems-claimed');
+        // PHASE 1: Notifier avec payload pour optimistic updates
+        gameDataEmitter.emit('reward-claimed', { type: rewardType, amount: rewardAmount });
+        gameDataEmitter.emit(`${rewardType}-claimed`, { amount: rewardAmount });
         return { success: true };
       } else {
         console.error('AdMob: Ad watch failed:', result.error);

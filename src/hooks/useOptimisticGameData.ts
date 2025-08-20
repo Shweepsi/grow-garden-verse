@@ -39,10 +39,10 @@ export const useOptimisticGameData = () => {
 
     setOptimisticUpdates(prev => [...prev, update]);
 
-    // Remove optimistic update after 5 seconds (should be replaced by real data by then)
+    // PHASE 1: Extend optimistic updates to 10 seconds for better persistence
     setTimeout(() => {
       setOptimisticUpdates(prev => prev.filter(u => u.id !== update.id));
-    }, 5000);
+    }, 10000);
   }, []);
 
   // Clear all optimistic updates when real data arrives
@@ -55,11 +55,16 @@ export const useOptimisticGameData = () => {
     }
   }, [gameData?.garden?.coins, gameData?.garden?.gems]);
 
-  // Listen for reward claimed events to add optimistic updates
+  // PHASE 1: Listen for reward claimed events with payload to add optimistic updates
   useEffect(() => {
-    const handleRewardClaimed = () => {
+    const handleRewardClaimed = (payload?: { type: string; amount: number }) => {
+      if (payload && payload.amount && (payload.type === 'coins' || payload.type === 'gems')) {
+        // Add immediate optimistic update with exact amount
+        console.log(`🚀 PHASE 1: Adding optimistic update for ${payload.type}: +${payload.amount}`);
+        addOptimisticUpdate(payload.type as 'coins' | 'gems', payload.amount);
+      }
+      
       // Clear old optimistic updates when reward is claimed
-      // The specific amounts will be added by the component that knows the reward details
       setOptimisticUpdates(prev => 
         prev.filter(update => Date.now() - update.timestamp < 1000)
       );
@@ -70,7 +75,7 @@ export const useOptimisticGameData = () => {
     return () => {
       gameDataEmitter.off('reward-claimed', handleRewardClaimed);
     };
-  }, []);
+  }, [addOptimisticUpdate]);
 
   return {
     gameData: optimisticGameData,

@@ -93,15 +93,15 @@ export const useGameData = () => {
         }).filter(time => time !== Infinity)
       );
       
-      // Intervalles adaptatifs mais moins agressifs
+      // PHASE 1: Ultra-reactive intervals with 1s maximum for premium rewards
       if (shortestTimeRemaining < 5) return 1000;    // 1s pour < 5s restantes
-      if (shortestTimeRemaining < 30) return 3000;   // 3s pour < 30s restantes  
-      if (shortestTimeRemaining < 120) return 10000; // 10s pour < 2min restantes
-      return 30000; // 30s pour le reste
+      if (shortestTimeRemaining < 30) return 1000;   // 1s pour < 30s restantes (ultra-réactif)
+      if (shortestTimeRemaining < 120) return 1000;  // 1s pour < 2min restantes (ultra-réactif)
+      return 3000; // 3s pour le reste (réduit de 30s à 3s)
     },
-    // Optimisation : réactivité accrue pour les récompenses
+    // PHASE 1: Ultra-reactive for rewards with dynamic stale time
     structuralSharing: true,
-    staleTime: 500, // 500ms pour une réactivité maximale après récompenses
+    staleTime: 0, // 0ms pour une réactivité instantanée après récompenses
     // Garder les données en cache plus longtemps
     gcTime: 300000, // 5 minutes
   });
