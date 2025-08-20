@@ -93,7 +93,8 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
 
   // Mémoisé pour stabiliser l'état du bouton
   const adButtonState = useMemo(() => {
-    const shouldAnimate = adState.dailyCount < adState.maxDaily && adState.available;
+    const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
+    const shouldAnimate = !dailyLimitReached;
     return {
       shouldAnimate,
       className: `h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
@@ -102,7 +103,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
           : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
       }`
     };
-  }, [adState.dailyCount, adState.maxDaily, adState.available]);
+  }, [adState.dailyCount, adState.maxDaily]);
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
