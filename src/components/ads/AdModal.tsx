@@ -5,7 +5,6 @@ import { Play } from 'lucide-react';
 import { AdMobService } from '@/services/AdMobService';
 import { AdRewardService } from '@/services/AdRewardService';
 import { AdProgressBar } from './AdProgressBar';
-import { AdDiagnosticsPanel } from './AdDiagnosticsPanel';
 import { AdRewardSelector } from './AdRewardSelector';
 import { AdWatchButton } from './AdWatchButton';
 import { AdValidationProgress } from './AdValidationProgress';
@@ -14,7 +13,7 @@ import { AdCacheService } from '@/services/ads/AdCacheService';
 import { useGameData } from '@/hooks/useGameData';
 import { useAdRewards } from '@/hooks/useAdRewards';
 import { useAdWatcher } from '@/hooks/useAdWatcher';
-import { useAdDiagnostics } from '@/hooks/useAdDiagnostics';
+
 import { useAdModalState } from '@/hooks/useAdModalState';
 import { useToast } from '@/hooks/use-toast';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
@@ -44,12 +43,6 @@ export function AdModal({
     watchState,
     watchAd: watchAdStandard
   } = useAdWatcher();
-  const {
-    showDiagnostics,
-    toggleDiagnostics,
-    runConnectivityTest,
-    debugInfo
-  } = useAdDiagnostics();
   const {
     selectedReward,
     availableRewards,
@@ -182,13 +175,10 @@ export function AdModal({
             
           </DialogTitle>
           
-          <AdProgressBar dailyCount={adState.dailyCount} maxDaily={adState.maxDaily} onToggleDiagnostics={toggleDiagnostics} />
+          <AdProgressBar dailyCount={adState.dailyCount} maxDaily={adState.maxDaily} />
         </DialogHeader>
 
         <div className="space-y-6 overflow-y-auto overflow-x-hidden pr-1 flex-1">
-          {/* Panel de diagnostics */}
-          {showDiagnostics && <AdDiagnosticsPanel debugInfo={debugInfo} onTestConnectivity={runConnectivityTest} />}
-
           {/* Sélecteur de récompenses */}
           <AdRewardSelector availableRewards={availableRewards} selectedReward={selectedReward} loadingRewards={loadingRewards} onSelectReward={setSelectedReward} />
 

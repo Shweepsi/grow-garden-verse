@@ -4,10 +4,9 @@ import { Button } from '@/components/ui/button';
 interface AdProgressBarProps {
   dailyCount: number;
   maxDaily: number;
-  onToggleDiagnostics: () => void;
 }
 
-export function AdProgressBar({ dailyCount, maxDaily, onToggleDiagnostics }: AdProgressBarProps) {
+export function AdProgressBar({ dailyCount, maxDaily }: AdProgressBarProps) {
   const progressPercentage = (dailyCount / maxDaily) * 100;
 
   return (
@@ -31,14 +30,6 @@ export function AdProgressBar({ dailyCount, maxDaily, onToggleDiagnostics }: AdP
             </div>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleDiagnostics}
-          className="ml-4 h-8 w-8 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-100 transition-colors duration-200"
-        >
-          🔧
-        </Button>
       </div>
     </div>
   );
