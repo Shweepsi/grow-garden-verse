@@ -114,7 +114,7 @@ export const PremiumAdAutoReward = ({
               size="sm"
               className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white disabled:opacity-50"
             >
-              <Gift className="h-4 w-4 mr-1" />
+              <Crown className="h-4 w-4 mr-1" />
               {claiming ? 'Attribution...' : 
                isLimitReached ? 'Limite atteinte' :
                (!adState?.available ? 'Cooldown actif' : 'Réclamer')}
