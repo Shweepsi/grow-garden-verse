@@ -1,4 +1,3 @@
-import { GameHeader } from '@/components/garden/GameHeader';
 import { PrestigeSystem } from '@/components/garden/PrestigeSystem';
 import { LadderModal } from '@/components/garden/LadderModal';
 import { SettingsModal } from '@/components/settings/SettingsModal';
@@ -13,8 +12,7 @@ import { useNavigate } from 'react-router-dom';
 export const ProfilePage = () => {
   const navigate = useNavigate();
   const {
-    gameState,
-    loading
+    gameState
   } = useRefactoredGame();
   const {
     signOut
@@ -39,24 +37,14 @@ export const ProfilePage = () => {
       queryKey: ['gameData']
     });
   };
-  if (loading) {
-    return <div className="min-h-screen garden-background flex items-center justify-center">
-        <div className="glassmorphism rounded-xl p-6">
-          <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-        </div>
-      </div>;
-  }
 
   // Calculer les statistiques
   const activePlants = gameState.plots.filter(plot => plot.plant_type && plot.planted_at).length;
   const totalPlants = gameState.plantTypes.length;
-  return <div className="min-h-screen garden-background">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
-        <GameHeader garden={gameState.garden} />
-      </div>
-    
-      {/* Content with padding to avoid overlap */}
+
+  return (
+    <div className="min-h-full">
+      {/* Content with padding */}
       <div className="px-3 pb-6 space-y-4">
 
           {/* Carte des classements */}
@@ -126,5 +114,6 @@ export const ProfilePage = () => {
       {/* Modale des classements */}
       <LadderModal isOpen={showLadder} onClose={() => setShowLadder(false)} />
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
-    </div>;
+    </div>
+  );
 };
