@@ -308,23 +308,18 @@ export class AdMobService {
     try {
       console.log('AdMob: Applying immediate client-side reward for optimal UX');
       
-      // Appeler directement notre service de récompense
-      const response = await fetch(`https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zZmV4dXF2bHB4cmZhdWtmb2JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NDY3ODIsImV4cCI6MjA2NjQyMjc4Mn0.wu17C74K3kUs8mjRoHwFVAhjgEBmi91gRiJiGkYPICY'}`
-        },
-        body: JSON.stringify({
+      // Use Supabase client for secure API calls
+      const { data, error } = await supabase.functions.invoke('validate-ad-reward', {
+        body: {
           user_id: userId,
           reward_type: rewardType,
           reward_amount: rewardAmount,
           ad_duration: 30,
           source: 'client_immediate'
-        })
+        }
       });
 
-      if (response.ok) {
+      if (!error && data) {
         console.log('AdMob: Immediate client reward applied successfully');
       } else {
         console.warn('AdMob: Failed to apply immediate client reward, SSV will handle it');
