@@ -611,6 +611,16 @@ export type Database = {
           source: string
         }[]
       }
+      get_leaderboard_data: {
+        Args: { p_limit?: number; p_type: string }
+        Returns: {
+          level_value: number
+          prestige_value: number
+          rank_position: number
+          stat_value: number
+          username: string
+        }[]
+      }
       get_plot_unlock_cost: {
         Args: { plot_number: number }
         Returns: number
