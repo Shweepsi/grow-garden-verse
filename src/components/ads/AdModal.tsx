@@ -135,12 +135,9 @@ export function AdModal({
       });
       return;
     }
+    // Note: Daily limit check is handled by useAdRewards to avoid double notifications
+    // Just return early here for UI state management
     if (adState.dailyCount >= adState.maxDaily) {
-      toast({
-        title: "Erreur",
-        description: "Limite quotidienne de publicités atteinte",
-        variant: "destructive"
-      });
       return;
     }
 

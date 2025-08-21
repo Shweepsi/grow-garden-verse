@@ -211,6 +211,10 @@ export const useAdRewards = () => {
       const errorMessage = adState.dailyCount >= adState.maxDaily
         ? `Limite quotidienne atteinte. Reset dans ${timeFormatted}.`
         : `Cooldown actif. Prochaine récompense dans ${timeFormatted}.`;
+      
+      // Show toast notification for the error
+      toast.error(errorMessage);
+      
       return {
         success: false,
         error: errorMessage
