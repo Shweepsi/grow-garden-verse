@@ -1,7 +1,6 @@
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useGameData } from '@/hooks/useGameData';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
-import { GameHeader } from '@/components/garden/GameHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -140,18 +139,17 @@ export const UpgradesPage = () => {
     };
   };
   if (upgradesLoading) {
-    return <div className="min-h-screen garden-background flex items-center justify-center">
+    return (
+      <div className="min-h-full flex items-center justify-center">
         <div className="glassmorphism rounded-xl p-6">
           <Loader2 className="h-6 w-6 animate-spin text-green-600" />
         </div>
-      </div>;
-  }
-  return <div className="min-h-screen garden-background">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-40 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm">
-        <GameHeader garden={gameData?.garden} />
       </div>
-      
+    );
+  }
+
+  return (
+    <div className="min-h-full">
       {/* Content with compact padding */}
       <div className="px-3 pb-4 space-y-3">
         {/* Progression par catégorie */}
@@ -276,5 +274,6 @@ export const UpgradesPage = () => {
             </p>
           </div>}
       </div>
-    </div>;
+    </div>
+  );
 };
