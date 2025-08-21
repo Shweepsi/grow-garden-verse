@@ -86,7 +86,7 @@ export const useLadder = () => {
       // Récupérer les joueurs réels avec leurs profils
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, coins, created_at');
+        .select('user_id, coins, premium_status, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -113,6 +113,7 @@ export const useLadder = () => {
           coins: g.coins,
           level: 0,
           prestige_level: 0,
+          premium_status: g.premium_status || false,
           is_bot: false,
           created_at: g.created_at
         })),
@@ -146,7 +147,7 @@ export const useLadder = () => {
       // Récupérer les joueurs réels avec leurs profils
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, prestige_level, created_at');
+        .select('user_id, prestige_level, premium_status, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -173,6 +174,7 @@ export const useLadder = () => {
           coins: 0,
           level: 0,
           prestige_level: g.prestige_level || 0,
+          premium_status: g.premium_status || false,
           is_bot: false,
           created_at: g.created_at
         })),
@@ -206,7 +208,7 @@ export const useLadder = () => {
       // Récupérer les joueurs réels avec leurs profils
       const { data: gardens, error: gardensError } = await supabase
         .from('player_gardens')
-        .select('user_id, level, experience, created_at');
+        .select('user_id, level, experience, premium_status, created_at');
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -234,6 +236,7 @@ export const useLadder = () => {
           level: g.level || 1,
           experience: g.experience || 0,
           prestige_level: 0,
+          premium_status: g.premium_status || false,
           is_bot: false,
           created_at: g.created_at
         })),
@@ -268,7 +271,7 @@ export const useLadder = () => {
     queryFn: async () => {
       if (!user?.id) return {};
 
-      const [harvestRank, coinsRank, prestigeRank, levelRank] = await Promise.all([
+      const [harvestRank, coinsRank, prestigeRank, levelRank, userGarden] = await Promise.all([
         // Rang par récoltes
         supabase.rpc('get_user_harvest_rank', { target_user_id: user.id }),
         // Rang par pièces
@@ -277,13 +280,17 @@ export const useLadder = () => {
         supabase.rpc('get_user_prestige_rank', { target_user_id: user.id }),
         // Rang par niveau
         supabase.rpc('get_user_level_rank', { target_user_id: user.id }),
+        // Statut premium du joueur
+        supabase.from('player_gardens').select('premium_status').eq('user_id', user.id).single(),
       ]);
 
+      const premiumStatus = userGarden.data?.premium_status || false;
+
       return {
-        harvests: harvestRank.data ? { rank: harvestRank.data } : null,
-        coins: coinsRank.data ? { rank: coinsRank.data } : null,
-        prestige: prestigeRank.data ? { rank: prestigeRank.data } : null,
-        level: levelRank.data ? { rank: levelRank.data } : null,
+        harvests: harvestRank.data ? { rank: harvestRank.data, premium_status: premiumStatus } : null,
+        coins: coinsRank.data ? { rank: coinsRank.data, premium_status: premiumStatus } : null,
+        prestige: prestigeRank.data ? { rank: prestigeRank.data, premium_status: premiumStatus } : null,
+        level: levelRank.data ? { rank: levelRank.data, premium_status: premiumStatus } : null,
       };
     },
     enabled: !!user?.id,
