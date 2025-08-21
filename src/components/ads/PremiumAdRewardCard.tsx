@@ -25,7 +25,7 @@ export const PremiumAdRewardCard = ({ onClaim, loading = false }: PremiumAdRewar
       
       <CardContent className="space-y-4">
         <div className="text-center p-4 rounded-lg bg-gradient-to-r from-yellow-100/50 to-orange-100/50 border border-yellow-200/50">
-          <Crown className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+          <Gift className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
           <h3 className="font-semibold text-yellow-800 mb-1">
             Récompenses Automatiques
           </h3>
