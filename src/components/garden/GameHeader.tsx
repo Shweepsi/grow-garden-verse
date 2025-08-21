@@ -91,19 +91,35 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
     return { currentLevel, currentXp, progressPercentage };
   }, [garden?.level, garden?.experience]);
 
-  // Mémoisé pour stabiliser l'état du bouton
+  // Mémoisé pour stabiliser l'état du bouton avec logique plus intelligente
   const adButtonState = useMemo(() => {
+    // Pour Premium, toujours vérifier la limite même si l'état n'est pas encore chargé
+    if (isPremium) {
+      const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
+      return {
+        shouldAnimate: !dailyLimitReached,
+        isDisabled: dailyLimitReached,
+        className: `h-8 px-2.5 border-0 rounded-md flex items-center transition-all duration-300 ${
+          dailyLimitReached
+            ? 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400 opacity-50'
+            : 'bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500'
+        }`
+      };
+    }
+    
+    // Pour les utilisateurs non-Premium
     const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
     const shouldAnimate = !dailyLimitReached;
     return {
       shouldAnimate,
+      isDisabled: dailyLimitReached,
       className: `h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
         shouldAnimate
           ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 plant-ready-bounce hover:scale-105 active:scale-95' 
           : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
       }`
     };
-  }, [adState.dailyCount, adState.maxDaily]);
+  }, [adState.dailyCount, adState.maxDaily, isPremium]);
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
@@ -204,30 +220,16 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
                 </div>
               </div>
 
-{/* Bouton Publicité / Premium */}
-{isPremium ? (
-  <Button
-    size="sm"
-    onClick={() => safeSetShowAdModal(true)}
-    disabled={adState.dailyCount >= adState.maxDaily}
-    className={`h-8 px-2.5 border-0 rounded-md flex items-center transition-all duration-300 ${
-      adState.dailyCount >= adState.maxDaily
-        ? 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400 opacity-50'
-        : 'bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500'
-    }`}
-    aria-label="Récompenses premium"
-  >
-    <Gift className="h-3 w-3 text-white" />
-  </Button>
-) : (
-  <Button
-    size="sm"
-    onClick={() => safeSetShowAdModal(true)}
-    className={adButtonState.className}
-  >
-    <Gift className="h-3 w-3 text-white" />
-  </Button>
-)}
+{/* Bouton Publicité / Premium - Unifié avec état stabilisé */}
+<Button
+  size="sm"
+  onClick={() => safeSetShowAdModal(true)}
+  disabled={adButtonState.isDisabled}
+  className={adButtonState.className}
+  aria-label={isPremium ? "Récompenses premium" : "Regarder une publicité"}
+>
+  <Gift className="h-3 w-3 text-white" />
+</Button>
             </div>
 
             {/* Ligne 2: Boosts actifs (si présents) */}

@@ -1,12 +1,10 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { useGameData } from '@/hooks/useGameData';
 import { toast } from 'sonner';
 import { AdCooldownService } from '@/services/ads/AdCooldownService';
-import { AdRewardDistributionService } from '@/services/ads/AdRewardDistributionService';
 import { AdRewardService } from '@/services/AdRewardService';
 import { PremiumRewardService } from '@/services/ads/PremiumRewardService';
 import { AdState } from '@/types/ads';
@@ -14,22 +12,106 @@ import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
 import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
 
+// Persistance localStorage pour l'état des ads
+const AD_STATE_STORAGE_KEY = 'adState';
+
+const getStoredAdState = (): Partial<AdState> | null => {
+  try {
+    const stored = localStorage.getItem(AD_STATE_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStoredAdState = (state: AdState): void => {
+  try {
+    localStorage.setItem(AD_STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore localStorage errors
+  }
+};
+
 export const useAdRewards = () => {
   const { user } = useAuth();
   const { isPremium } = usePremiumStatus();
   const { data: gameData } = useGameData();
   const queryClient = useQueryClient();
   const mounted = useRef(true);
-  const [adState, setAdState] = useState<AdState>({
-    available: false,
-    cooldownEnds: null,
-    dailyCount: 0,
-    maxDaily: 5,
-    currentReward: null,
-    timeUntilNext: 0
-  });
-  const [loading, setLoading] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
+
+  // État initial conservateur pour éviter le flash
+  const getInitialAdState = (): AdState => {
+    const stored = getStoredAdState();
+    if (stored) {
+      return {
+        available: false, // Conservateur: toujours commencer par false
+        cooldownEnds: stored.cooldownEnds || null,
+        dailyCount: stored.dailyCount || 5, // Conservateur: supposer limite atteinte
+        maxDaily: stored.maxDaily || 5,
+        currentReward: null,
+        timeUntilNext: stored.timeUntilNext || 3600 // Conservateur: 1h de cooldown
+      };
+    }
+    
+    return {
+      available: false,
+      cooldownEnds: null,
+      dailyCount: 5, // Conservateur: supposer limite atteinte
+      maxDaily: 5,
+      currentReward: null,
+      timeUntilNext: 3600 // Conservateur: 1h de cooldown
+    };
+  };
+
+  // Query React Query pour l'état des ads avec persistance
+  const { 
+    data: adState = getInitialAdState(), 
+    isLoading: loading,
+    refetch,
+    isInitialLoading
+  } = useQuery({
+    queryKey: ['adState', user?.id],
+    queryFn: async (): Promise<AdState> => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const cooldownInfo = await AdCooldownService.getCooldownInfo(user.id);
+      
+      const newState: AdState = {
+        available: cooldownInfo.available,
+        cooldownEnds: cooldownInfo.cooldownEnds,
+        timeUntilNext: cooldownInfo.timeUntilNext,
+        dailyCount: cooldownInfo.dailyCount,
+        maxDaily: cooldownInfo.maxDaily,
+        currentReward: null
+      };
+      
+      // Persister dans localStorage
+      setStoredAdState(newState);
+      
+      return newState;
+    },
+    enabled: !!user?.id,
+    staleTime: 30000, // 30s de cache pour éviter trop de requêtes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: (query) => {
+      // Polling plus fréquent si en cooldown
+      const data = query.state.data;
+      if (data?.timeUntilNext && data.timeUntilNext > 0) {
+        return Math.min(data.timeUntilNext * 1000, 60000); // Max 1 minute
+      }
+      return 5 * 60 * 1000; // 5 minutes sinon
+    },
+    initialData: getInitialAdState,
+    refetchOnWindowFocus: false,
+    retry: 2
+  });
+
+  // Manual refresh function
+  const refreshAdState = useCallback(async () => {
+    if (!user?.id || !mounted.current) return;
+    await refetch();
+  }, [user?.id, refetch]);
 
   // Track component mount/unmount
   useEffect(() => {
@@ -65,85 +147,24 @@ export const useAdRewards = () => {
     };
   }, [isPremium]);
 
-  // Actualiser l'état des publicités avec gestion d'erreur améliorée - FIXED: stable function
-const refreshAdState = useCallback(async (force = false) => {
-  if (!user?.id || !mounted.current) return;
-
-  try {
-    // Éviter les rechargements trop fréquents sauf si forcé
-    if (!force && loading) return;
-    
-    if (mounted.current) {
-      setLoading(true);
-    }
-    
-    const cooldownInfo = await AdCooldownService.getCooldownInfo(user.id);
-    
-    if (!mounted.current) return;
-    
-    // Seulement mettre à jour si les données ont réellement changé
-    setAdState(prev => {
-      const hasChanged = 
-        prev.available !== cooldownInfo.available ||
-        prev.dailyCount !== cooldownInfo.dailyCount ||
-        prev.maxDaily !== cooldownInfo.maxDaily ||
-        prev.timeUntilNext !== cooldownInfo.timeUntilNext;
-      
-      if (!hasChanged) return prev;
-      
-      return {
-        ...prev,
-        available: cooldownInfo.available,
-        cooldownEnds: cooldownInfo.cooldownEnds,
-        timeUntilNext: cooldownInfo.timeUntilNext,
-        dailyCount: cooldownInfo.dailyCount,
-        maxDaily: cooldownInfo.maxDaily
-      };
-    });
-
-    // Mettre à jour les diagnostics seulement si nécessaire
-    if (Capacitor.isNativePlatform() && mounted.current) {
-      const debugInfo = AdMobService.getDebugInfo();
-      setDiagnostics(prev => {
-        if (JSON.stringify(prev) !== JSON.stringify(debugInfo)) {
-          return debugInfo;
-        }
-        return prev;
-      });
-    }
-    
-  } catch (error) {
-    console.error('Error refreshing ad state:', error);
-  } finally {
-    if (mounted.current) {
-      setLoading(false);
-    }
-  }
-}, [user?.id]);
-
-
   // Timer pour actualiser le cooldown
   useEffect(() => {
-    if (adState.timeUntilNext > 0) {
-      const interval = setInterval(() => {
-        if (mounted.current) {
-          setAdState(prev => ({
+    if (!adState?.timeUntilNext || adState.timeUntilNext <= 0) return;
+
+    const interval = setInterval(() => {
+      if (mounted.current) {
+        queryClient.setQueryData(['adState', user?.id], (prev: AdState | undefined) => {
+          if (!prev) return prev;
+          return {
             ...prev,
             timeUntilNext: Math.max(0, prev.timeUntilNext - 1)
-          }));
-        }
-      }, 1000);
+          };
+        });
+      }
+    }, 1000);
 
-      return () => clearInterval(interval);
-    }
-  }, [adState.timeUntilNext]);
-
-  // Actualiser quand l'utilisateur change - FIXED: only when user changes
-  useEffect(() => {
-    if (user?.id) {
-      refreshAdState();
-    }
-  }, [user?.id]); // FIXED: removed refreshAdState from dependencies
+    return () => clearInterval(interval);
+  }, [adState?.timeUntilNext, queryClient, user?.id]);
 
   // Formater le temps restant
   const formatTimeUntilNext = useCallback((seconds: number): string => {
@@ -170,6 +191,8 @@ const refreshAdState = useCallback(async (force = false) => {
       return "🚫 Premium: Publicités désactivées - Récompenses automatiques";
     }
     
+    if (!adState) return "Chargement...";
+    
     if (adState.dailyCount >= adState.maxDaily) {
       const timeFormatted = formatTimeUntilNext(adState.timeUntilNext);
       return `Limite quotidienne atteinte. Reset dans ${timeFormatted}`;
@@ -180,7 +203,7 @@ const refreshAdState = useCallback(async (force = false) => {
 
   // Fonction pour réclamer une récompense avec logique premium améliorée
   const claimAdReward = async (rewardType: string, rewardAmount: number) => {
-    if (!user?.id || !mounted.current) return { success: false, error: 'Not authenticated' };
+    if (!user?.id || !mounted.current || !adState) return { success: false, error: 'Not authenticated' };
 
     // Vérifier le cooldown même pour les premiums
     if (!adState.available) {
@@ -235,7 +258,7 @@ const refreshAdState = useCallback(async (force = false) => {
           }
 
           // PHASE 1: Rafraîchissement immédiat sans délai + invalidation de cache
-          refreshAdState(true);
+          refreshAdState();
           queryClient.invalidateQueries({ queryKey: ['gameData'] });
 
           // PHASE 1: Notifier avec payload pour optimistic updates
@@ -262,10 +285,6 @@ const refreshAdState = useCallback(async (force = false) => {
     }
 
     try {
-      if (mounted.current) {
-        setLoading(true);
-      }
-      
       // Obtenir les informations de diagnostic avant d'essayer
       const debugInfo = AdMobService.getDebugInfo();
       console.log('AdMob: Attempting to watch ad with debug info:', debugInfo);
@@ -274,7 +293,7 @@ const refreshAdState = useCallback(async (force = false) => {
       
       if (result.success && mounted.current) {
         // PHASE 1: Rafraîchissement immédiat sans délai + invalidation de cache
-        refreshAdState(true);
+        refreshAdState();
         queryClient.invalidateQueries({ queryKey: ['gameData'] });
 
         // PHASE 1: Notifier avec payload pour optimistic updates
@@ -290,10 +309,6 @@ const refreshAdState = useCallback(async (force = false) => {
       const debugInfo = AdMobService.getDebugInfo();
       console.error('AdMob: Debug info on error:', debugInfo);
       return { success: false, error: (error as Error).message };
-    } finally {
-      if (mounted.current) {
-        setLoading(false);
-      }
     }
   };
 
@@ -302,25 +317,18 @@ const refreshAdState = useCallback(async (force = false) => {
     if (!mounted.current) return false;
     
     try {
-      if (mounted.current) {
-        setLoading(true);
-      }
       const result = await AdMobService.testConnectivity();
       console.log('AdMob: Connectivity test result:', result);
       return result;
     } catch (error) {
       console.error('AdMob: Connectivity test error:', error);
       return false;
-    } finally {
-      if (mounted.current) {
-        setLoading(false);
-      }
     }
   }, []);
 
   return {
     adState,
-    loading,
+    loading: loading || isInitialLoading,
     refreshAdState,
     formatTimeUntilNext,
     getAdStatusMessage,

@@ -117,7 +117,7 @@ export function useAdWatcher() {
         });
         
         // Refresh ad state to reflect updated daily count (already incremented server-side)
-        refreshAdState?.(true);
+        refreshAdState?.();
         onSuccess?.();
       } else {
         console.log('AdMob: Timeout - récompense non reçue via SSV');
