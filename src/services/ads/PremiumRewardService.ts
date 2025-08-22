@@ -145,16 +145,32 @@ export class PremiumRewardService {
    */
   static async checkPremiumRewardLimits(userId: string): Promise<{ allowed: boolean; error?: string }> {
     try {
-      // Check if user hasn't exceeded reasonable premium reward limits (e.g., 100 per day)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Utiliser la même logique de reset que les publicités normales
+      // Vérifier d'abord dans ad_cooldowns pour la cohérence
+      const { data: cooldownData } = await supabase
+        .from('ad_cooldowns')
+        .select('daily_reset_date')
+        .eq('user_id', userId)
+        .single();
+
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Si l'utilisateur a un cooldown avec une date différente, c'est un nouveau jour
+      if (cooldownData && cooldownData.daily_reset_date !== today) {
+        console.log(`Premium: New day detected for user ${userId}, reset allowed`);
+        return { allowed: true };
+      }
+
+      // Vérifier les sessions premium du jour actuel
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
 
       const { data, error } = await supabase
         .from('ad_sessions')
         .select('id')
         .eq('user_id', userId)
         .contains('reward_data', { premium_session: true })
-        .gte('watched_at', today.toISOString());
+        .gte('watched_at', todayStart.toISOString());
 
       if (error) throw error;
 
@@ -172,6 +188,21 @@ export class PremiumRewardService {
     } catch (error) {
       console.error('Error checking premium reward limits:', error);
       return { allowed: false, error: 'Erreur lors de la vérification des limites' };
+    }
+  }
+
+  /**
+   * Force reset for premium users (aligned with regular ad reset)
+   */
+  static async forceResetPremiumLimits(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Les utilisateurs premium utilisent le même système de cooldown pour la cohérence
+      // Le reset se fait via la même fonction force-daily-reset
+      console.log(`Premium: Reset will be handled by standard ad cooldown system for user ${userId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('Error forcing premium reset:', error);
+      return { success: false, error: 'Erreur lors du reset premium' };
     }
   }
 }
