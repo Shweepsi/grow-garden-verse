@@ -75,11 +75,56 @@ Deno.serve(async (req) => {
     let currentCount = 0
 
     if (cooldownData) {
-      // Si c'est un nouveau jour, le compteur est effectivement à 0
-      if (cooldownData.daily_reset_date === today) {
+      // Si c'est un nouveau jour, reset explicite en base
+      if (cooldownData.daily_reset_date !== today) {
+        console.log(`Daily reset detected for user ${user.id}: ${cooldownData.daily_reset_date} -> ${today}`)
+        
+        // Reset explicite en base de données
+        const { error: resetError } = await supabaseClient
+          .from('ad_cooldowns')
+          .update({
+            daily_count: 0,
+            daily_reset_date: today,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+
+        if (resetError) {
+          console.error('Error resetting daily count:', resetError)
+          return new Response(
+            JSON.stringify({ success: false, error: 'Database reset error' }), 
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        currentCount = 0
+        console.log(`Daily count reset to 0 for user ${user.id}`)
+      } else {
+        // Même jour, utiliser le compteur existant
         currentCount = cooldownData.daily_count || 0
       }
-      // Sinon, nouveau jour = compteur à 0
+    } else {
+      // Pas d'entrée existante, créer une nouvelle avec compteur à 0
+      console.log(`Creating new ad_cooldown entry for user ${user.id}`)
+      const { error: createError } = await supabaseClient
+        .from('ad_cooldowns')
+        .insert({
+          user_id: user.id,
+          daily_count: 0,
+          daily_reset_date: today,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+      if (createError) {
+        console.error('Error creating ad_cooldown entry:', createError)
+        return new Response(
+          JSON.stringify({ success: false, error: 'Database creation error' }), 
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      currentCount = 0
     }
 
     // Vérifier la limite
