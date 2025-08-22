@@ -1,259 +1,175 @@
-import { supabase } from "@/integrations/supabase/client";
-import { AdReward, AdState } from "@/types/ads";
-import { AdCooldownService } from "./ads/AdCooldownService";
-import { AdRewardDistributionService } from "./ads/AdRewardDistributionService";
-import { AdCacheService } from "./ads/AdCacheService";
+import { supabase } from '@/integrations/supabase/client';
+import type { AdReward, AdState } from '@/types/ads';
 
+/**
+ * Service unifié simplifié pour gérer toutes les récompenses
+ * Utilise la nouvelle edge function ad-rewards comme source unique de vérité
+ */
 export class UnifiedRewardService {
+  private static rewardsCache = new Map<number, AdReward[]>();
+
   /**
-   * Fonction de tri personnalisé pour les récompenses publicitaires
-   * Ordre : pièces, gemmes, boost pièces, boost croissance, boost gemmes
+   * Trie les récompenses par ordre de priorité
    */
   private static sortRewards(rewards: AdReward[]): AdReward[] {
-    const rewardOrder = {
-      'coins': 1,
-      'gems': 2,
-      'coin_boost': 3,
-      'growth_speed': 4,
-      'growth_boost': 4, // même priorité que growth_speed
-      'gem_boost': 5
-    };
-
+    const order = ['coins', 'gems', 'coin_boost', 'gem_boost', 'growth_speed', 'growth_boost'];
+    
     return rewards.sort((a, b) => {
-      const orderA = rewardOrder[a.type] || 999;
-      const orderB = rewardOrder[b.type] || 999;
+      const aIndex = order.indexOf(a.type);
+      const bIndex = order.indexOf(b.type);
       
-      // Si même ordre, trier par montant décroissant
-      if (orderA === orderB) {
-        return b.amount - a.amount;
+      if (aIndex !== bIndex) {
+        return aIndex - bIndex;
       }
       
-      return orderA - orderB;
+      return (b.amount || 0) - (a.amount || 0);
     });
   }
 
   /**
-   * Service unifié pour obtenir les récompenses disponibles
+   * Récupère les récompenses disponibles pour un niveau de joueur donné
    */
   static async getAvailableRewards(playerLevel: number): Promise<AdReward[]> {
     try {
-      // Vérifier le cache d'abord
-      const cachedRewards = AdCacheService.getCachedRewards(playerLevel);
-      if (cachedRewards) {
-        console.log('UnifiedRewardService: Using cached rewards for level', playerLevel);
-        return this.sortRewards(cachedRewards);
+      if (this.rewardsCache.has(playerLevel)) {
+        const cached = this.rewardsCache.get(playerLevel);
+        if (cached) return cached;
       }
 
-      console.log('UnifiedRewardService: Fetching rewards for level', playerLevel);
       const { data: configs, error } = await supabase
         .from('ad_reward_configs')
         .select('*')
         .eq('active', true)
-        .lte('min_player_level', playerLevel);
+        .lte('min_player_level', playerLevel)
+        .order('reward_type');
 
-      if (error) throw error;
+      if (error || !configs?.length) {
+        console.error('Error fetching reward configs:', error);
+        return this.getFallbackRewards();
+      }
 
-      const rewards = configs.map(config => {
-        const normalizedType = config.reward_type === 'growth_boost' ? 'growth_speed' : config.reward_type;
-        let amount = config.base_amount + (config.level_coefficient * (playerLevel - 1));
-
-        if (config.max_amount && amount > config.max_amount) {
-          amount = config.max_amount;
-        }
-
-        if (normalizedType === 'growth_speed' && amount < 1 && amount > 0) {
-          amount = 1 / amount;
-        }
-
-        let description = config.description;
-        if (normalizedType === 'coins' || normalizedType === 'gems') {
-          description = `${Math.floor(amount)} ${config.display_name.toLowerCase()}`;
-        } else if (normalizedType === 'growth_speed') {
-          description = `Boost Croissance x${amount}`;
-        } else if (normalizedType.includes('boost')) {
-          description = `${config.display_name} x${amount}`;
-        }
+      const rewards: AdReward[] = configs.map(config => {
+        const calculatedAmount = config.base_amount + (config.level_coefficient * (playerLevel - 1));
+        const finalAmount = config.max_amount ? Math.min(calculatedAmount, config.max_amount) : calculatedAmount;
 
         return {
-          type: normalizedType as AdReward['type'],
-          amount: Math.floor(amount * 100) / 100,
-          description,
-          emoji: config.emoji || '🎁',
-          duration: config.duration_minutes
+          type: config.reward_type as AdReward['type'],
+          amount: Math.floor(finalAmount),
+          duration: config.duration_minutes,
+          description: config.description,
+          emoji: config.emoji
         };
       });
 
       const sortedRewards = this.sortRewards(rewards);
-      AdCacheService.cacheRewards(playerLevel, sortedRewards);
+      this.rewardsCache.set(playerLevel, sortedRewards);
       
       return sortedRewards;
     } catch (error) {
-      console.error('Error loading rewards:', error);
-      const fallbackRewards: AdReward[] = [
-        {
-          type: 'coins' as const,
-          amount: 1000 + (800 * (playerLevel - 1)),
-          description: `${1000 + (800 * (playerLevel - 1))} pièces`,
-          emoji: '🪙',
-          duration: undefined
-        }
-      ];
-      
-      const sortedFallbackRewards = this.sortRewards(fallbackRewards);
-      AdCacheService.cacheRewards(playerLevel, sortedFallbackRewards);
-      return sortedFallbackRewards;
+      console.error('Error in getAvailableRewards:', error);
+      return this.getFallbackRewards();
     }
   }
 
   /**
-   * Service unifié pour obtenir l'état des récompenses (normal/premium)
+   * Récompenses de secours en cas d'erreur
    */
-  static async getRewardState(userId: string, isPremium: boolean = false): Promise<AdState> {
+  private static getFallbackRewards(): AdReward[] {
+    return [
+      { type: 'coins', amount: 100, description: 'Pièces bonus', emoji: '🪙' },
+      { type: 'gems', amount: 5, description: 'Gemmes bonus', emoji: '💎' }
+    ];
+  }
+
+  /**
+   * Récupère l'état actuel des récompenses via la nouvelle edge function
+   */
+  static async getRewardState(userId: string): Promise<AdState> {
     try {
-      const cooldownInfo = await AdCooldownService.getCooldownInfo(userId);
-      
+      const { data, error } = await supabase.functions.invoke('ad-rewards', {
+        method: 'GET'
+      });
+
+      if (error) {
+        console.error('Error fetching reward state:', error);
+        return this.getDefaultState();
+      }
+
       return {
-        available: cooldownInfo.available,
-        cooldownEnds: cooldownInfo.cooldownEnds,
-        dailyCount: cooldownInfo.dailyCount,
-        maxDaily: cooldownInfo.maxDaily,
+        available: data.available,
+        cooldownEnds: null,
+        dailyCount: data.dailyCount,
+        maxDaily: data.maxDaily,
         currentReward: null,
-        timeUntilNext: cooldownInfo.timeUntilNext
+        timeUntilNext: data.timeUntilNext
       };
     } catch (error) {
       console.error('Error getting reward state:', error);
-      return {
-        available: false,
-        cooldownEnds: null,
-        dailyCount: 0,
-        maxDaily: 5,
-        currentReward: null,
-        timeUntilNext: 0
-      };
+      return this.getDefaultState();
     }
   }
 
+  private static getDefaultState(): AdState {
+    return {
+      available: false,
+      cooldownEnds: null,
+      dailyCount: 5,
+      maxDaily: 5,
+      currentReward: null,
+      timeUntilNext: 0
+    };
+  }
+
   /**
-   * Valide si un utilisateur peut réclamer une récompense
+   * Réclame une récompense via la nouvelle edge function unifiée
+   * Même logique pour premium et normal : limite 5/jour identique
    */
-  static async validateRewardClaim(userId: string, isPremium: boolean = false): Promise<{ allowed: boolean; error?: string }> {
+  static async claimReward(
+    reward: AdReward, 
+    isPremium: boolean = false
+  ): Promise<{ success: boolean; sessionId?: string; error?: string; dailyCount?: number }> {
     try {
-      // Vérification unifiée des limites via ad_cooldowns
-      const { data: cooldownData } = await supabase
-        .from('ad_cooldowns')
-        .select('daily_count, daily_reset_date')
-        .eq('user_id', userId)
-        .single();
+      const { data, error } = await supabase.functions.invoke('ad-rewards', {
+        method: 'POST',
+        body: {
+          reward_type: reward.type,
+          reward_amount: reward.amount,
+          is_premium: isPremium
+        }
+      });
 
-      const today = new Date().toISOString().split('T')[0];
-      const maxDaily = 5;
-
-      // Si nouveau jour, autoriser
-      if (cooldownData && cooldownData.daily_reset_date !== today) {
-        return { allowed: true };
-      }
-
-      // Vérifier la limite quotidienne
-      const currentCount = cooldownData?.daily_count || 0;
-      if (currentCount >= maxDaily) {
+      if (error || !data?.success) {
         return { 
-          allowed: false, 
-          error: `Limite quotidienne atteinte (${maxDaily} récompenses par jour)` 
+          success: false, 
+          error: data?.error || error?.message || 'Claim failed',
+          dailyCount: data?.dailyCount 
         };
       }
 
-      return { allowed: true };
-    } catch (error) {
-      console.error('Error validating reward claim:', error);
-      return { allowed: false, error: 'Erreur lors de la validation' };
-    }
-  }
-
-  /**
-   * Distribue une récompense (normal ou premium)
-   */
-  static async distributeReward(
-    userId: string, 
-    reward: AdReward, 
-    isPremium: boolean = false
-  ): Promise<{ success: boolean; sessionId?: string; error?: string }> {
-    try {
-      // Validation des limites
-      const validation = await this.validateRewardClaim(userId, isPremium);
-      if (!validation.allowed) {
-        return { success: false, error: validation.error };
-      }
-
-      // Validation du statut premium si nécessaire
-      if (isPremium) {
-        const { data: gardenData } = await supabase
-          .from('player_gardens')
-          .select('premium_status')
-          .eq('user_id', userId)
-          .single();
-
-        if (!gardenData?.premium_status) {
-          return { success: false, error: 'Statut premium requis' };
-        }
-      }
-
-      // Créer la session d'audit
-      const sessionData = {
-        user_id: userId,
-        reward_type: reward.type,
-        reward_amount: reward.amount,
-        reward_data: {
-          duration: reward.duration,
-          description: reward.description,
-          source: isPremium ? 'premium_auto' : 'ad_watch',
-          premium_session: isPremium,
-          started_at: new Date().toISOString(),
-          completed: true
-        },
-        watched_at: new Date().toISOString()
-      };
-
-      const { data: session, error: sessionError } = await supabase
-        .from('ad_sessions')
-        .insert(sessionData)
-        .select('id')
-        .single();
-
-      if (sessionError) throw sessionError;
-
-      // Distribuer la récompense
-      const distributionResult = await AdRewardDistributionService.distributeReward(userId, reward);
-      if (!distributionResult.success) {
-        return { success: false, error: distributionResult.error };
-      }
-
-      // Incrémenter le compteur
-      await AdCooldownService.updateAfterAdWatch(userId);
-
-      console.log(`UnifiedRewardService: Successfully distributed ${isPremium ? 'premium' : 'normal'} reward ${reward.type}:${reward.amount} to user ${userId}`);
-
       return { 
         success: true, 
-        sessionId: session.id 
+        sessionId: data.sessionId,
+        dailyCount: data.dailyCount
       };
+
     } catch (error) {
-      console.error('Error distributing reward:', error);
-      return { success: false, error: 'Erreur lors de la distribution de la récompense' };
+      console.error('Error claiming reward:', error);
+      return { success: false, error: 'Network error' };
     }
   }
 
   /**
-   * Force le rechargement des récompenses
+   * Force le rechargement des récompenses pour un niveau donné
    */
   static async forceReloadRewards(playerLevel: number): Promise<AdReward[]> {
-    AdCacheService.clearRewardsCache(playerLevel);
+    this.rewardsCache.delete(playerLevel);
     return this.getAvailableRewards(playerLevel);
   }
 
   /**
-   * Vide tout le cache des récompenses
+   * Nettoie tout le cache des récompenses
    */
   static clearAllRewardsCache(): void {
-    AdCacheService.clearAllRewardsCache();
+    this.rewardsCache.clear();
   }
 }

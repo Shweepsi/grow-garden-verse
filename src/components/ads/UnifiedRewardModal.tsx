@@ -62,39 +62,26 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
   };
 
   const handleClaimReward = async () => {
-    if (!selectedReward) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner une récompense",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!selectedReward) return;
 
-    // Check daily limit
-    if (rewardState.dailyCount >= rewardState.maxDaily) {
-      return;
-    }
-
-    if (isPremium) {
-      // Premium: utiliser le service unifié
-      const result = await claimReward(selectedReward.type, selectedReward.amount);
-      if (result?.success) {
-        if (mounted.current) onOpenChange(false);
-      } else {
-        toast({
-          title: "Erreur",
-          description: result?.error || "Impossible de réclamer la récompense",
-          variant: "destructive"
-        });
+    const { isPremium } = usePremiumStatus();
+    
+    try {
+      // Logique unifiée : même limite pour tous, seule différence = pub ou pas
+      if (rewardState.dailyCount >= rewardState.maxDaily) {
+        toast({ title: "Limite atteinte", description: "Limite quotidienne atteinte (5/5)", variant: "destructive" });
+        return;
       }
-    } else {
-      // Non-premium: utiliser le système de publicité standard
-      await watchAdStandard(selectedReward, () => {
-        if (mounted.current) {
-          onOpenChange(false);
-        }
-      });
+      
+      const result = await claimReward(selectedReward.type, selectedReward.amount);
+      if (result.success) {
+        onOpenChange(false);
+        setSelectedReward(null);
+        // Message différencié automatiquement dans claimReward
+      }
+    } catch (error) {
+      console.error('Error claiming reward:', error);
+      toast({ title: "Erreur", description: "Erreur lors de la réclamation", variant: "destructive" });
     }
   };
 
