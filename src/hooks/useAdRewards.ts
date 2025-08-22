@@ -11,6 +11,7 @@ import { AdState } from '@/types/ads';
 import { AdMobService } from '@/services/AdMobService';
 import { Capacitor } from '@capacitor/core';
 import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
+import { supabase } from '@/integrations/supabase/client';
 
 // Persistance localStorage pour l'état des ads
 const AD_STATE_STORAGE_KEY = 'adState';
@@ -39,6 +40,20 @@ export const useAdRewards = () => {
   const queryClient = useQueryClient();
   const mounted = useRef(true);
   const [diagnostics, setDiagnostics] = useState<any>(null);
+
+  // Force reset quotidien
+  const forceReset = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase.functions.invoke('force-daily-reset');
+      if (data.success) {
+        toast.success('Reset quotidien effectué');
+        queryClient.invalidateQueries({ queryKey: ['adState', user.id] });
+      }
+    } catch (error) {
+      console.error('Error forcing reset:', error);
+    }
+  }, [user, queryClient]);
 
   // État initial conservateur pour éviter le flash
   const getInitialAdState = (): AdState => {
@@ -338,6 +353,7 @@ export const useAdRewards = () => {
     getAdStatusMessage,
     watchAd: claimAdReward, // Nom plus clair pour la fonction
     testConnectivity,
+    forceReset,
     debug: { 
       adMobState: AdMobService.getState(),
       diagnostics: diagnostics
