@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Crown, Loader2, AlertCircle } from 'lucide-react';
+import { Gift, Crown, Loader2, AlertCircle } from 'lucide-react';
 import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { UnifiedRewardModal } from './UnifiedRewardModal';
@@ -56,16 +56,14 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
     if (isPremium) {
       return (
         <>
-          <Crown className="w-4 h-4 mr-2" />
-          {variant === 'compact' ? 'Premium' : 'Récompense Premium'}
+          <Gift className="w-4 h-4" />
         </>
       );
     }
 
     return (
       <>
-        <Play className="w-4 h-4 mr-2" />
-        {variant === 'compact' ? 'Pub' : 'Regarder Publicité'}
+        <Gift className="w-4 h-4" />
       </>
     );
   };
