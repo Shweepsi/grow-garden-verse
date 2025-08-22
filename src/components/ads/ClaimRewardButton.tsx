@@ -56,7 +56,7 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
     if (isPremium) {
       return (
         <>
-          <Gift className="w-4 h-4" />
+          <Crown className="w-4 h-4" />
         </>
       );
     }
