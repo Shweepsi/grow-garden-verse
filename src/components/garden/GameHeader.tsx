@@ -4,10 +4,10 @@ import { PlayerGarden } from '@/types/game';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { FloatingNumber } from '@/components/animations/FloatingNumber';
 import { AdRewardCard } from '@/components/ads/AdRewardCard';
-import { AdModal } from '@/components/ads/AdModal';
+import { ClaimRewardButton } from '@/components/ads/ClaimRewardButton';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { useAdRewards } from '@/hooks/useAdRewards';
+import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { useOptimisticGameData } from '@/hooks/useOptimisticGameData';
 import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
@@ -27,9 +27,8 @@ export const GameHeader = ({ garden: originalGarden }: GameHeaderProps) => {
   const { gameData: optimisticData, addOptimisticUpdate } = useOptimisticGameData();
   const garden = optimisticData?.garden || originalGarden;
   const { animations } = useAnimations();
-const [showAdModal, setShowAdModal] = useState(false);
 
-const { availableRewards, adState } = useAdRewards();
+const { rewardState } = useUnifiedRewards();
   const { isPremium } = usePremiumStatus();
   const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
   const mounted = useRef(true);
@@ -39,9 +38,6 @@ useEffect(() => {
   mounted.current = true;
   return () => {
     mounted.current = false;
-    // Close modals when component unmounts to prevent crashes
-    setShowAdModal(false);
-    // setShowPremiumDialog(false);
   };
 }, []);
 
@@ -66,12 +62,7 @@ useEffect(() => {
   };
 }, []);
 
-// Safe modal state setter that checks if component is mounted
-const safeSetShowAdModal = useCallback((show: boolean) => {
-  if (mounted.current) {
-    setShowAdModal(show);
-  }
-}, []);
+// Pas besoin de modal state pour le système unifié
 
   // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
@@ -95,7 +86,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
   const adButtonState = useMemo(() => {
     // Pour Premium, toujours vérifier la limite même si l'état n'est pas encore chargé
     if (isPremium) {
-      const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
+      const dailyLimitReached = rewardState.dailyCount >= rewardState.maxDaily;
       return {
         shouldAnimate: !dailyLimitReached,
         isDisabled: dailyLimitReached,
@@ -108,7 +99,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
     }
     
     // Pour les utilisateurs non-Premium
-    const dailyLimitReached = adState.dailyCount >= adState.maxDaily;
+    const dailyLimitReached = rewardState.dailyCount >= rewardState.maxDaily;
     const shouldAnimate = !dailyLimitReached;
     return {
       shouldAnimate,
@@ -119,7 +110,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
           : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
       }`
     };
-  }, [adState.dailyCount, adState.maxDaily, isPremium]);
+  }, [rewardState.dailyCount, rewardState.maxDaily, isPremium]);
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
@@ -221,15 +212,10 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
               </div>
 
 {/* Bouton Publicité / Premium - Unifié avec état stabilisé */}
-<Button
-  size="sm"
-  onClick={() => safeSetShowAdModal(true)}
-  disabled={adButtonState.isDisabled}
-  className={adButtonState.className}
-  aria-label={isPremium ? "Récompenses premium" : "Regarder une publicité"}
->
-  <Gift className="h-3 w-3 text-white" />
-</Button>
+              <ClaimRewardButton 
+                variant="compact"
+                className={adButtonState.className}
+              />
             </div>
 
             {/* Ligne 2: Boosts actifs (si présents) */}
@@ -329,12 +315,7 @@ const safeSetShowAdModal = useCallback((show: boolean) => {
 
 {/* Modals - using safe state setter and conditional rendering */}
 {mounted.current && (
-  <>
-    <AdModal 
-      open={showAdModal} 
-      onOpenChange={safeSetShowAdModal}
-    />
-  </>
+   <></>
 )}
     </div>
   );
