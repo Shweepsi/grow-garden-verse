@@ -68,11 +68,11 @@ export function AdRewardSelector({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 overflow-hidden">
       <h3 className="text-sm font-semibold text-gray-700 mb-3">
         Choisissez votre récompense
       </h3>
-      <div className="grid gap-3 overflow-hidden">
+      <div className="grid gap-3 overflow-hidden rounded-lg">
         {availableRewards.map((reward, index) => {
           const isSelected = selectedReward?.type === reward.type && selectedReward?.amount === reward.amount;
           const baseGradient = getRewardGradient(reward.type);
