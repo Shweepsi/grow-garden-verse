@@ -72,7 +72,7 @@ export function AdRewardSelector({
       <h3 className="text-sm font-semibold text-gray-700 mb-3">
         Choisissez votre récompense
       </h3>
-      <div className="grid gap-3">
+      <div className="grid gap-3 overflow-hidden">
         {availableRewards.map((reward, index) => {
           const isSelected = selectedReward?.type === reward.type && selectedReward?.amount === reward.amount;
           const baseGradient = getRewardGradient(reward.type);
@@ -83,8 +83,8 @@ export function AdRewardSelector({
               key={index}
               className={`p-4 cursor-pointer transition-all duration-300 border-2 ${
                 isSelected 
-                  ? `bg-gradient-to-r ${selectedGradient} shadow-lg` 
-                  : `bg-gradient-to-r ${baseGradient} hover:shadow-md`
+                  ? `bg-gradient-to-r ${selectedGradient} shadow-inner` 
+                  : `bg-gradient-to-r ${baseGradient} hover:brightness-105`
               }`}
               onClick={() => onSelectReward(reward)}
             >
