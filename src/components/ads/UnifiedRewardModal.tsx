@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Crown, Gift, Loader2, AlertCircle } from 'lucide-react';
+import { Crown, Play, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
@@ -90,22 +90,47 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
 
   const getButtonContent = () => {
     if (watchState.isWatching) {
-      return <Loader2 className="w-4 h-4 animate-spin" />;
+      return (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Chargement...
+        </>
+      );
     }
 
     if (watchState.isWaitingForReward) {
-      return <Loader2 className="w-4 h-4 animate-spin" />;
+      return (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Validation...
+        </>
+      );
     }
 
     if (dailyLimitReached) {
-      return <AlertCircle className="w-4 h-4" />;
+      return (
+        <>
+          <AlertCircle className="w-4 h-4 mr-2" />
+          Limite atteinte
+        </>
+      );
     }
 
     if (isPremium) {
-      return <Crown className="w-4 h-4" />;
+      return (
+        <>
+          <Crown className="w-4 h-4 mr-2" />
+          Réclamer
+        </>
+      );
     }
 
-    return <Gift className="w-4 h-4" />;
+    return (
+      <>
+        <Play className="w-4 h-4 mr-2" />
+        Regarder pub
+      </>
+    );
   };
 
   const getButtonClassName = () => {
