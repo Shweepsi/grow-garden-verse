@@ -145,10 +145,10 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
     }
 
     if (isPremium) {
-      return `${baseClasses} bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 hover:from-yellow-600 hover:via-yellow-700 hover:to-amber-700 shadow-yellow-500/40 text-white hover:shadow-yellow-500/50 hover:scale-105`;
+      return `${baseClasses} bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 hover:from-yellow-600 hover:via-yellow-700 hover:to-amber-700 shadow-yellow-500/40 text-white hover:shadow-yellow-500/50`;
     }
     
-    return `${baseClasses} bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:via-orange-700 hover:to-amber-700 shadow-orange-500/40 text-white hover:shadow-orange-500/50 hover:scale-105`;
+    return `${baseClasses} bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:via-orange-700 hover:to-amber-700 shadow-orange-500/40 text-white hover:shadow-orange-500/50`;
   };
 
   return (
@@ -191,7 +191,7 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
                   <button
                     key={index}
                     onClick={() => handleRewardSelect(reward)}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-left hover:scale-[1.02] ${
+                    className={`p-4 rounded-xl border-2 transition-colors duration-200 text-left ${
                       selectedReward?.type === reward.type
                         ? 'border-orange-500 bg-orange-50 shadow-lg shadow-orange-500/20'
                         : 'border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-25'

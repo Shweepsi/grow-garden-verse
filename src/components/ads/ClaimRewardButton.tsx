@@ -79,7 +79,7 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
       return `${baseClasses} ${sizeClasses} ${isPremium 
         ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-yellow-500/40 hover:shadow-yellow-500/60' 
         : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-orange-500/40 hover:shadow-orange-500/60'
-      } hover:scale-110`;
+      }`;
     }
 
     if (variant === 'compact') {
@@ -89,7 +89,7 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
       return `${baseClasses} ${isPremium 
         ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-yellow-500/40' 
         : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-orange-500/40'
-      } hover:scale-105`;
+       }`;
     }
 
     // Default variant
@@ -100,7 +100,7 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
     return `${baseClasses} ${isPremium 
       ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-yellow-500/40 hover:shadow-yellow-500/50' 
       : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-orange-500/40 hover:shadow-orange-500/50'
-    } hover:scale-105`;
+    }`;
   };
 
   return (
