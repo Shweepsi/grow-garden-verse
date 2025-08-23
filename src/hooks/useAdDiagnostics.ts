@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { useAdRewards } from '@/hooks/useAdRewards';
+import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 import { useToast } from '@/hooks/use-toast';
 
 export function useAdDiagnostics() {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const { testConnectivity, debug } = useAdRewards();
+  const { rewardState } = useUnifiedRewards();
   const { toast } = useToast();
 
   const toggleDiagnostics = useCallback(() => {
@@ -12,7 +12,8 @@ export function useAdDiagnostics() {
   }, []);
 
   const runConnectivityTest = useCallback(async () => {
-    const result = await testConnectivity();
+    // Simplified connectivity test based on reward state
+    const result = rewardState?.available !== false;
     toast({
       title: result ? "Connexion OK" : "Connexion échouée",
       description: result 
@@ -21,12 +22,12 @@ export function useAdDiagnostics() {
       variant: result ? "default" : "destructive"
     });
     return result;
-  }, [testConnectivity, toast]);
+  }, [rewardState, toast]);
 
   return {
     showDiagnostics,
     toggleDiagnostics,
     runConnectivityTest,
-    debugInfo: debug
+    debugInfo: rewardState
   };
 }

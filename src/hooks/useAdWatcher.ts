@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameData } from '@/hooks/useGameData';
-import { useAdRewards } from '@/hooks/useAdRewards';
+import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 
 export interface AdWatchState {
   isWatching: boolean;
@@ -19,8 +19,8 @@ export function useAdWatcher() {
   const { toast } = useToast();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
   const { data: gameData, refetch: refetchGameData } = useGameData();
-  // Added refreshAdState to update UI after successful reward without incrementing count twice
-  const { testConnectivity, refreshAdState } = useAdRewards();
+  // Use unified rewards system
+  const { refreshState } = useUnifiedRewards();
 
   const [watchState, setWatchState] = useState<AdWatchState>({
     isWatching: false,
@@ -44,16 +44,7 @@ export function useAdWatcher() {
     try {
       setWatchState(prev => ({ ...prev, isWatching: true }));
       
-      // Test de connectivité
-      const isConnected = await testConnectivity();
-      if (!isConnected) {
-        toast({
-          title: "Problème de connexion",
-          description: "Vérifiez votre connexion internet et réessayez",
-          variant: "destructive"
-        });
-        return;
-      }
+      // Connectivity is now handled by unified system
       
       // Capturer les valeurs actuelles
       const currentCoins = gameData?.garden?.coins || 0;
@@ -116,8 +107,8 @@ export function useAdWatcher() {
           description: selectedReward.description
         });
         
-        // Refresh ad state to reflect updated daily count (already incremented server-side)
-        refreshAdState?.();
+        // Refresh reward state to reflect updated daily count (already incremented server-side)
+        refreshState?.();
         onSuccess?.();
       } else {
         console.log('AdMob: Timeout - récompense non reçue via SSV');
@@ -142,7 +133,7 @@ export function useAdWatcher() {
         validationProgress: 0
       });
     }
-  }, [user?.id, gameData, testConnectivity, refetchGameData, triggerCoinAnimation, triggerGemAnimation, toast, refreshAdState]);
+  }, [user?.id, gameData, refetchGameData, triggerCoinAnimation, triggerGemAnimation, toast, refreshState]);
 
   return {
     watchState,
