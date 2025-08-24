@@ -21,7 +21,7 @@ export const useUnifiedRewards = () => {
     available: true,
     cooldownEnds: null,
     dailyCount: 0,
-    maxDaily: 5, // Limite identique pour tous
+    maxDaily: 5, // Valeur par défaut, sera remplacée par la valeur de la BDD
     currentReward: null,
     timeUntilNext: 0
   });

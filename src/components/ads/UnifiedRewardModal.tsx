@@ -75,7 +75,7 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
       // Logique unifiée : même limite pour tous, seule différence = pub ou pas
       if (rewardState.dailyCount >= rewardState.maxDaily) {
         console.log('❌ Daily limit reached');
-        toast({ title: "Limite atteinte", description: "Limite quotidienne atteinte (5/5)", variant: "destructive" });
+        toast({ title: "Limite atteinte", description: `Limite quotidienne atteinte (${rewardState.dailyCount}/${rewardState.maxDaily})`, variant: "destructive" });
         return;
       }
       

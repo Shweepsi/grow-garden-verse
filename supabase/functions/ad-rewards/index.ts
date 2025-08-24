@@ -206,8 +206,8 @@ Deno.serve(async (req) => {
         const expiresAt = new Date()
         expiresAt.setMinutes(expiresAt.getMinutes() + rewardConfig.duration_minutes)
 
-        // Insérer la session et l'effet en parallèle pour optimiser
-        const [sessionResult, boostResult, gardenResult] = await Promise.all([
+        // Insérer la session et mise à jour du jardin
+        const [sessionResult, gardenResult] = await Promise.all([
           // Session d'audit
           supabaseClient
             .from('ad_sessions')
@@ -222,8 +222,41 @@ Deno.serve(async (req) => {
             .select('id')
             .single(),
           
-          // Effet boost
+          // Mise à jour last_played
           supabaseClient
+            .from('player_gardens')
+            .update({ last_played: now })
+            .eq('user_id', user.id)
+        ]);
+
+        // Vérifier s'il existe déjà un boost du même type
+        const { data: existingEffect, error: existingError } = await supabaseClient
+          .from('active_effects')
+          .select('id, expires_at, effect_value')
+          .eq('user_id', user.id)
+          .eq('effect_type', reward_type)
+          .gte('expires_at', now)
+          .single();
+
+        let effectResult;
+        
+        if (existingEffect && !existingError) {
+          // Additionner la durée au boost existant
+          const currentExpiresAt = new Date(existingEffect.expires_at);
+          const newExpiresAt = new Date(currentExpiresAt.getTime() + (rewardConfig.duration_minutes * 60 * 1000));
+          
+          effectResult = await supabaseClient
+            .from('active_effects')
+            .update({ 
+              expires_at: newExpiresAt.toISOString(),
+              effect_value: Math.max(finalEffectValue, existingEffect.effect_value) // Garder la meilleure valeur
+            })
+            .eq('id', existingEffect.id);
+
+          console.log(`✅ Boost duration extended: ${reward_type} extended by ${rewardConfig.duration_minutes}min for user ${user.id}`);
+        } else {
+          // Créer un nouveau boost
+          effectResult = await supabaseClient
             .from('active_effects')
             .insert({
               user_id: user.id,
@@ -232,29 +265,23 @@ Deno.serve(async (req) => {
               expires_at: expiresAt.toISOString(),
               source: is_premium ? 'premium_reward' : 'ad_reward',
               created_at: now
-            }),
-          
-          // Mise à jour last_played
-          supabaseClient
-            .from('player_gardens')
-            .update({ last_played: now })
-            .eq('user_id', user.id)
-        ])
+            });
 
-        if (boostResult.error) {
-          console.error('Error creating boost effect:', boostResult.error)
-          throw new Error(`Failed to create boost: ${boostResult.error.message}`)
+          console.log(`✅ New boost created: ${reward_type} x${finalEffectValue} for ${rewardConfig.duration_minutes}min to user ${user.id}`);
+        }
+
+        if (effectResult.error) {
+          console.error('Error managing boost effect:', effectResult.error);
+          throw new Error(`Failed to manage boost: ${effectResult.error.message}`);
         }
 
         if (sessionResult.error) {
-          console.warn('Session logging failed but continuing:', sessionResult.error)
+          console.warn('Session logging failed but continuing:', sessionResult.error);
         }
 
         if (gardenResult.error) {
-          console.warn('Garden update failed but continuing:', gardenResult.error)
+          console.warn('Garden update failed but continuing:', gardenResult.error);
         }
-
-        console.log(`✅ Boost applied successfully: ${reward_type} x2.0 for ${reward_amount}min to user ${user.id} (premium: ${is_premium})`)
 
         return new Response(
           JSON.stringify({ 

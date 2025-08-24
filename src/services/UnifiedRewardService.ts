@@ -114,7 +114,7 @@ export class UnifiedRewardService {
     return {
       available: false,
       cooldownEnds: null,
-      dailyCount: 5,
+      dailyCount: 0,
       maxDaily: 5,
       currentReward: null,
       timeUntilNext: 0
