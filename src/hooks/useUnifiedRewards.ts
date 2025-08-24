@@ -134,7 +134,7 @@ export const useUnifiedRewards = () => {
         if (result.success) {
           toast({
             title: "Boost Premium activé !",
-            description: `${reward.emoji} Boost ${rewardType} activé pour ${rewardAmount} minutes`
+            description: `${reward.emoji} ${reward.description} activé pour 60 minutes`
           });
           await refreshState();
           return { success: true, message: 'Boost premium activé avec succès' };
@@ -162,7 +162,7 @@ export const useUnifiedRewards = () => {
             if (result.success) {
               toast({
                 title: "Boost activé !",
-                description: `${reward.emoji} Boost ${rewardType} activé pour ${rewardAmount} minutes`
+                description: `${reward.emoji} ${reward.description} activé pour 60 minutes`
               });
               await refreshState();
               return { success: true, message: 'Publicité regardée et boost activé' };
