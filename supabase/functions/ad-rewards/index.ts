@@ -156,11 +156,34 @@ Deno.serve(async (req) => {
         )
       }
 
+      // Récupérer la configuration depuis la DB
+      const { data: rewardConfig, error: configError } = await supabaseClient
+        .from('ad_reward_configs')
+        .select('base_amount, duration_minutes, level_coefficient')
+        .eq('reward_type', reward_type)
+        .eq('active', true)
+        .single()
+
+      if (configError || !rewardConfig) {
+        console.error('Failed to fetch reward config:', configError)
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Invalid reward configuration'
+          }), 
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Calculer la valeur finale avec les coefficients
+      const playerLevel = 1 // Pour l'instant, on peut récupérer ça depuis player_gardens si nécessaire
+      const finalEffectValue = rewardConfig.base_amount + (rewardConfig.level_coefficient * (playerLevel - 1))
+
       // Transaction unique pour optimiser les performances
       try {
         const now = new Date().toISOString()
         const expiresAt = new Date()
-        expiresAt.setMinutes(expiresAt.getMinutes() + (reward_amount || 30))
+        expiresAt.setMinutes(expiresAt.getMinutes() + rewardConfig.duration_minutes)
 
         // Insérer la session et l'effet en parallèle pour optimiser
         const [sessionResult, boostResult, gardenResult] = await Promise.all([
@@ -170,8 +193,8 @@ Deno.serve(async (req) => {
             .insert({
               user_id: user.id,
               reward_type,
-              reward_amount,
-              reward_data: { is_premium, claimed_at: now },
+              reward_amount: finalEffectValue,
+              reward_data: { is_premium, claimed_at: now, duration_minutes: rewardConfig.duration_minutes },
               watched_at: now,
               created_at: now
             })
@@ -184,7 +207,7 @@ Deno.serve(async (req) => {
             .insert({
               user_id: user.id,
               effect_type: reward_type,
-              effect_value: 2.0, // 2x multiplier
+              effect_value: finalEffectValue,
               expires_at: expiresAt.toISOString(),
               source: is_premium ? 'premium_reward' : 'ad_reward',
               created_at: now
