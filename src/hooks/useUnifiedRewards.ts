@@ -68,9 +68,14 @@ export const useUnifiedRewards = () => {
     }
   }, [isPremium, user]);
 
-  const refreshState = useCallback(() => {
-    refetchRewardState();
-  }, [refetchRewardState]);
+  const refreshState = useCallback(async () => {
+    await refetchRewardState();
+    // Forcer un reload des récompenses aussi
+    if (gameData?.garden?.level) {
+      const rewards = await UnifiedRewardService.forceReloadRewards(gameData.garden.level);
+      setAvailableRewards(rewards);
+    }
+  }, [refetchRewardState, gameData?.garden?.level]);
 
   const formatTimeUntilNext = useCallback((seconds: number): string => {
     if (seconds <= 0) return '0s';
@@ -113,8 +118,8 @@ export const useUnifiedRewards = () => {
     const reward: AdReward = {
       type: rewardType as AdReward['type'],
       amount: rewardAmount,
-      description: `${rewardType} x${rewardAmount}`,
-      emoji: rewardType === 'coins' ? '🪙' : '💎'
+      description: `${rewardType} boost x${rewardAmount}min`,
+      emoji: rewardType === 'coin_boost' ? '🚀' : rewardType === 'gem_boost' ? '💎' : '⚡'
     };
 
     console.log('📦 Reward object created:', reward);
@@ -128,11 +133,11 @@ export const useUnifiedRewards = () => {
         
         if (result.success) {
           toast({
-            title: "Récompense réclamée !",
-            description: `${reward.emoji} +${rewardAmount} ${rewardType}`
+            title: "Boost Premium activé !",
+            description: `${reward.emoji} Boost ${rewardType} activé pour ${rewardAmount} minutes`
           });
-          await refetchRewardState();
-          return { success: true, message: 'Récompense premium réclamée avec succès' };
+          await refreshState();
+          return { success: true, message: 'Boost premium activé avec succès' };
         } else {
           console.log('❌ Premium claim failed:', result.error);
           toast({
@@ -156,11 +161,11 @@ export const useUnifiedRewards = () => {
             
             if (result.success) {
               toast({
-                title: "Récompense gagnée !",
-                description: `${reward.emoji} +${rewardAmount} ${rewardType}`
+                title: "Boost activé !",
+                description: `${reward.emoji} Boost ${rewardType} activé pour ${rewardAmount} minutes`
               });
-              await refetchRewardState();
-              return { success: true, message: 'Publicité regardée et récompense gagnée' };
+              await refreshState();
+              return { success: true, message: 'Publicité regardée et boost activé' };
             } else {
               toast({
                 title: "Erreur",

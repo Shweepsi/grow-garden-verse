@@ -156,49 +156,30 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Create reward session for audit
-      const { data: sessionData, error: sessionError } = await supabaseClient
-        .from('ad_sessions')
-        .insert({
-          user_id: user.id,
-          reward_type,
-          reward_amount,
-          reward_data: { is_premium, claimed_at: new Date().toISOString() },
-          watched_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        })
-        .select('id')
-        .single()
-
-      if (sessionError) {
-        console.error('Error creating session:', sessionError)
-        // Don't fail the whole operation, just log it
-      }
-
-      // Distribute reward based on type
+      // Transaction unique pour optimiser les performances
       try {
-        if (reward_type === 'coins') {
-          await supabaseClient
-            .from('player_gardens')
-            .update({ 
-              coins: supabaseClient.raw(`coins + ${reward_amount}`),
-              last_played: new Date().toISOString()
-            })
-            .eq('user_id', user.id)
-        } else if (reward_type === 'gems') {
-          await supabaseClient
-            .from('player_gardens')
-            .update({ 
-              gems: supabaseClient.raw(`gems + ${reward_amount}`),
-              last_played: new Date().toISOString()
-            })
-            .eq('user_id', user.id)
-        } else {
-          // Handle boost rewards
-          const expiresAt = new Date()
-          expiresAt.setMinutes(expiresAt.getMinutes() + (reward_amount || 30)) // Default 30min boost
+        const now = new Date().toISOString()
+        const expiresAt = new Date()
+        expiresAt.setMinutes(expiresAt.getMinutes() + (reward_amount || 30))
 
-          await supabaseClient
+        // Insérer la session et l'effet en parallèle pour optimiser
+        const [sessionResult, boostResult, gardenResult] = await Promise.all([
+          // Session d'audit
+          supabaseClient
+            .from('ad_sessions')
+            .insert({
+              user_id: user.id,
+              reward_type,
+              reward_amount,
+              reward_data: { is_premium, claimed_at: now },
+              watched_at: now,
+              created_at: now
+            })
+            .select('id')
+            .single(),
+          
+          // Effet boost
+          supabaseClient
             .from('active_effects')
             .insert({
               user_id: user.id,
@@ -206,17 +187,36 @@ Deno.serve(async (req) => {
               effect_value: 2.0, // 2x multiplier
               expires_at: expiresAt.toISOString(),
               source: is_premium ? 'premium_reward' : 'ad_reward',
-              created_at: new Date().toISOString()
-            })
+              created_at: now
+            }),
+          
+          // Mise à jour last_played
+          supabaseClient
+            .from('player_gardens')
+            .update({ last_played: now })
+            .eq('user_id', user.id)
+        ])
+
+        if (boostResult.error) {
+          console.error('Error creating boost effect:', boostResult.error)
+          throw new Error(`Failed to create boost: ${boostResult.error.message}`)
         }
 
-        console.log(`Reward distributed: ${reward_type} ${reward_amount} for user ${user.id} (premium: ${is_premium})`)
+        if (sessionResult.error) {
+          console.warn('Session logging failed but continuing:', sessionResult.error)
+        }
+
+        if (gardenResult.error) {
+          console.warn('Garden update failed but continuing:', gardenResult.error)
+        }
+
+        console.log(`✅ Boost applied successfully: ${reward_type} x2.0 for ${reward_amount}min to user ${user.id} (premium: ${is_premium})`)
 
         return new Response(
           JSON.stringify({ 
             success: true,
-            sessionId: sessionData?.id,
-            message: 'Reward claimed successfully',
+            sessionId: sessionResult.data?.id,
+            message: 'Boost claimed successfully',
             dailyCount: incrementResult.new_count,
             maxDaily: MAX_DAILY
           }), 

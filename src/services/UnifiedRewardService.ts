@@ -12,7 +12,8 @@ export class UnifiedRewardService {
    * Trie les récompenses par ordre de priorité
    */
   private static sortRewards(rewards: AdReward[]): AdReward[] {
-    const order = ['coins', 'gems', 'coin_boost', 'gem_boost', 'growth_speed', 'growth_boost'];
+    // Ordre de priorité : seulement les boosts maintenant
+    const order = ['coin_boost', 'gem_boost', 'growth_speed', 'growth_boost'];
     
     return rewards.sort((a, b) => {
       const aIndex = order.indexOf(a.type);
@@ -72,12 +73,12 @@ export class UnifiedRewardService {
   }
 
   /**
-   * Récompenses de secours en cas d'erreur
+   * Récompenses de secours en cas d'erreur - seulement les boosts
    */
   private static getFallbackRewards(): AdReward[] {
     return [
-      { type: 'coins', amount: 100, description: 'Pièces bonus', emoji: '🪙' },
-      { type: 'gems', amount: 5, description: 'Gemmes bonus', emoji: '💎' }
+      { type: 'coin_boost', amount: 30, duration: 30, description: 'Boost de pièces (30min)', emoji: '🚀' },
+      { type: 'growth_speed', amount: 30, duration: 30, description: 'Boost de croissance (30min)', emoji: '⚡' }
     ];
   }
 
