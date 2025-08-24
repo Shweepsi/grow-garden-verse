@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { UnifiedRewardService } from '@/services/UnifiedRewardService';
 import { usePremiumStatus } from './usePremiumStatus';
 import { useGameData } from './useGameData';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { AdMobService } from '@/services/AdMobService';
 import type { AdReward, AdState } from '@/types/ads';
 
@@ -13,6 +13,7 @@ export const useUnifiedRewards = () => {
   const { user } = useAuth();
   const { isPremium } = usePremiumStatus();
   const { data: gameData } = useGameData();
+  const { toast } = useToast();
   const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
   const [loadingRewards, setLoadingRewards] = useState(false);
 
@@ -102,7 +103,10 @@ export const useUnifiedRewards = () => {
   }, [user, rewardState, isPremium]);
 
   const claimReward = async (rewardType: string, rewardAmount: number): Promise<{ success: boolean; error?: string; message?: string }> => {
+    console.log('🔧 claimReward called with:', { rewardType, rewardAmount, isPremium, userId: user?.id });
+    
     if (!user) {
+      console.log('❌ No user found');
       return { success: false, error: 'Utilisateur non connecté' };
     }
 
@@ -113,49 +117,83 @@ export const useUnifiedRewards = () => {
       emoji: rewardType === 'coins' ? '🪙' : '💎'
     };
 
+    console.log('📦 Reward object created:', reward);
+
     try {
       if (isPremium) {
+        console.log('👑 Premium user - claiming directly');
         // Utilisateur premium : réclamation directe via edge function
         const result = await UnifiedRewardService.claimReward(reward, true);
+        console.log('🏆 UnifiedRewardService result:', result);
         
         if (result.success) {
-          toast.success(`Récompense premium réclamée : ${reward.emoji} +${rewardAmount}`);
+          toast({
+            title: "Récompense réclamée !",
+            description: `${reward.emoji} +${rewardAmount} ${rewardType}`
+          });
           await refetchRewardState();
           return { success: true, message: 'Récompense premium réclamée avec succès' };
         } else {
-          toast.error(result.error || 'Erreur lors de la réclamation');
+          console.log('❌ Premium claim failed:', result.error);
+          toast({
+            title: "Erreur",
+            description: result.error || 'Erreur lors de la réclamation',
+            variant: "destructive"
+          });
           return { success: false, error: result.error };
         }
       } else {
+        console.log('📱 Standard user - showing ad first');
         // Utilisateur normal : regarder une publicité d'abord
         try {
           const adResult = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
+          console.log('📺 Ad result:', adResult);
           
           if (adResult.success && adResult.rewarded) {
             // Publicité regardée avec succès, réclamer via edge function
             const result = await UnifiedRewardService.claimReward(reward, false);
+            console.log('🎬 Post-ad claim result:', result);
             
             if (result.success) {
-              toast.success(`Récompense gagnée : ${reward.emoji} +${rewardAmount}`);
+              toast({
+                title: "Récompense gagnée !",
+                description: `${reward.emoji} +${rewardAmount} ${rewardType}`
+              });
               await refetchRewardState();
               return { success: true, message: 'Publicité regardée et récompense gagnée' };
             } else {
-              toast.error(result.error || 'Erreur lors de la distribution');
+              toast({
+                title: "Erreur",
+                description: result.error || 'Erreur lors de la distribution',
+                variant: "destructive"
+              });
               return { success: false, error: result.error };
             }
           } else {
-            toast.error('Publicité non terminée ou non récompensée');
+            toast({
+              title: "Publicité non complétée",
+              description: 'Veuillez regarder la publicité entièrement',
+              variant: "destructive"
+            });
             return { success: false, error: 'Publicité non complétée' };
           }
         } catch (adError) {
-          console.error('Error showing ad:', adError);
-          toast.error('Erreur lors de l\'affichage de la publicité');
+          console.error('💥 Error showing ad:', adError);
+          toast({
+            title: "Erreur publicité",
+            description: 'Erreur lors de l\'affichage de la publicité',
+            variant: "destructive"
+          });
           return { success: false, error: 'Erreur publicité' };
         }
       }
     } catch (error) {
-      console.error('Error in claimReward:', error);
-      toast.error('Erreur inattendue');
+      console.error('💥 Error in claimReward:', error);
+      toast({
+        title: "Erreur inattendue",
+        description: 'Une erreur inattendue s\'est produite',
+        variant: "destructive"
+      });
       return { success: false, error: 'Erreur inattendue' };
     }
   };

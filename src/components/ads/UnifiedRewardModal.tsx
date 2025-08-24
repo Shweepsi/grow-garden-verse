@@ -64,23 +64,36 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
   const handleClaimReward = async () => {
     if (!selectedReward) return;
 
-    const { isPremium } = usePremiumStatus();
+    console.log('🔧 handleClaimReward called with:', { 
+      selectedReward, 
+      isPremium, 
+      dailyCount: rewardState.dailyCount, 
+      maxDaily: rewardState.maxDaily 
+    });
     
     try {
       // Logique unifiée : même limite pour tous, seule différence = pub ou pas
       if (rewardState.dailyCount >= rewardState.maxDaily) {
+        console.log('❌ Daily limit reached');
         toast({ title: "Limite atteinte", description: "Limite quotidienne atteinte (5/5)", variant: "destructive" });
         return;
       }
       
+      console.log('🚀 Calling claimReward...');
       const result = await claimReward(selectedReward.type, selectedReward.amount);
+      console.log('✅ claimReward result:', result);
+      
       if (result.success) {
+        console.log('🎉 Reward claimed successfully, closing modal');
         onOpenChange(false);
         setSelectedReward(null);
         // Message différencié automatiquement dans claimReward
+      } else {
+        console.log('❌ claimReward failed:', result.error);
+        toast({ title: "Erreur", description: result.error || "Erreur lors de la réclamation", variant: "destructive" });
       }
     } catch (error) {
-      console.error('Error claiming reward:', error);
+      console.error('💥 Error in handleClaimReward:', error);
       toast({ title: "Erreur", description: "Erreur lors de la réclamation", variant: "destructive" });
     }
   };
