@@ -7,6 +7,27 @@ interface RewardRequest {
   is_premium?: boolean;
 }
 
+// Get dynamic daily limit from database
+async function getDailyAdLimit(supabaseClient: any): Promise<number> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_configs')
+      .select('config_value')
+      .eq('config_key', 'daily_ad_limit')
+      .single();
+    
+    if (error || !data) {
+      console.log('Failed to get daily ad limit from config, using default 5');
+      return 5;
+    }
+    
+    return data.config_value?.max_ads || 5;
+  } catch (error) {
+    console.log('Error getting daily ad limit:', error);
+    return 5;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -45,7 +66,7 @@ Deno.serve(async (req) => {
     // GET: Check current reward state
     if (req.method === 'GET') {
       const today = new Date().toISOString().split('T')[0]
-      const MAX_DAILY = 5 // Same limit for all users
+      const MAX_DAILY = await getDailyAdLimit(supabaseClient)
 
       // Get or create cooldown record with automatic daily reset
       let { data: cooldownData, error: selectError } = await supabaseClient
@@ -133,7 +154,7 @@ Deno.serve(async (req) => {
       }
 
       const today = new Date().toISOString().split('T')[0]
-      const MAX_DAILY = 5 // Same limit for all users
+      const MAX_DAILY = await getDailyAdLimit(supabaseClient)
 
       // Use atomic increment function for thread safety
       const { data: incrementResult, error: incrementError } = await supabaseClient

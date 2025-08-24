@@ -96,15 +96,18 @@ export const useUnifiedRewards = () => {
   const getStatusMessage = useCallback((): string => {
     if (!user) return 'Connexion requise';
     
-    if (rewardState.dailyCount >= rewardState.maxDaily) {
-      return 'Limite quotidienne atteinte (5/5)';
+    const maxDaily = rewardState.maxDaily || 5;
+    const dailyCount = rewardState.dailyCount || 0;
+    
+    if (dailyCount >= maxDaily) {
+      return `Limite quotidienne atteinte (${dailyCount}/${maxDaily})`;
     }
 
     if (isPremium) {
-      return `Récompenses Premium disponibles (${rewardState.dailyCount}/5)`;
+      return `Récompenses Premium disponibles (${dailyCount}/${maxDaily})`;
     }
 
-    return `Publicités disponibles (${rewardState.dailyCount}/5)`;
+    return `Publicités disponibles (${dailyCount}/${maxDaily})`;
   }, [user, rewardState, isPremium]);
 
   const claimReward = async (rewardType: string, rewardAmount: number): Promise<{ success: boolean; error?: string; message?: string }> => {
@@ -132,9 +135,12 @@ export const useUnifiedRewards = () => {
         console.log('🏆 UnifiedRewardService result:', result);
         
         if (result.success) {
+          // Get the reward config from database for accurate notification
+          const rewardConfig = availableRewards.find(r => r.type === reward.type);
+          
           toast({
             title: "Boost Premium activé !",
-            description: `${reward.emoji} ${reward.description} activé pour 60 minutes`
+            description: `${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
           });
           await refreshState();
           return { success: true, message: 'Boost premium activé avec succès' };
@@ -160,9 +166,12 @@ export const useUnifiedRewards = () => {
             console.log('🎬 Post-ad claim result:', result);
             
             if (result.success) {
+              // Get the reward config from database for accurate notification
+              const rewardConfig = availableRewards.find(r => r.type === reward.type);
+              
               toast({
                 title: "Boost activé !",
-                description: `${reward.emoji} ${reward.description} activé pour 60 minutes`
+                description: `${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
               });
               await refreshState();
               return { success: true, message: 'Publicité regardée et boost activé' };
