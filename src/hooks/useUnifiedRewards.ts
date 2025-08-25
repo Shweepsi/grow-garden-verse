@@ -139,7 +139,7 @@ export const useUnifiedRewards = () => {
           const rewardConfig = availableRewards.find(r => r.type === reward.type);
           
           toast({
-            title: "Boost Premium activé !",
+            title: "Boost activé",
             description: `${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
           });
           await refreshState();
@@ -170,7 +170,7 @@ export const useUnifiedRewards = () => {
               const rewardConfig = availableRewards.find(r => r.type === reward.type);
               
               toast({
-                title: "Boost activé !",
+                title: "Boost activé",
                 description: `${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
               });
               await refreshState();
