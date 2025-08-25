@@ -17,28 +17,18 @@ export const useUnifiedRewards = () => {
   const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
   const [loadingRewards, setLoadingRewards] = useState(false);
 
-  const getInitialState = (): AdState => ({
-    available: true,
-    cooldownEnds: null,
-    dailyCount: 0,
-    maxDaily: 5, // Valeur par défaut, sera remplacée par la valeur de la BDD
-    currentReward: null,
-    timeUntilNext: 0
-  });
-
   // Query pour récupérer l'état des récompenses via la nouvelle edge function
   const { 
-    data: rewardState = getInitialState(), 
+    data: rewardState, 
     isLoading, 
     refetch: refetchRewardState 
   } = useQuery({
     queryKey: ['unifiedRewardState', user?.id],
     queryFn: () => UnifiedRewardService.getRewardState(user?.id || ''),
     enabled: !!user,
-    staleTime: 30 * 1000,
+    staleTime: 5 * 1000, // 5 secondes pour des données plus fraîches
     gcTime: 2 * 60 * 1000,
-    refetchInterval: 60 * 1000,
-    initialData: getInitialState()
+    refetchInterval: 60 * 1000
   });
 
   // Charger les récompenses disponibles basées sur le niveau du joueur
@@ -95,6 +85,7 @@ export const useUnifiedRewards = () => {
 
   const getStatusMessage = useCallback((): string => {
     if (!user) return 'Connexion requise';
+    if (!rewardState) return 'Chargement...';
     
     const maxDaily = rewardState.maxDaily || 5;
     const dailyCount = rewardState.dailyCount || 0;
