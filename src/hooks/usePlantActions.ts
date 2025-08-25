@@ -139,13 +139,16 @@ export const usePlantActions = () => {
         plantType.rarity,
         gemChance
       );
+      
+      // Appliquer le boost aux gemmes
+      const boostedGems = applyGemsBoost(gemReward);
 
-      console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes`);
+      console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes (${boostedGems} avec boost)`);
 
       const newExp = Math.max(0, (garden.experience || 0) + expReward);
       const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
       const newCoins = Math.max(0, (garden.coins || 0) + harvestReward);
-      const newGems = Math.max(0, (garden.gems || 0) + gemReward);
+      const newGems = Math.max(0, (garden.gems || 0) + boostedGems);
       const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
 
       // Utiliser la fonction atomique SQL pour une meilleure cohérence des données
@@ -171,9 +174,8 @@ export const usePlantActions = () => {
       // Déclencher les animations de récompense
       triggerCoinAnimation(harvestReward);
       triggerXpAnimation(expReward);
-      const boostedGems = applyGemsBoost(gemReward);
-      if (gemReward > 0) {
-        triggerGemAnimation(gemReward);
+      if (boostedGems > 0) {
+        triggerGemAnimation(boostedGems);
       }
 
       // OPTIMISATION: Batching des logs pour réduire les requêtes
