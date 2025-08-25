@@ -84,9 +84,18 @@ useEffect(() => {
 
   // Mémoisé pour stabiliser l'état du bouton avec logique plus intelligente
   const adButtonState = useMemo(() => {
+    // Protection contre les valeurs undefined
+    if (!rewardState) {
+      return {
+        shouldAnimate: false,
+        isDisabled: true,
+        className: 'h-8 px-2.5 border-0 rounded-md flex items-center transition-all duration-300 bg-gradient-to-r from-gray-400 to-gray-300'
+      };
+    }
+
     // Pour Premium, toujours vérifier la limite même si l'état n'est pas encore chargé
     if (isPremium) {
-      const dailyLimitReached = rewardState.dailyCount >= rewardState.maxDaily;
+      const dailyLimitReached = (rewardState.dailyCount || 0) >= (rewardState.maxDaily || 5);
       return {
         shouldAnimate: !dailyLimitReached,
         isDisabled: dailyLimitReached,
@@ -99,7 +108,7 @@ useEffect(() => {
     }
     
     // Pour les utilisateurs non-Premium
-    const dailyLimitReached = rewardState.dailyCount >= rewardState.maxDaily;
+    const dailyLimitReached = (rewardState.dailyCount || 0) >= (rewardState.maxDaily || 5);
     const shouldAnimate = !dailyLimitReached;
     return {
       shouldAnimate,
@@ -110,7 +119,7 @@ useEffect(() => {
           : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
       }`
     };
-  }, [rewardState.dailyCount, rewardState.maxDaily, isPremium]);
+  }, [rewardState?.dailyCount, rewardState?.maxDaily, isPremium]);
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
