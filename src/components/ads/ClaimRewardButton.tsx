@@ -21,8 +21,8 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
   
   const [modalOpen, setModalOpen] = useState(false);
 
-  const dailyLimitReached = rewardState.dailyCount >= rewardState.maxDaily;
-  const isDisabled = loading || dailyLimitReached || !rewardState.available;
+  const dailyLimitReached = (rewardState?.dailyCount || 0) >= (rewardState?.maxDaily || 5);
+  const isDisabled = loading || dailyLimitReached || !rewardState?.available;
 
   const getButtonContent = () => {
     if (loading) {
@@ -41,8 +41,8 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
       );
     }
 
-    if (!rewardState.available && rewardState.timeUntilNext > 0) {
-      const timeFormatted = formatTimeUntilNext(rewardState.timeUntilNext);
+    if (!rewardState?.available && (rewardState?.timeUntilNext || 0) > 0) {
+      const timeFormatted = formatTimeUntilNext(rewardState?.timeUntilNext || 0);
       return (
         <>
           <AlertCircle className="w-4 h-4 mr-2" />
