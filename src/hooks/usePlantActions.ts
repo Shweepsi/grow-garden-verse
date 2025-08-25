@@ -172,8 +172,8 @@ export const usePlantActions = () => {
       triggerCoinAnimation(harvestReward);
       triggerXpAnimation(expReward);
       const boostedGems = applyGemsBoost(gemReward);
-      if (boostedGems > 0) {
-        triggerGemAnimation(boostedGems);
+      if (gemReward > 0) {
+        triggerGemAnimation(gemReward);
       }
 
       // OPTIMISATION: Batching des logs pour réduire les requêtes
