@@ -67,15 +67,15 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
     console.log('🔧 handleClaimReward called with:', { 
       selectedReward, 
       isPremium, 
-      dailyCount: rewardState.dailyCount, 
-      maxDaily: rewardState.maxDaily 
+      dailyCount: rewardState?.dailyCount || 0, 
+      maxDaily: rewardState?.maxDaily || 5 
     });
     
     try {
       // Logique unifiée : même limite pour tous, seule différence = pub ou pas
-      if (rewardState.dailyCount >= rewardState.maxDaily) {
+      if ((rewardState?.dailyCount || 0) >= (rewardState?.maxDaily || 5)) {
         console.log('❌ Daily limit reached');
-        toast({ title: "Limite atteinte", description: `Limite quotidienne atteinte (${rewardState.dailyCount}/${rewardState.maxDaily})`, variant: "destructive" });
+        toast({ title: "Limite atteinte", description: `Limite quotidienne atteinte (${rewardState?.dailyCount || 0}/${rewardState?.maxDaily || 5})`, variant: "destructive" });
         return;
       }
       
@@ -99,7 +99,7 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
   };
 
   const isLoading = watchState.isWatching || watchState.isWaitingForReward || loading;
-  const dailyLimitReached = rewardState.dailyCount >= rewardState.maxDaily;
+  const dailyLimitReached = (rewardState?.dailyCount || 0) >= (rewardState?.maxDaily || 5);
 
   const getButtonContent = () => {
     if (watchState.isWatching) {
@@ -176,12 +176,12 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
           <div className="space-y-2">
             <div className="flex justify-between text-sm font-medium">
               <span className="text-gray-600">Progression quotidienne</span>
-              <span className="text-orange-600">{rewardState.dailyCount}/{rewardState.maxDaily}</span>
+              <span className="text-orange-600">{rewardState?.dailyCount || 0}/{rewardState?.maxDaily || 5}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
               <div 
                 className="h-2.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${Math.min((rewardState.dailyCount / rewardState.maxDaily) * 100, 100)}%` }}
+                style={{ width: `${Math.min(((rewardState?.dailyCount || 0) / (rewardState?.maxDaily || 5)) * 100, 100)}%` }}
               />
             </div>
             <p className="text-xs text-center text-gray-500">
