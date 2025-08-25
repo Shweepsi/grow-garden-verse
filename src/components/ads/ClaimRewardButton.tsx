@@ -36,8 +36,7 @@ export function ClaimRewardButton({ variant = 'default', className = '' }: Claim
     if (dailyLimitReached) {
       return (
         <>
-          <AlertCircle className="w-4 h-4 mr-2" />
-          {variant === 'compact' ? 'Limite' : 'Limite atteinte'}
+          <AlertCircle className="w-4 h-4" />
         </>
       );
     }
