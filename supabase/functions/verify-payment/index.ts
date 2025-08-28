@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("Session ID manquant");
     }
 
-    console.log(`🔍 Vérification du paiement: ${sessionId}`);
+    
 
     // Initialiser Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -30,7 +30,6 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     
     if (session.payment_status !== "paid") {
-      console.log(`⏳ Paiement non confirmé: ${session.payment_status}`);
       return new Response(
         JSON.stringify({ 
           verified: false, 
@@ -45,7 +44,7 @@ serve(async (req) => {
 
     // Client Supabase avec clé service pour bypasser RLS
     const supabaseService = createClient(
-      "https://osfexuqvlpxrfaukfobn.supabase.co",
+      Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
@@ -58,13 +57,11 @@ serve(async (req) => {
       .single();
 
     if (purchaseError || !purchase) {
-      console.error("❌ Achat non trouvé:", purchaseError);
       throw new Error("Achat non trouvé dans la base de données");
     }
 
     // Vérifier si déjà traité
     if (purchase.status === "completed") {
-      console.log(`✅ Paiement déjà traité: ${sessionId}`);
       return new Response(
         JSON.stringify({ 
           verified: true, 
@@ -88,7 +85,6 @@ serve(async (req) => {
       .single();
 
     if (gardenError) {
-      console.error("❌ Erreur récupération jardin:", gardenError);
       throw new Error("Erreur lors de la récupération du jardin");
     }
 
@@ -105,7 +101,6 @@ serve(async (req) => {
       .eq("user_id", purchase.user_id);
 
     if (updateGemsError) {
-      console.error("❌ Erreur attribution gemmes:", updateGemsError);
       throw new Error("Erreur lors de l'attribution des gemmes");
     }
 
@@ -119,10 +114,8 @@ serve(async (req) => {
       .eq("id", purchase.id);
 
     if (updatePurchaseError) {
-      console.error("❌ Erreur mise à jour achat:", updatePurchaseError);
+      throw new Error("Erreur lors de la mise à jour de l'achat");
     }
-
-    console.log(`🎉 Paiement vérifié et gemmes attribuées: ${rewardGems} gemmes pour ${purchase.user_id}`);
 
     return new Response(
       JSON.stringify({ 
@@ -137,9 +130,8 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("❌ Erreur verify-payment:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Erreur lors de la vérification du paiement" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

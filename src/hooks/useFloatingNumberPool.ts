@@ -83,10 +83,16 @@ export const useFloatingNumberPool = () => {
       ? `${(Math.abs(animation.amount) / 1000).toFixed(1)}K`
       : Math.abs(animation.amount).toString();
     
-    element.innerHTML = `
-      <span>${icon}</span>
-      <span>${isNegative ? '-' : '+'}${formattedAmount}</span>
-    `;
+    // Secure DOM manipulation - avoid innerHTML
+    element.textContent = '';
+    
+    const iconSpan = document.createElement('span');
+    iconSpan.textContent = icon;
+    element.appendChild(iconSpan);
+    
+    const amountSpan = document.createElement('span');
+    amountSpan.textContent = `${isNegative ? '-' : '+'}${formattedAmount}`;
+    element.appendChild(amountSpan);
     
     return element;
   }, [initializePool]);

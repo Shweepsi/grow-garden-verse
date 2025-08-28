@@ -15,8 +15,8 @@ serve(async (req) => {
   try {
     // Créer le client Supabase pour l'authentification
     const supabaseClient = createClient(
-      "https://osfexuqvlpxrfaukfobn.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zZmV4dXF2bHB4cmZhdWtmb2JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NDY3ODIsImV4cCI6MjA2NjQyMjc4Mn0.wu17C74K3kUs8mjRoHwFVAhjgEBmi91gRiJiGkYPICY"
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
     // Récupérer l'utilisateur authentifié
@@ -32,8 +32,6 @@ serve(async (req) => {
       throw new Error("Utilisateur non authentifié");
     }
 
-    console.log(`💎 Création du paiement pour l'utilisateur: ${user.email}`);
-
     // Initialiser Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -48,9 +46,6 @@ serve(async (req) => {
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      console.log(`✅ Client Stripe existant trouvé: ${customerId}`);
-    } else {
-      console.log(`🆕 Nouveau client Stripe pour: ${user.email}`);
     }
 
     // Déterminer les URLs de retour selon la plateforme
@@ -94,7 +89,7 @@ serve(async (req) => {
 
     // Enregistrer l'achat dans la base de données
     const supabaseService = createClient(
-      "https://osfexuqvlpxrfaukfobn.supabase.co",
+      Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
@@ -112,11 +107,8 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error("❌ Erreur lors de l'enregistrement:", insertError);
       throw new Error("Erreur lors de l'enregistrement de l'achat");
     }
-
-    console.log(`🎯 Session créée: ${session.id}`);
 
     return new Response(
       JSON.stringify({ 
@@ -130,9 +122,8 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("❌ Erreur create-payment:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Erreur lors de la création du paiement" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
