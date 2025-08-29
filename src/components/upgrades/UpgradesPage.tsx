@@ -95,9 +95,9 @@ export const UpgradesPage = () => {
       
       return maxLevel;
     } else {
-      // Pour les autres catégories, logique standard
+      // Pour les autres catégories, retourner le nombre d'améliorations achetées (commence à 0)
       const purchasedCount = upgrades.filter(upgrade => isUpgradePurchased(upgrade.id)).length;
-      return purchasedCount + 1;
+      return purchasedCount;
     }
   };
 
@@ -200,7 +200,7 @@ export const UpgradesPage = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <div className="flex-1 bg-white/50 rounded-full h-2 overflow-hidden">
                       <div className={`h-full transition-all duration-700 ${maxLevel ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-blue-400 to-cyan-500'}`} style={{
-                    width: `${(currentLevel - 1) / totalLevels * 100}%`
+                    width: `${currentLevel / totalLevels * 100}%`
                   }} />
                     </div>
                     <Badge variant="outline" className={`text-xs font-bold ${maxLevel ? 'bg-green-100 text-green-700 border-green-300' : 'bg-blue-100 text-blue-700 border-blue-300'}`}>
