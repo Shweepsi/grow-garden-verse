@@ -199,12 +199,30 @@ export const useUnifiedRewards = () => {
           }
         } catch (adError) {
           console.error('💥 Error showing ad:', adError);
+          
+          // Improved error handling with more specific messages
+          let errorMessage = 'Erreur lors de l\'affichage de la publicité';
+          let errorTitle = "Erreur publicité";
+          
+          if (adError instanceof Error) {
+            if (adError.message.includes('disponibles uniquement sur mobile')) {
+              errorTitle = "Application mobile requise";
+              errorMessage = "Les publicités ne sont disponibles que sur l'application mobile.";
+            } else if (adError.message.includes('connectivité') || adError.message.includes('network')) {
+              errorTitle = "Problème de connexion";
+              errorMessage = "Vérifiez votre connexion internet et réessayez.";
+            } else if (adError.message.includes('limite') || adError.message.includes('limit')) {
+              errorTitle = "Limite atteinte";
+              errorMessage = "Limite quotidienne de publicités atteinte.";
+            }
+          }
+          
           toast({
-            title: "Erreur publicité",
-            description: 'Erreur lors de l\'affichage de la publicité',
+            title: errorTitle,
+            description: errorMessage,
             variant: "destructive"
           });
-          return { success: false, error: 'Erreur publicité' };
+          return { success: false, error: errorMessage };
         }
       }
     } catch (error) {

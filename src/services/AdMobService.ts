@@ -240,24 +240,8 @@ export class AdMobService {
       };
     }
 
-    // Vérifier la limite quotidienne avant de montrer la pub
-    try {
-      const { data: limitCheck } = await supabase.functions.invoke('check-ad-limit');
-      if (!limitCheck?.success) {
-        return {
-          success: false,
-          rewarded: false,
-          error: 'Limite quotidienne de publicités atteinte'
-        };
-      }
-    } catch (error) {
-      console.error('AdMob: Error checking ad limit:', error);
-      return {
-        success: false,
-        rewarded: false,
-        error: 'Erreur lors de la vérification des limites'
-      };
-    }
+    // Note: Daily limit checking is now handled in useUnifiedRewards.ts
+    console.log('AdMob: Proceeding to show ad (limit checking done upstream)');
 
     try {
       if (!this.state.isAdLoaded) {

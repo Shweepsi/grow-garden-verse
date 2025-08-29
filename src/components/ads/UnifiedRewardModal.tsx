@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Crown, Play, Loader2, AlertCircle } from 'lucide-react';
+import { Crown, Play, Loader2, AlertCircle, Smartphone } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
@@ -100,6 +101,7 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
 
   const isLoading = watchState.isWatching || watchState.isWaitingForReward || loading;
   const dailyLimitReached = (rewardState?.dailyCount || 0) >= (rewardState?.maxDaily || 5);
+  const isWebPlatform = !Capacitor.isNativePlatform();
 
   const getButtonContent = () => {
     if (watchState.isWatching) {
@@ -138,6 +140,15 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
       );
     }
 
+    if (isWebPlatform) {
+      return (
+        <>
+          <Smartphone className="w-4 h-4 mr-2" />
+          Application mobile requise
+        </>
+      );
+    }
+
     return (
       <>
         <Play className="w-4 h-4 mr-2" />
@@ -159,6 +170,10 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
 
     if (isPremium) {
       return `${baseClasses} bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 hover:from-yellow-600 hover:via-yellow-700 hover:to-amber-700 shadow-yellow-500/40 text-white hover:shadow-yellow-500/50`;
+    }
+
+    if (isWebPlatform) {
+      return `${baseClasses} bg-gradient-to-r from-blue-400 to-blue-500 shadow-blue-400/30 text-white cursor-not-allowed opacity-75`;
     }
     
     return `${baseClasses} bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:via-orange-700 hover:to-amber-700 shadow-orange-500/40 text-white hover:shadow-orange-500/50`;
@@ -268,7 +283,13 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
           </Button>
           
           <Button 
-            onClick={handleClaimReward}
+            onClick={isWebPlatform ? () => {
+              toast({
+                title: "Application mobile requise",
+                description: "Les publicités ne sont disponibles que sur l'application mobile. Téléchargez l'app pour regarder des publicités et obtenir des récompenses !",
+                variant: "default"
+              });
+            } : handleClaimReward}
             disabled={!selectedReward || isLoading || dailyLimitReached}
             className={getButtonClassName()}
           >
