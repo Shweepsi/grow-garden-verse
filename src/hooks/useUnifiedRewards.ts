@@ -145,12 +145,27 @@ export const useUnifiedRewards = () => {
         }
       } else {
         console.log('📱 Standard user - showing ad first');
+        
+        // Vérifier d'abord les limites quotidiennes
+        if (!rewardState?.available || (rewardState.dailyCount >= rewardState.maxDaily)) {
+          const maxDaily = rewardState?.maxDaily || 5;
+          const dailyCount = rewardState?.dailyCount || 0;
+          toast({
+            title: "Limite atteinte",
+            description: `Limite quotidienne atteinte (${dailyCount}/${maxDaily})`,
+            variant: "destructive"
+          });
+          return { success: false, error: 'Limite quotidienne atteinte' };
+        }
+        
         // Utilisateur normal : regarder une publicité d'abord
         try {
+          console.log('🎬 Showing rewarded ad...');
           const adResult = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
           console.log('📺 Ad result:', adResult);
           
           if (adResult.success && adResult.rewarded) {
+            console.log('✅ Ad watched successfully, claiming reward...');
             // Publicité regardée avec succès, réclamer via edge function
             const result = await UnifiedRewardService.claimReward(reward, false);
             console.log('🎬 Post-ad claim result:', result);
@@ -165,6 +180,7 @@ export const useUnifiedRewards = () => {
               await refreshState();
               return { success: true, message: 'Publicité regardée et boost activé' };
             } else {
+              console.error('❌ Failed to claim reward after ad:', result.error);
               toast({
                 title: "Erreur",
                 description: result.error || 'Erreur lors de la distribution',
@@ -173,6 +189,7 @@ export const useUnifiedRewards = () => {
               return { success: false, error: result.error };
             }
           } else {
+            console.log('❌ Ad not completed or not rewarded');
             toast({
               title: "Publicité non complétée",
               description: 'Veuillez regarder la publicité entièrement',

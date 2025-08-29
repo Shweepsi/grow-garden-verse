@@ -12,15 +12,25 @@ export class AdCooldownService {
     maxDaily: number;
   }> {
     try {
-      // Utiliser la nouvelle edge function pour vérifier les limites
-      const { data, error } = await supabase.functions.invoke('check-ad-limit');
+      console.log('🔍 Checking ad cooldown for user:', userId);
+      
+      // Utiliser la fonction ad-rewards existante avec GET
+      const { data, error } = await supabase.functions.invoke('ad-rewards', {
+        body: null // GET request
+      });
       
       if (error) {
-        console.error('Error checking ad limit:', error);
+        console.error('❌ Error checking ad limit:', error);
         throw error;
       }
 
-      if (!data.success) {
+      console.log('📊 Ad limit check result:', data);
+
+      const available = data.available || false;
+      const dailyCount = data.dailyCount || 0;
+      const maxDaily = data.maxDaily || this.MAX_DAILY_ADS;
+
+      if (!available || dailyCount >= maxDaily) {
         // Limite atteinte
         const now = new Date();
         const tomorrow = new Date(now);
@@ -32,8 +42,8 @@ export class AdCooldownService {
           available: false,
           cooldownEnds: tomorrow,
           timeUntilNext,
-          dailyCount: data.current_count || this.MAX_DAILY_ADS,
-          maxDaily: this.MAX_DAILY_ADS
+          dailyCount,
+          maxDaily
         };
       }
 
@@ -41,17 +51,17 @@ export class AdCooldownService {
         available: true,
         cooldownEnds: null,
         timeUntilNext: 0,
-        dailyCount: data.current_count || 0,
-        maxDaily: this.MAX_DAILY_ADS
+        dailyCount,
+        maxDaily
       };
     } catch (error) {
-      console.error('Error in getCooldownInfo:', error);
-      // Fallback en cas d'erreur - bloquer les pubs par sécurité
+      console.error('💥 Error in getCooldownInfo:', error);
+      // Fallback en cas d'erreur - permettre 1 pub par sécurité
       return {
-        available: false,
+        available: true,
         cooldownEnds: null,
-        timeUntilNext: 3600, // 1 heure de cooldown
-        dailyCount: this.MAX_DAILY_ADS,
+        timeUntilNext: 0,
+        dailyCount: 0,
         maxDaily: this.MAX_DAILY_ADS
       };
     }
@@ -59,21 +69,14 @@ export class AdCooldownService {
 
   static async updateAfterAdWatch(userId: string): Promise<void> {
     try {
-      // Utiliser la nouvelle edge function pour incrémenter le compteur
-      const { data, error } = await supabase.functions.invoke('increment-ad-count');
+      console.log('📈 Updating ad count after watch for user:', userId);
       
-      if (error) {
-        console.error('Error incrementing ad count:', error);
-        throw error;
-      }
-
-      if (data.success) {
-        console.log(`📈 Pub regardée: ${data.new_count}/${this.MAX_DAILY_ADS} aujourd'hui`);
-      } else {
-        console.warn('Failed to increment ad count:', data.message);
-      }
+      // Cette fonction n'est plus nécessaire car l'incrémentation 
+      // se fait directement dans la fonction ad-rewards lors du claim
+      console.log('✅ Ad count will be updated by the claim process');
+      
     } catch (error) {
-      console.error('Error in updateAfterAdWatch:', error);
+      console.error('💥 Error in updateAfterAdWatch:', error);
       throw error;
     }
   }
