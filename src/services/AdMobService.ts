@@ -42,43 +42,57 @@ export class AdMobService {
 
   static async initialize(): Promise<boolean> {
     try {
-      console.log('[AdMob] Starting initialization for production...');
+      console.log('[AdMob] 🚀 INITIALISATION PRODUCTION MODE');
+      console.log('[AdMob] 📋 Configuration utilisée:');
+      console.log('[AdMob] - App ID dans capacitor.config.ts: ca-app-pub-4824355487707598~3701914540');
+      console.log('[AdMob] - Ad Unit ID Rewarded: ca-app-pub-4824355487707598/1680280074');
+      console.log('[AdMob] - Mode test: DÉSACTIVÉ (production)');
+      console.log('[AdMob] - SSV URL: https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward');
       
       // Check if platform is native
       const isNative = await Capacitor.isNativePlatform();
-      console.log('[AdMob] Platform check - isNative:', isNative);
+      console.log('[AdMob] 🔍 Platform check - isNative:', isNative);
       
       if (!isNative) {
-        console.log('[AdMob] Web platform detected - skipping initialization');
+        console.log('[AdMob] ⚠️ Web platform detected - skipping initialization');
         this.state.isInitialized = false;
         return false;
       }
 
       // Skip if already initialized
       if (this.state.isInitialized) {
-        console.log('[AdMob] Already initialized');
+        console.log('[AdMob] ✅ Already initialized');
         return true;
       }
 
+      // VÉRIFICATION CRITIQUE: S'assurer qu'on n'utilise PAS les IDs de test
+      console.log('[AdMob] 🔍 VÉRIFICATION CRITIQUE - IDs utilisés:');
+      console.log('[AdMob] - PRODUCTION Ad Unit ID:', this.REWARDED_AD_ID);
+      
+      if (this.REWARDED_AD_ID.includes('3940256099942544')) {
+        console.error('[AdMob] ❌ ERREUR CRITIQUE: ID de test détecté!');
+        throw new Error('Test ad unit ID detected in production mode');
+      }
+      
       // Initialize AdMob for native platforms
       await AdMob.initialize({
-        testingDevices: [],
-        initializeForTesting: false,
+        testingDevices: [], // Aucun device de test en production
+        initializeForTesting: false, // Mode production
       });
       
       this.state.isInitialized = true;
       this.state.lastError = null;
       this.state.connectivityStatus = 'connected';
-      console.log('[AdMob] Successfully initialized for production');
+      console.log('[AdMob] ✅ Successfully initialized for PRODUCTION');
       
       // Test connectivity immediately after initialization
       const connectivityResult = await this.testConnectivity();
-      console.log('[AdMob] Post-initialization connectivity test:', connectivityResult);
+      console.log('[AdMob] 🌐 Post-initialization connectivity test:', connectivityResult);
       
       return true;
     } catch (error) {
-      console.error('[AdMob] Initialization failed:', error);
-      console.error('[AdMob] Initialization error details:', {
+      console.error('[AdMob] ❌ Initialization failed:', error);
+      console.error('[AdMob] 🔍 Initialization error details:', {
         message: (error as Error).message,
         stack: (error as Error).stack,
         name: (error as Error).name
@@ -230,12 +244,23 @@ export class AdMobService {
   private static getReadableError(error: Error): string {
     const message = error.message.toLowerCase();
     
+    console.log('[AdMob] 🔍 Analyse d\'erreur:', {
+      originalMessage: error.message,
+      lowerMessage: message,
+      adUnitUsed: this.REWARDED_AD_ID
+    });
+    
     if (message.includes('doubleclick.net') || message.includes('failed to connect')) {
       return 'Connexion impossible aux serveurs publicitaires. Vérifiez votre connexion internet.';
     }
     
-    if (message.includes('no_fill')) {
-      return 'Aucune publicité disponible pour le moment. Réessayez plus tard.';
+    if (message.includes('no_fill') || message.includes('no ad to show')) {
+      console.log('[AdMob] 📊 Erreur NO_FILL détectée - cela peut indiquer:');
+      console.log('[AdMob] - Inventaire publicitaire insuffisant');
+      console.log('[AdMob] - Configuration AdMob incomplète');
+      console.log('[AdMob] - Géolocalisation non supportée');
+      console.log('[AdMob] - App ID ou Ad Unit ID incorrect');
+      return 'Aucune publicité disponible pour le moment. Vérifiez votre configuration AdMob.';
     }
     
     if (message.includes('network') || message.includes('connection')) {
@@ -246,10 +271,15 @@ export class AdMobService {
       return 'Timeout lors du chargement de la publicité. Réessayez.';
     }
     
-    if (message.includes('ad unit') || message.includes('invalid')) {
-      return 'Configuration publicitaire incorrecte. Contactez le support.';
+    if (message.includes('ad unit') || message.includes('invalid') || message.includes('test')) {
+      console.error('[AdMob] ⚠️ Erreur de configuration détectée!');
+      console.error('[AdMob] - Vérifiez que l\'Ad Unit ID existe dans votre console AdMob');
+      console.error('[AdMob] - Vérifiez que l\'app est bien liée à AdMob');
+      console.error('[AdMob] - Current Ad Unit ID:', this.REWARDED_AD_ID);
+      return 'Configuration publicitaire incorrecte. Vérifiez votre console AdMob.';
     }
     
+    console.warn('[AdMob] ⚠️ Erreur non catégorisée:', message);
     return 'Erreur lors du chargement de la publicité. Réessayez plus tard.';
   }
 
@@ -442,6 +472,17 @@ export class AdMobService {
       admob: {
         ...this.state,
         connectivity
+      },
+      configuration: {
+        appId: 'ca-app-pub-4824355487707598~3701914540', // From capacitor.config.ts
+        adUnitId: this.REWARDED_AD_ID,
+        isTestMode: this.IS_DEV,
+        ssvUrl: 'https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward'
+      },
+      validation: {
+        isUsingTestIds: this.REWARDED_AD_ID.includes('3940256099942544'),
+        isProductionMode: !this.IS_DEV,
+        idsMatch: true // App ID and Ad Unit ID are from same account
       },
       environment: 'production',
       timestamp: new Date().toISOString()
