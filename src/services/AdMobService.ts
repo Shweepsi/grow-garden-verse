@@ -255,14 +255,16 @@ export class AdMobService {
 
   static async showRewardedAd(userId: string, rewardType: string, rewardAmount: number): Promise<AdWatchResult> {
     try {
-      console.log(`[AdMob] showRewardedAd called for user ${userId}, reward: ${rewardType}, amount: ${rewardAmount}`);
-      console.log(`[AdMob] Current state:`, this.getState());
+      console.log(`[AdMob] 🎯 DÉBUT PROCESSUS AD REWARD`);
+      console.log(`[AdMob] 📋 Paramètres: userId=${userId}, reward=${rewardType}, amount=${rewardAmount}`);
+      console.log(`[AdMob] 📊 État initial:`, JSON.stringify(this.getState(), null, 2));
       
-      // Vérifier si on est sur une plateforme native
+      // ÉTAPE 1: Vérification plateforme
+      console.log(`[AdMob] 🔍 ÉTAPE 1: Vérification plateforme...`);
       const isNative = await Capacitor.isNativePlatform();
-      console.log(`[AdMob] Platform check - isNative: ${isNative}`);
+      console.log(`[AdMob] ✅ Plateforme native: ${isNative}`);
       if (!isNative) {
-        console.log('[AdMob] Web platform detected - ads not available');
+        console.log('[AdMob] ❌ ÉCHEC: Plateforme web détectée - publicités non disponibles');
         return { 
           success: false, 
           rewarded: false, 
@@ -270,83 +272,116 @@ export class AdMobService {
         };
       }
 
-      // Vérifier l'état d'initialisation
+      // ÉTAPE 2: Vérification initialisation
+      console.log(`[AdMob] 🔍 ÉTAPE 2: Vérification initialisation...`);
+      console.log(`[AdMob] État initialized: ${this.state.isInitialized}`);
       if (!this.state.isInitialized) {
-        console.log('[AdMob] Not initialized, attempting to initialize...');
+        console.log('[AdMob] ⚠️ Non initialisé, tentative d\'initialisation...');
         const initialized = await this.initialize();
-        console.log(`[AdMob] Initialization result: ${initialized}`);
+        console.log(`[AdMob] ${initialized ? '✅' : '❌'} Résultat initialisation: ${initialized}`);
         if (!initialized) {
-          console.error('[AdMob] Failed to initialize AdMob service');
+          console.error('[AdMob] ❌ ÉCHEC CRITIQUE: Impossible d\'initialiser AdMob');
           return { 
             success: false, 
             rewarded: false, 
             error: 'Impossible d\'initialiser le service publicitaire' 
           };
         }
+      } else {
+        console.log(`[AdMob] ✅ AdMob déjà initialisé`);
       }
 
-      // Test de connectivité avant de charger l'annonce
-      console.log('[AdMob] Testing connectivity before loading ad...');
+      // ÉTAPE 3: Test connectivité
+      console.log(`[AdMob] 🔍 ÉTAPE 3: Test de connectivité...`);
       const connectivity = await this.testConnectivity();
-      console.log(`[AdMob] Connectivity test result: ${connectivity}`);
+      console.log(`[AdMob] ${connectivity ? '✅' : '❌'} Test connectivité: ${connectivity}`);
+      if (!connectivity) {
+        console.log(`[AdMob] ⚠️ Connectivité faible mais on continue...`);
+      }
 
-      // Charger l'annonce si elle n'est pas déjà chargée
+      // ÉTAPE 4: Chargement annonce
+      console.log(`[AdMob] 🔍 ÉTAPE 4: Vérification/chargement annonce...`);
+      console.log(`[AdMob] isAdLoaded: ${this.state.isAdLoaded}, isAdLoading: ${this.state.isAdLoading}`);
       if (!this.state.isAdLoaded) {
-        console.log('[AdMob] Ad not loaded, loading now...');
+        console.log('[AdMob] 📥 Chargement de l\'annonce...');
         const loaded = await this.loadRewardedAd(userId, rewardType, rewardAmount);
-        console.log(`[AdMob] Ad loading result: ${loaded}`);
+        console.log(`[AdMob] ${loaded ? '✅' : '❌'} Résultat chargement: ${loaded}`);
         if (!loaded) {
-          console.error('[AdMob] Failed to load rewarded ad');
+          console.error('[AdMob] ❌ ÉCHEC CRITIQUE: Impossible de charger l\'annonce');
+          console.error('[AdMob] 🚨 Dernière erreur:', this.state.lastError);
           return { 
             success: false, 
             rewarded: false, 
-            error: 'Impossible de charger la publicité' 
+            error: this.state.lastError || 'Impossible de charger la publicité' 
           };
         }
-      }
-
-      console.log('[AdMob] Showing rewarded ad...');
-      const result = await AdMob.showRewardVideoAd();
-      console.log('[AdMob] Ad show result:', result);
-
-      // Check if the user was rewarded (AdMobRewardItem has 'type' and 'amount' properties)
-      const wasRewarded = !!(result && typeof result === 'object' && 'type' in result && 'amount' in result);
-      
-      // Appliquer la récompense immédiatement côté client
-      if (wasRewarded) {
-        console.log('[AdMob] User was rewarded, applying client-side reward...');
-        await this.applyImmediateClientReward(userId, rewardType, rewardAmount);
       } else {
-        console.warn('[AdMob] User was not rewarded - ad may not have been completed');
+        console.log(`[AdMob] ✅ Annonce déjà chargée`);
       }
 
-      // Nettoyer l'état pour permettre le chargement de la prochaine annonce
-      this.cleanup();
+      // ÉTAPE 5: Affichage annonce
+      console.log(`[AdMob] 🔍 ÉTAPE 5: Affichage de l'annonce...`);
+      console.log(`[AdMob] 🎬 Tentative d'affichage avec l'ID: ${this.REWARDED_AD_ID}`);
       
-      // Précharger la prochaine annonce en arrière-plan
-      this.preloadAd(userId, rewardType, rewardAmount);
+      const result = await AdMob.showRewardVideoAd();
+      console.log(`[AdMob] 🎬 Résultat brut showRewardVideoAd:`, JSON.stringify(result, null, 2));
 
+      // ÉTAPE 6: Vérification récompense
+      console.log(`[AdMob] 🔍 ÉTAPE 6: Analyse du résultat...`);
+      const wasRewarded = !!(result && typeof result === 'object' && 'type' in result && 'amount' in result);
+      console.log(`[AdMob] ${wasRewarded ? '🎉' : '😞'} Récompense accordée: ${wasRewarded}`);
+      
+      if (wasRewarded) {
+        const rewardInfo = result as AdMobRewardItem;
+        console.log(`[AdMob] 🎁 Détails récompense: type="${rewardInfo.type}", amount=${rewardInfo.amount}`);
+        console.log('[AdMob] 💰 Application récompense côté client...');
+        await this.applyImmediateClientReward(userId, rewardType, rewardAmount);
+        console.log('[AdMob] ✅ Récompense client appliquée');
+      } else {
+        console.warn('[AdMob] ⚠️ PROBLÈME: Utilisateur non récompensé - annonce possiblement fermée prématurément');
+        console.warn('[AdMob] 📋 Analyse du résultat:', {
+          result,
+          hasType: result && 'type' in result,
+          hasAmount: result && 'amount' in result,
+          resultType: typeof result
+        });
+      }
+
+      // ÉTAPE 7: Nettoyage et préparation suivante
+      console.log(`[AdMob] 🔍 ÉTAPE 7: Nettoyage et préparation...`);
+      this.cleanup();
+      console.log(`[AdMob] 🧹 État nettoyé`);
+      
+      this.preloadAd(userId, rewardType, rewardAmount);
+      console.log(`[AdMob] 🔄 Préchargement suivant lancé`);
+
+      console.log(`[AdMob] 🎯 FIN PROCESSUS - SUCCÈS: ${wasRewarded ? 'RÉCOMPENSÉ' : 'NON RÉCOMPENSÉ'}`);
       return { 
         success: true, 
         rewarded: wasRewarded 
       };
 
     } catch (error) {
-      console.error('[AdMob] Error showing rewarded ad:', error);
-      console.error('[AdMob] Error details:', {
+      console.error('[AdMob] 💥 ERREUR FATALE dans showRewardedAd:', error);
+      console.error('[AdMob] 🔍 Détails erreur complète:', {
         message: (error as Error).message,
         stack: (error as Error).stack,
-        name: (error as Error).name
+        name: (error as Error).name,
+        toString: error.toString()
       });
-      this.state.lastError = (error as Error).message;
       
-      // Nettoyer l'état en cas d'erreur
+      const readableError = this.getReadableError(error as Error);
+      this.state.lastError = readableError;
+      console.error('[AdMob] 📝 Erreur lisible pour utilisateur:', readableError);
+      
+      // Nettoyage en cas d'erreur
       this.cleanup();
+      console.log(`[AdMob] 🧹 État nettoyé après erreur`);
       
       return { 
         success: false, 
         rewarded: false, 
-        error: this.getReadableError(error as Error) 
+        error: readableError 
       };
     }
   }
