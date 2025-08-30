@@ -41,27 +41,50 @@ export class AdMobService {
   };
 
   static async initialize(): Promise<boolean> {
-    if (this.state.isInitialized || !Capacitor.isNativePlatform()) {
-      console.log('AdMob: Already initialized or not on native platform');
-      return this.state.isInitialized;
-    }
-
     try {
-      console.log('AdMob: Initializing with production settings...');
+      console.log('[AdMob] Starting initialization for production...');
       
-      await AdMob.initialize({
-        testingDevices: [], // Aucun appareil de test en production
-        initializeForTesting: false // Jamais en mode test pour la production
-      });
+      // Check if platform is native
+      const isNative = await Capacitor.isNativePlatform();
+      console.log('[AdMob] Platform check - isNative:', isNative);
+      
+      if (!isNative) {
+        console.log('[AdMob] Web platform detected - skipping initialization');
+        this.state.isInitialized = false;
+        return false;
+      }
 
+      // Skip if already initialized
+      if (this.state.isInitialized) {
+        console.log('[AdMob] Already initialized');
+        return true;
+      }
+
+      // Initialize AdMob for native platforms
+      await AdMob.initialize({
+        testingDevices: [],
+        initializeForTesting: false,
+      });
+      
       this.state.isInitialized = true;
       this.state.lastError = null;
       this.state.connectivityStatus = 'connected';
-      console.log('AdMob: Initialized successfully with production ad unit');
+      console.log('[AdMob] Successfully initialized for production');
+      
+      // Test connectivity immediately after initialization
+      const connectivityResult = await this.testConnectivity();
+      console.log('[AdMob] Post-initialization connectivity test:', connectivityResult);
+      
       return true;
     } catch (error) {
-      console.error('AdMob: Failed to initialize:', error);
+      console.error('[AdMob] Initialization failed:', error);
+      console.error('[AdMob] Initialization error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        name: (error as Error).name
+      });
       this.state.lastError = this.getReadableError(error as Error);
+      this.state.isInitialized = false;
       this.state.connectivityStatus = 'disconnected';
       return false;
     }
@@ -231,55 +254,99 @@ export class AdMobService {
   }
 
   static async showRewardedAd(userId: string, rewardType: string, rewardAmount: number): Promise<AdWatchResult> {
-    if (!Capacitor.isNativePlatform()) {
-      console.log('AdMob: Web platform - ads not available');
-      return { 
-        success: false, 
-        rewarded: false,
-        error: 'Publicités disponibles uniquement sur mobile' 
-      };
-    }
-
-    // Note: Daily limit checking is now handled in useUnifiedRewards.ts
-    console.log('AdMob: Proceeding to show ad (limit checking done upstream)');
-
     try {
-      if (!this.state.isAdLoaded) {
-        console.log('AdMob: Ad not loaded, loading now...');
-        const loaded = await this.loadRewardedAd(userId, rewardType, rewardAmount);
-        if (!loaded) {
+      console.log(`[AdMob] showRewardedAd called for user ${userId}, reward: ${rewardType}, amount: ${rewardAmount}`);
+      console.log(`[AdMob] Current state:`, this.getState());
+      
+      // Vérifier si on est sur une plateforme native
+      const isNative = await Capacitor.isNativePlatform();
+      console.log(`[AdMob] Platform check - isNative: ${isNative}`);
+      if (!isNative) {
+        console.log('[AdMob] Web platform detected - ads not available');
+        return { 
+          success: false, 
+          rewarded: false, 
+          error: 'Publicités disponibles uniquement sur mobile' 
+        };
+      }
+
+      // Vérifier l'état d'initialisation
+      if (!this.state.isInitialized) {
+        console.log('[AdMob] Not initialized, attempting to initialize...');
+        const initialized = await this.initialize();
+        console.log(`[AdMob] Initialization result: ${initialized}`);
+        if (!initialized) {
+          console.error('[AdMob] Failed to initialize AdMob service');
           return { 
             success: false, 
-            rewarded: false,
-            error: this.state.lastError || 'Échec du chargement de la publicité' 
+            rewarded: false, 
+            error: 'Impossible d\'initialiser le service publicitaire' 
           };
         }
       }
 
-      console.log('AdMob: Showing production rewarded ad with SSV for user:', userId);
-      console.log('AdMob: Ad unit ID:', this.REWARDED_AD_ID);
-      
+      // Test de connectivité avant de charger l'annonce
+      console.log('[AdMob] Testing connectivity before loading ad...');
+      const connectivity = await this.testConnectivity();
+      console.log(`[AdMob] Connectivity test result: ${connectivity}`);
+
+      // Charger l'annonce si elle n'est pas déjà chargée
+      if (!this.state.isAdLoaded) {
+        console.log('[AdMob] Ad not loaded, loading now...');
+        const loaded = await this.loadRewardedAd(userId, rewardType, rewardAmount);
+        console.log(`[AdMob] Ad loading result: ${loaded}`);
+        if (!loaded) {
+          console.error('[AdMob] Failed to load rewarded ad');
+          return { 
+            success: false, 
+            rewarded: false, 
+            error: 'Impossible de charger la publicité' 
+          };
+        }
+      }
+
+      console.log('[AdMob] Showing rewarded ad...');
       const result = await AdMob.showRewardVideoAd();
+      console.log('[AdMob] Ad show result:', result);
+
+      // Check if the user was rewarded (AdMobRewardItem has 'type' and 'amount' properties)
+      const wasRewarded = !!(result && typeof result === 'object' && 'type' in result && 'amount' in result);
       
-      console.log('AdMob: Production ad watched successfully, applying immediate client reward');
+      // Appliquer la récompense immédiatement côté client
+      if (wasRewarded) {
+        console.log('[AdMob] User was rewarded, applying client-side reward...');
+        await this.applyImmediateClientReward(userId, rewardType, rewardAmount);
+      } else {
+        console.warn('[AdMob] User was not rewarded - ad may not have been completed');
+      }
+
+      // Nettoyer l'état pour permettre le chargement de la prochaine annonce
+      this.cleanup();
       
-      // AMÉLIORATION: Récompense immédiate côté client (recommandation Google)
-      await this.applyImmediateClientReward(userId, rewardType, rewardAmount);
-      
-      // AdMob handles server validation automatically via SSV pour validation a posteriori
-      this.state.isAdLoaded = false;
-      
-      // Preload next ad for better UX
-      setTimeout(() => this.preloadAd(userId, rewardType, rewardAmount), 1000);
-      
-      return { success: true, rewarded: true };
+      // Précharger la prochaine annonce en arrière-plan
+      this.preloadAd(userId, rewardType, rewardAmount);
+
+      return { 
+        success: true, 
+        rewarded: wasRewarded 
+      };
+
     } catch (error) {
-      console.error('AdMob: Error showing rewarded ad:', error);
-      this.state.isAdLoaded = false;
+      console.error('[AdMob] Error showing rewarded ad:', error);
+      console.error('[AdMob] Error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        name: (error as Error).name
+      });
+      this.state.lastError = (error as Error).message;
+      
+      // Nettoyer l'état en cas d'erreur
+      this.cleanup();
+      
       return { 
         success: false, 
-        rewarded: false,
-        error: this.getReadableError(error as Error)
+        rewarded: false, 
+        error: this.getReadableError(error as Error) 
       };
     }
   }
@@ -324,6 +391,25 @@ export class AdMobService {
       isProduction: !this.IS_DEV,
       platform: Capacitor.getPlatform(),
       isNative: Capacitor.isNativePlatform()
+    };
+  }
+
+  // Fonction de diagnostic complète
+  static async getDiagnosticInfo() {
+    const isNative = await Capacitor.isNativePlatform();
+    const connectivity = await this.testConnectivity();
+    
+    return {
+      platform: {
+        isNative,
+        platformName: Capacitor.getPlatform()
+      },
+      admob: {
+        ...this.state,
+        connectivity
+      },
+      environment: 'production',
+      timestamp: new Date().toISOString()
     };
   }
 

@@ -188,11 +188,19 @@ export const useUnifiedRewards = () => {
               });
               return { success: false, error: result.error };
             }
-          } else {
-            console.log('❌ Ad not completed or not rewarded');
+          } else if (!adResult.success) {
+            console.error('[useUnifiedRewards] Ad failed to show:', adResult.error);
+            toast({
+              title: "Erreur publicitaire",
+              description: adResult.error || "Impossible d'afficher la publicité. Vérifiez votre connexion.",
+              variant: "destructive"
+            });
+            return { success: false, error: adResult.error || 'Erreur publicitaire' };
+          } else if (!adResult.rewarded) {
+            console.error('[useUnifiedRewards] Ad was not completed by user');
             toast({
               title: "Publicité non complétée",
-              description: 'Veuillez regarder la publicité entièrement',
+              description: "Veuillez regarder la publicité entièrement pour recevoir la récompense.",
               variant: "destructive"
             });
             return { success: false, error: 'Publicité non complétée' };
