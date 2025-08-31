@@ -6,7 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
-import { useAdWatcher } from '@/hooks/useAdWatcher';
+
 import { useAdModalState } from '@/hooks/useAdModalState';
 import { useToast } from '@/hooks/use-toast';
 import { AdReward } from '@/types/ads';
@@ -29,7 +29,7 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
     formatTimeUntilNext
   } = useUnifiedRewards();
   
-  const { watchState, watchAd: watchAdStandard } = useAdWatcher();
+  
   const {
     selectedReward,
     setSelectedReward,
@@ -99,25 +99,16 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
     }
   };
 
-  const isLoading = watchState.isWatching || watchState.isWaitingForReward || loading;
+  const isLoading = loading;
   const dailyLimitReached = (rewardState?.dailyCount || 0) >= (rewardState?.maxDaily || 5);
   const isWebPlatform = !Capacitor.isNativePlatform();
 
   const getButtonContent = () => {
-    if (watchState.isWatching) {
+    if (isLoading) {
       return (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Chargement...
-        </>
-      );
-    }
-
-    if (watchState.isWaitingForReward) {
-      return (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Validation...
+          {isPremium ? 'Attribution...' : 'Chargement...'}
         </>
       );
     }
@@ -245,30 +236,6 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
             )}
           </div>
 
-          {/* Indicateur de progression pour les pubs */}
-          {!isPremium && (watchState.isWatching || watchState.isWaitingForReward) && (
-            <div className="space-y-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                <span className="text-blue-800 font-medium">
-                  {watchState.isWatching ? 'Chargement de la publicité...' : 'Validation en cours...'}
-                </span>
-              </div>
-              {watchState.validationProgress && (
-                <div className="space-y-1">
-                  <div className="w-full bg-blue-200 rounded-full h-2">
-                    <div 
-                      className="h-2 bg-blue-600 rounded-full transition-all duration-300"
-                      style={{ width: `${watchState.validationProgress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-blue-600 text-center">
-                    Progression: {watchState.validationProgress}%
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Boutons d'action */}
