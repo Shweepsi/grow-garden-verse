@@ -3,7 +3,6 @@ import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { FloatingNumber } from '@/components/animations/FloatingNumber';
-import { AdRewardCard } from '@/components/ads/AdRewardCard';
 import { ClaimRewardButton } from '@/components/ads/ClaimRewardButton';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
