@@ -102,15 +102,9 @@ export class AdSessionService {
         emoji: ''
       };
 
-      const distributionResult = await AdRewardDistributionService.distributeReward(userId, reward);
-      
-      if (!distributionResult.success) {
-        console.error('Failed to distribute reward:', distributionResult.error);
-        // On continue même si la distribution échoue pour éviter de bloquer l'utilisateur
-        // mais on log l'erreur pour investigation
-      } else {
-        console.log(`AdMob: Successfully distributed reward ${reward.type}:${reward.amount} to user ${userId}`);
-      }
+      // SUPPRIMÉ: La distribution des récompenses est maintenant gérée entièrement par l'edge function ad-rewards
+      // Plus besoin de AdRewardDistributionService qui causait une double application des boosts
+      console.log(`AdMob: Reward distribution handled by edge function ad-rewards for user ${userId}`);
 
       return { success: true };
     } catch (error) {
