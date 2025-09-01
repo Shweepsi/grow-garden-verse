@@ -127,7 +127,8 @@ export class UnifiedRewardService {
    */
   static async claimReward(
     reward: AdReward, 
-    isPremium: boolean = false
+    isPremium: boolean = false,
+    skipIncrement: boolean = false
   ): Promise<{ success: boolean; sessionId?: string; error?: string; dailyCount?: number }> {
     try {
       const { data, error } = await supabase.functions.invoke('ad-rewards', {
@@ -135,7 +136,8 @@ export class UnifiedRewardService {
         body: {
           reward_type: reward.type,
           reward_amount: reward.amount,
-          is_premium: isPremium
+          is_premium: isPremium,
+          skip_increment: skipIncrement
         }
       });
 

@@ -122,7 +122,8 @@ export const useUnifiedRewards = () => {
       if (isPremium) {
         console.log('👑 Premium user - claiming directly');
         // Utilisateur premium : réclamation directe via edge function
-        const result = await UnifiedRewardService.claimReward(reward, true);
+        // Don't skip increment for premium users (no ad callback)
+        const result = await UnifiedRewardService.claimReward(reward, true, false);
         console.log('🏆 UnifiedRewardService result:', result);
         
         if (result.success) {
@@ -167,7 +168,8 @@ export const useUnifiedRewards = () => {
           if (adResult.success && adResult.rewarded) {
             console.log('✅ Ad watched successfully, claiming reward...');
             // Publicité regardée avec succès, réclamer via edge function
-            const result = await UnifiedRewardService.claimReward(reward, false);
+            // Skip increment since ad callback already counted it
+            const result = await UnifiedRewardService.claimReward(reward, false, true);
             console.log('🎬 Post-ad claim result:', result);
             
             if (result.success) {

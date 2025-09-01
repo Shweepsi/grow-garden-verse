@@ -5,6 +5,7 @@ interface RewardRequest {
   reward_type: string;
   reward_amount: number;
   is_premium?: boolean;
+  skip_increment?: boolean;
 }
 
 // Get dynamic daily limit from database
@@ -144,7 +145,7 @@ Deno.serve(async (req) => {
     // POST: Claim reward
     if (req.method === 'POST') {
       const body: RewardRequest = await req.json()
-      const { reward_type, reward_amount, is_premium = false } = body
+      const { reward_type, reward_amount, is_premium = false, skip_increment = false } = body
 
       if (!reward_type || !reward_amount) {
         return new Response(
@@ -156,25 +157,45 @@ Deno.serve(async (req) => {
       const today = new Date().toISOString().split('T')[0]
       const MAX_DAILY = await getDailyAdLimit(supabaseClient)
 
-      // Use atomic increment function for thread safety
-      const { data: incrementResult, error: incrementError } = await supabaseClient
-        .rpc('increment_ad_count_atomic', {
-          p_user_id: user.id,
-          p_today: today,
-          p_now: new Date().toISOString(),
-          p_max_ads: MAX_DAILY
-        })
+      let incrementResult = { success: true, new_count: 0, current_count: 0 }
 
-      if (incrementError || !incrementResult?.success) {
-        console.error('Error incrementing ad count:', incrementError)
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: incrementResult?.message || 'Daily limit reached',
-            dailyCount: incrementResult?.current_count || MAX_DAILY
-          }), 
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+      // Only increment if not skipping (to avoid double counting from ad callbacks)
+      if (!skip_increment) {
+        console.log(`📊 Incrementing ad count for user ${user.id} (skip_increment: ${skip_increment})`)
+        
+        const { data: atomicResult, error: incrementError } = await supabaseClient
+          .rpc('increment_ad_count_atomic', {
+            p_user_id: user.id,
+            p_today: today,
+            p_now: new Date().toISOString(),
+            p_max_ads: MAX_DAILY
+          })
+
+        if (incrementError || !atomicResult?.success) {
+          console.error('Error incrementing ad count:', incrementError)
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: atomicResult?.message || 'Daily limit reached',
+              dailyCount: atomicResult?.current_count || MAX_DAILY
+            }), 
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        incrementResult = atomicResult
+      } else {
+        console.log(`⏭️ Skipping ad count increment for user ${user.id} (already counted by ad callback)`)
+        
+        // Get current count without incrementing
+        const { data: cooldownData } = await supabaseClient
+          .from('ad_cooldowns')
+          .select('daily_count')
+          .eq('user_id', user.id)
+          .single()
+        
+        incrementResult.new_count = cooldownData?.daily_count || 0
+        incrementResult.current_count = incrementResult.new_count
       }
 
       // Récupérer la configuration depuis la DB
