@@ -513,33 +513,33 @@ Deno.serve(async (req) => {
           )
         }
         
-        console.log('AdMob SSV: Applying new DEFERRED reward')
-        const result = await applyReward(userId, rewardType, adjustedAmount, rewardConfig.duration_minutes || 30)
+        console.log('AdMob SSV: Processing DEFERRED reward - Only incrementing ad count')
         
-        if (result.success) {
-          await updateAdCooldown(userId)
-          await logAdReward(userId, rewardType, adjustedAmount, 30, transactionId, 'ssv_deferred')
-          
-          console.log(`AdMob SSV: Successfully applied DEFERRED reward - Transaction: ${transactionId}`)
+        // CORRECTION: Ne faire QUE l'incrémentation du compteur ici
+        // L'attribution des récompenses se fera via ad-rewards
+        const cooldownResult = await updateAdCooldown(userId)
+        
+        if (cooldownResult.success) {
+          await logAdReward(userId, rewardType, 0, 0, transactionId, 'ssv_count_only') // Amount 0 car pas de reward ici
+          console.log(`AdMob SSV: Successfully incremented ad count - Transaction: ${transactionId}`)
         } else {
-          console.error(`AdMob SSV: Failed to apply deferred reward: ${result.error}`)
+          console.error(`AdMob SSV: Failed to increment ad count: ${cooldownResult.error}`)
         }
       }
       
       const processingTime = Date.now() - startTime;
         
-      console.log(`AdMob SSV: Successfully processed reward for user: ${userId} - Type: ${rewardType}, Amount: ${adjustedAmount}, Processing time: ${processingTime}ms`)
+      console.log(`AdMob SSV: Successfully processed ad count increment for user: ${userId} - Transaction ID: ${transactionId}, Processing time: ${processingTime}ms`)
       
       // AMÉLIORATION: Réponse enrichie avec métadonnées complètes
       return new Response(
         JSON.stringify({ 
           success: true, 
           processed: true,
+          message: 'Ad count incremented successfully',
           reward_details: {
-            type: rewardType,
-            amount: adjustedAmount,
-            duration: rewardConfig.duration_minutes || 30,
-            player_level: playerLevel
+            type: 'ad_count_increment',
+            note: 'Actual reward will be distributed by client claim system'
           },
           user_id: userId,
           session_id: sessionId,
@@ -986,7 +986,7 @@ async function revokeBoostReward(userId: string, effectType: string): Promise<{ 
   return { success: true }
 }
 
-async function updateAdCooldown(userId: string): Promise<void> {
+async function updateAdCooldown(userId: string): Promise<{ success: boolean; error?: string }> {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
   
@@ -1024,10 +1024,11 @@ async function updateAdCooldown(userId: string): Promise<void> {
 
   if (error) {
     console.error('Edge Function: Failed to update ad cooldown:', error);
-    throw error;
+    return { success: false, error: error.message };
   }
   
   console.log(`Edge Function: Ad watched ${newDailyCount}/5 today for user ${userId}`);
+  return { success: true };
 }
 
 async function logAdReward(userId: string, rewardType: string, amount: number, adDuration: number, transactionId?: string, source?: string): Promise<void> {
