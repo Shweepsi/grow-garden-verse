@@ -16,6 +16,7 @@ export const useUnifiedRewards = () => {
   const { toast } = useToast();
   const [availableRewards, setAvailableRewards] = useState<AdReward[]>([]);
   const [loadingRewards, setLoadingRewards] = useState(false);
+  const [adLoading, setAdLoading] = useState(false); // État de chargement spécifique pour les pubs
 
   // Query pour récupérer l'état des récompenses via la nouvelle edge function
   const { 
@@ -162,6 +163,7 @@ export const useUnifiedRewards = () => {
         // Utilisateur normal : regarder une publicité d'abord
         try {
           console.log('🎬 Showing rewarded ad...');
+          setAdLoading(true); // ACTIVER le spinner pendant le chargement de la pub
           const adResult = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
           console.log('📺 Ad result:', adResult);
           
@@ -243,6 +245,8 @@ export const useUnifiedRewards = () => {
         variant: "destructive"
       });
       return { success: false, error: 'Erreur inattendue' };
+    } finally {
+      setAdLoading(false); // DÉSACTIVER le spinner dans tous les cas
     }
   };
 
@@ -250,7 +254,7 @@ export const useUnifiedRewards = () => {
     // État unifié
     rewardState,
     availableRewards,
-    loading: isLoading || loadingRewards,
+    loading: isLoading || loadingRewards || adLoading,
 
     // Actions
     claimReward,
