@@ -30,7 +30,7 @@ export class AdMobService {
   private static readonly IS_DEV = false;
   
   // ID CORRECT de l'annonce de récompense de production (doit correspondre à capacitor.config.ts)
-  private static readonly REWARDED_AD_ID = 'ca-app-pub-4824355487707598/9563847269';  // ID correct configuré dans AdMob
+  private static readonly REWARDED_AD_ID = 'ca-app-pub-4824355487707598/1680280074';  // ID correct configuré dans AdMob
 
   private static state: AdMobState = {
     isInitialized: false,
