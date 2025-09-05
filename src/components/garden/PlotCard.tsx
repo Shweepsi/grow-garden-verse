@@ -78,7 +78,9 @@ export const PlotCard = memo(({
     const baseClasses = "bg-white/80 backdrop-blur-sm rounded-lg p-2 sm:p-3 h-full flex flex-col items-center justify-center relative border transition-all duration-200 transform-gpu";
     
     if (!plot.unlocked) {
-      return `${baseClasses} border-gray-200/50 opacity-60`;
+      return canAffordUnlock ? 
+        `${baseClasses} border-green-400/60 bg-green-50/40 shadow-green-100/50 opacity-90` :
+        `${baseClasses} border-gray-200/50 opacity-40`;
     }
     
     if (isAutoHarvestPlot) {
