@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FontSizeSelector } from "@/components/accessibility/FontSizeSelector";
-import { AdMobDebugPanel } from "@/components/ads/AdMobDebugPanel";
+import { AdSystemDiagnostics } from "@/components/ads/AdSystemDiagnostics";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         </DialogHeader>
         <div className="py-4 space-y-6">
           <FontSizeSelector />
-          <AdMobDebugPanel />
+          <AdSystemDiagnostics />
         </div>
       </DialogContent>
     </Dialog>

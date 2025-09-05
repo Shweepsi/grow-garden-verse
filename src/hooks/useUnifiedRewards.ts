@@ -5,7 +5,7 @@ import { UnifiedRewardService } from '@/services/UnifiedRewardService';
 import { usePremiumStatus } from './usePremiumStatus';
 import { useGameData } from './useGameData';
 import { useToast } from '@/hooks/use-toast';
-import { AdMobService } from '@/services/AdMobService';
+import { AdMobSimpleService } from '@/services/ads/AdMobSimpleService';
 import type { AdReward, AdState } from '@/types/ads';
 
 
@@ -55,7 +55,7 @@ export const useUnifiedRewards = () => {
   // Initialisation d'AdMob pour les utilisateurs non-premium
   useEffect(() => {
     if (!isPremium && user) {
-      AdMobService.initialize();
+      AdMobSimpleService.initialize();
     }
   }, [isPremium, user]);
 
@@ -162,29 +162,30 @@ export const useUnifiedRewards = () => {
         
         // Utilisateur normal : regarder une publicité d'abord
         try {
-          console.log('🎬 Showing rewarded ad...');
-          setAdLoading(true); // ACTIVER le spinner pendant le chargement de la pub
-          const adResult = await AdMobService.showRewardedAd(user.id, rewardType, rewardAmount);
-          console.log('📺 Ad result:', adResult);
+          console.log('🎬 Affichage de la publicité...');
+          setAdLoading(true);
+          
+          const adResult = await AdMobSimpleService.showAd();
+          console.log('📺 Résultat publicité:', adResult);
           
           if (adResult.success && adResult.rewarded) {
-            console.log('✅ Ad watched successfully, claiming reward...');
-            // Publicité regardée avec succès, réclamer via edge function
-            // Skip increment since ad callback already counted it
-            const result = await UnifiedRewardService.claimReward(reward, false, true);
-            console.log('🎬 Post-ad claim result:', result);
+            console.log('✅ Publicité regardée avec succès');
+            
+            // Réclamer la récompense via l'edge function
+            const result = await UnifiedRewardService.claimReward(reward, false, false);
+            console.log('🎬 Résultat réclamation:', result);
             
             if (result.success) {
-              // Get the reward config from database for accurate notification
               const rewardConfig = availableRewards.find(r => r.type === reward.type);
               
               toast({
                 description: `${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
               });
+              
               await refreshState();
               return { success: true, message: 'Publicité regardée et boost activé' };
             } else {
-              console.error('❌ Failed to claim reward after ad:', result.error);
+              console.error('❌ Échec réclamation après publicité:', result.error);
               toast({
                 title: "Erreur",
                 description: result.error || 'Erreur lors de la distribution',
@@ -193,39 +194,35 @@ export const useUnifiedRewards = () => {
               return { success: false, error: result.error };
             }
           } else if (!adResult.success) {
-            console.error('[useUnifiedRewards] Ad failed to show:', adResult.error);
+            console.error('❌ Échec affichage publicité:', adResult.error);
             toast({
-              title: "Erreur publicitaire",
-              description: adResult.error || "Impossible d'afficher la publicité. Vérifiez votre connexion.",
+              title: "Erreur publicitaire", 
+              description: adResult.error || "Impossible d'afficher la publicité",
               variant: "destructive"
             });
             return { success: false, error: adResult.error || 'Erreur publicitaire' };
-          } else if (!adResult.rewarded) {
-            console.error('[useUnifiedRewards] Ad was not completed by user');
+          } else {
+            console.error('❌ Publicité non complétée');
             toast({
               title: "Publicité non complétée",
-              description: "Veuillez regarder la publicité entièrement pour recevoir la récompense.",
+              description: "Veuillez regarder la publicité entièrement pour recevoir la récompense",
               variant: "destructive"
             });
             return { success: false, error: 'Publicité non complétée' };
           }
         } catch (adError) {
-          console.error('💥 Error showing ad:', adError);
+          console.error('💥 Erreur publicité:', adError);
           
-          // Improved error handling with more specific messages
           let errorMessage = 'Erreur lors de l\'affichage de la publicité';
           let errorTitle = "Erreur publicité";
           
           if (adError instanceof Error) {
-            if (adError.message.includes('disponibles uniquement sur mobile')) {
+            if (adError.message.includes('mobile')) {
               errorTitle = "Application mobile requise";
-              errorMessage = "Les publicités ne sont disponibles que sur l'application mobile.";
-            } else if (adError.message.includes('connectivité') || adError.message.includes('network')) {
+              errorMessage = "Les publicités ne sont disponibles que sur l'application mobile";
+            } else if (adError.message.includes('connexion') || adError.message.includes('network')) {
               errorTitle = "Problème de connexion";
-              errorMessage = "Vérifiez votre connexion internet et réessayez.";
-            } else if (adError.message.includes('limite') || adError.message.includes('limit')) {
-              errorTitle = "Limite atteinte";
-              errorMessage = "Limite quotidienne de publicités atteinte.";
+              errorMessage = "Vérifiez votre connexion internet et réessayez";
             }
           }
           

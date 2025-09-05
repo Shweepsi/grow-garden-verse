@@ -44,10 +44,10 @@ export class AdMobService {
     try {
       console.log('[AdMob] 🚀 INITIALISATION PRODUCTION MODE');
       console.log('[AdMob] 📋 Configuration utilisée:');
-      console.log('[AdMob] - App ID dans capacitor.config.ts: ca-app-pub-4824355487707598~3701914540');
-      console.log('[AdMob] - Ad Unit ID Rewarded: ca-app-pub-4824355487707598/1680280074');
-      console.log('[AdMob] - Mode test: DÉSACTIVÉ (production)');
-      console.log('[AdMob] - SSV URL: https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward');
+      console.log('[AdMob] - App ID: ca-app-pub-4824355487707598~3701914540');  
+      console.log('[AdMob] - Ad Unit ID: ca-app-pub-4824355487707598/1680280074');
+      console.log('[AdMob] - Mode: PRODUCTION (test désactivé)');
+      console.log('[AdMob] - Platform:', Capacitor.getPlatform());
       
       // Check if platform is native
       const isNative = await Capacitor.isNativePlatform();
@@ -65,38 +65,31 @@ export class AdMobService {
         return true;
       }
 
-      // VÉRIFICATION CRITIQUE: S'assurer qu'on n'utilise PAS les IDs de test
-      console.log('[AdMob] 🔍 VÉRIFICATION CRITIQUE - IDs utilisés:');
-      console.log('[AdMob] - PRODUCTION Ad Unit ID:', this.REWARDED_AD_ID);
+      // Vérification des IDs de production
+      console.log('[AdMob] 🔍 Validation IDs production:');
+      console.log('[AdMob] - Ad Unit:', this.REWARDED_AD_ID);
       
       if (this.REWARDED_AD_ID.includes('3940256099942544')) {
-        console.error('[AdMob] ❌ ERREUR CRITIQUE: ID de test détecté!');
-        throw new Error('Test ad unit ID detected in production mode');
+        throw new Error('ID de test détecté en mode production');
       }
       
-      // Initialize AdMob for native platforms
+      // Initialisation AdMob en mode production
       await AdMob.initialize({
-        testingDevices: [], // Aucun device de test en production
-        initializeForTesting: false, // Mode production
+        testingDevices: [],
+        initializeForTesting: false
       });
       
       this.state.isInitialized = true;
       this.state.lastError = null;
       this.state.connectivityStatus = 'connected';
-      console.log('[AdMob] ✅ Successfully initialized for PRODUCTION');
+      console.log('[AdMob] ✅ Initialisé en mode production');
       
-      // Test connectivity immediately after initialization
-      const connectivityResult = await this.testConnectivity();
-      console.log('[AdMob] 🌐 Post-initialization connectivity test:', connectivityResult);
+      // Test de connectivité post-initialisation
+      await this.testConnectivity();
       
       return true;
     } catch (error) {
-      console.error('[AdMob] ❌ Initialization failed:', error);
-      console.error('[AdMob] 🔍 Initialization error details:', {
-        message: (error as Error).message,
-        stack: (error as Error).stack,
-        name: (error as Error).name
-      });
+      console.error('[AdMob] ❌ Échec initialisation:', error);
       this.state.lastError = this.getReadableError(error as Error);
       this.state.isInitialized = false;
       this.state.connectivityStatus = 'disconnected';
@@ -106,118 +99,71 @@ export class AdMobService {
 
   static async testConnectivity(): Promise<boolean> {
     try {
-      console.log('AdMob: Testing connectivity...');
-      
       if (!navigator.onLine) {
-        console.log('AdMob: Device offline');
         this.state.connectivityStatus = 'disconnected';
         return false;
       }
 
-      // Test de base de connectivité réseau
-      const testResponse = await fetch('https://www.google.com/ads/preferences', {
+      // Test simple de connectivité
+      await fetch('https://www.google.com', {
         method: 'HEAD',
         mode: 'no-cors'
       });
       
       this.state.connectivityStatus = 'connected';
-      console.log('AdMob: Connectivity test passed');
       return true;
     } catch (error) {
-      console.error('AdMob: Connectivity test failed:', error);
       this.state.connectivityStatus = 'disconnected';
       return false;
     }
   }
 
   static async loadRewardedAd(userId: string, rewardType: string, rewardAmount: number, retryCount: number = 0): Promise<boolean> {
+    // Vérifications préliminaires simplifiées
     if (!Capacitor.isNativePlatform()) {
-      console.log('AdMob: Not on native platform - ads not available');
       this.state.lastError = 'Publicités disponibles uniquement sur mobile';
       return false;
     }
 
-    // Test de connectivité avant de charger
-    const isConnected = await this.testConnectivity();
-    if (!isConnected) {
-      this.state.lastError = 'Connexion internet requise pour charger les publicités';
-      return false;
-    }
-
-    if (this.state.isAdLoading) {
-      console.log('AdMob: Ad is already loading');
-      return false;
-    }
-
-    if (this.state.isAdLoaded) {
-      console.log('AdMob: Ad is already loaded');
-      return true;
+    if (this.state.isAdLoading || this.state.isAdLoaded) {
+      return this.state.isAdLoaded;
     }
 
     try {
-      const initialized = await this.initialize();
-      if (!initialized) {
-        throw new Error('AdMob not initialized');
+      // Initialisation si nécessaire
+      if (!this.state.isInitialized && !(await this.initialize())) {
+        throw new Error('Échec initialisation AdMob');
       }
 
       this.state.isAdLoading = true;
       this.state.lastError = null;
 
-      console.log(`AdMob: Loading rewarded ad with correct unit ID (attempt ${retryCount + 1})...`);
-      console.log(`AdMob: Using ad unit: ${this.REWARDED_AD_ID}`);
+      console.log(`[AdMob] Chargement publicité (tentative ${retryCount + 1})`);
       
-      // AMÉLIORATION: Configuration SSV optimisée avec métadonnées enrichies
-      const customData = JSON.stringify({
-        user_id: userId,
-        reward_type: rewardType,
-        reward_amount: rewardAmount,
-        timestamp: Date.now(),
-        session_id: `ad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        platform: Capacitor.getPlatform(),
-        app_version: '1.0.0',
-        validation_mode: 'ssv_enhanced'
-      });
-
-      const ssvUrl = `https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward`;
-
+      // Configuration simplifiée
       const options: ExtendedRewardAdOptions = {
         adId: this.REWARDED_AD_ID,
-        isTesting: false, // Jamais en mode test pour la production
-        serverSideVerificationOptions: {
-          userId: userId,
-          customData: customData,
-          serverSideVerificationUrl: ssvUrl
-        }
-      };
-
-      console.log('AdMob: Loading ad with production settings:', {
-        adUnitId: this.REWARDED_AD_ID,
-        userId: options.serverSideVerificationOptions?.userId,
-        ssvUrl: ssvUrl,
         isTesting: false
-      });
+      };
 
       await AdMob.prepareRewardVideoAd(options);
       
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
       
-      console.log('AdMob: Production ad loaded successfully with SSV configuration');
+      console.log('[AdMob] ✅ Publicité chargée avec succès');
       return true;
+      
     } catch (error) {
-      console.error('AdMob: Error loading rewarded ad:', error);
-      console.error('AdMob: Error details:', {
-        message: (error as Error).message,
-        adUnitId: this.REWARDED_AD_ID,
-        retryCount: retryCount
-      });
+      console.error('[AdMob] ❌ Erreur chargement:', error);
       
       this.state.isAdLoading = false;
       this.state.lastError = this.getReadableError(error as Error);
       
+      // Retry si erreur réseau
       if (retryCount < 2 && this.shouldRetry(error as Error)) {
-        console.log(`AdMob: Retrying load (${retryCount + 1}/3)...`);
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log(`[AdMob] 🔄 Nouvelle tentative (${retryCount + 1}/3)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
         return this.loadRewardedAd(userId, rewardType, rewardAmount, retryCount + 1);
       }
       
@@ -285,16 +231,10 @@ export class AdMobService {
 
   static async showRewardedAd(userId: string, rewardType: string, rewardAmount: number): Promise<AdWatchResult> {
     try {
-      console.log(`[AdMob] 🎯 DÉBUT PROCESSUS AD REWARD`);
-      console.log(`[AdMob] 📋 Paramètres: userId=${userId}, reward=${rewardType}, amount=${rewardAmount}`);
-      console.log(`[AdMob] 📊 État initial:`, JSON.stringify(this.getState(), null, 2));
+      console.log(`[AdMob] 🎯 Début affichage publicité`);
       
-      // ÉTAPE 1: Vérification plateforme
-      console.log(`[AdMob] 🔍 ÉTAPE 1: Vérification plateforme...`);
-      const isNative = await Capacitor.isNativePlatform();
-      console.log(`[AdMob] ✅ Plateforme native: ${isNative}`);
-      if (!isNative) {
-        console.log('[AdMob] ❌ ÉCHEC: Plateforme web détectée - publicités non disponibles');
+      // Vérifications de base
+      if (!await Capacitor.isNativePlatform()) {
         return { 
           success: false, 
           rewarded: false, 
@@ -302,146 +242,65 @@ export class AdMobService {
         };
       }
 
-      // ÉTAPE 2: Vérification initialisation
-      console.log(`[AdMob] 🔍 ÉTAPE 2: Vérification initialisation...`);
-      console.log(`[AdMob] État initialized: ${this.state.isInitialized}`);
-      if (!this.state.isInitialized) {
-        console.log('[AdMob] ⚠️ Non initialisé, tentative d\'initialisation...');
-        const initialized = await this.initialize();
-        console.log(`[AdMob] ${initialized ? '✅' : '❌'} Résultat initialisation: ${initialized}`);
-        if (!initialized) {
-          console.error('[AdMob] ❌ ÉCHEC CRITIQUE: Impossible d\'initialiser AdMob');
-          return { 
-            success: false, 
-            rewarded: false, 
-            error: 'Impossible d\'initialiser le service publicitaire' 
-          };
-        }
-      } else {
-        console.log(`[AdMob] ✅ AdMob déjà initialisé`);
-      }
-
-      // ÉTAPE 3: Test connectivité
-      console.log(`[AdMob] 🔍 ÉTAPE 3: Test de connectivité...`);
-      const connectivity = await this.testConnectivity();
-      console.log(`[AdMob] ${connectivity ? '✅' : '❌'} Test connectivité: ${connectivity}`);
-      if (!connectivity) {
-        console.log(`[AdMob] ⚠️ Connectivité faible mais on continue...`);
-      }
-
-      // ÉTAPE 4: Chargement annonce
-      console.log(`[AdMob] 🔍 ÉTAPE 4: Vérification/chargement annonce...`);
-      console.log(`[AdMob] isAdLoaded: ${this.state.isAdLoaded}, isAdLoading: ${this.state.isAdLoading}`);
+      // Chargement de la publicité si nécessaire
       if (!this.state.isAdLoaded) {
-        console.log('[AdMob] 📥 Chargement de l\'annonce...');
         const loaded = await this.loadRewardedAd(userId, rewardType, rewardAmount);
-        console.log(`[AdMob] ${loaded ? '✅' : '❌'} Résultat chargement: ${loaded}`);
         if (!loaded) {
-          console.error('[AdMob] ❌ ÉCHEC CRITIQUE: Impossible de charger l\'annonce');
-          console.error('[AdMob] 🚨 Dernière erreur:', this.state.lastError);
           return { 
             success: false, 
             rewarded: false, 
             error: this.state.lastError || 'Impossible de charger la publicité' 
           };
         }
-      } else {
-        console.log(`[AdMob] ✅ Annonce déjà chargée`);
       }
 
-      // ÉTAPE 5: Affichage annonce
-      console.log(`[AdMob] 🔍 ÉTAPE 5: Affichage de l'annonce...`);
-      console.log(`[AdMob] 🎬 Tentative d'affichage avec l'ID: ${this.REWARDED_AD_ID}`);
-      
+      console.log(`[AdMob] 🎬 Affichage de la publicité`);
       const result = await AdMob.showRewardVideoAd();
-      console.log(`[AdMob] 🎬 Résultat brut showRewardVideoAd:`, JSON.stringify(result, null, 2));
-
-      // ÉTAPE 6: Vérification récompense
-      console.log(`[AdMob] 🔍 ÉTAPE 6: Analyse du résultat...`);
+      
+      // Vérification de la récompense
       const wasRewarded = !!(result && typeof result === 'object' && 'type' in result && 'amount' in result);
-      console.log(`[AdMob] ${wasRewarded ? '🎉' : '😞'} Récompense accordée: ${wasRewarded}`);
       
       if (wasRewarded) {
-        const rewardInfo = result as AdMobRewardItem;
-        console.log(`[AdMob] 🎁 Détails récompense: type="${rewardInfo.type}", amount=${rewardInfo.amount}`);
-        console.log('[AdMob] 💰 Application récompense côté client...');
-        await this.applyImmediateClientReward(userId, rewardType, rewardAmount);
-        console.log('[AdMob] ✅ Récompense client appliquée');
+        console.log(`[AdMob] ✅ Récompense accordée`);
+        // La récompense sera gérée par l'edge function via SSV
       } else {
-        console.warn('[AdMob] ⚠️ PROBLÈME: Utilisateur non récompensé - annonce possiblement fermée prématurément');
-        console.warn('[AdMob] 📋 Analyse du résultat:', {
-          result,
-          hasType: result && 'type' in result,
-          hasAmount: result && 'amount' in result,
-          resultType: typeof result
-        });
+        console.log(`[AdMob] ❌ Publicité fermée prématurément`);
       }
 
-      // ÉTAPE 7: Nettoyage et préparation suivante
-      console.log(`[AdMob] 🔍 ÉTAPE 7: Nettoyage et préparation...`);
+      // Nettoyage
       this.cleanup();
-      console.log(`[AdMob] 🧹 État nettoyé`);
       
-      this.preloadAd(userId, rewardType, rewardAmount);
-      console.log(`[AdMob] 🔄 Préchargement suivant lancé`);
-
-      console.log(`[AdMob] 🎯 FIN PROCESSUS - SUCCÈS: ${wasRewarded ? 'RÉCOMPENSÉ' : 'NON RÉCOMPENSÉ'}`);
       return { 
         success: true, 
         rewarded: wasRewarded 
       };
 
     } catch (error) {
-      console.error('[AdMob] 💥 ERREUR FATALE dans showRewardedAd:', error);
-      console.error('[AdMob] 🔍 Détails erreur complète:', {
-        message: (error as Error).message,
-        stack: (error as Error).stack,
-        name: (error as Error).name,
-        toString: error.toString()
-      });
-      
-      const readableError = this.getReadableError(error as Error);
-      this.state.lastError = readableError;
-      console.error('[AdMob] 📝 Erreur lisible pour utilisateur:', readableError);
-      
-      // Nettoyage en cas d'erreur
+      console.error('[AdMob] 💥 Erreur affichage:', error);
+      this.state.lastError = this.getReadableError(error as Error);
       this.cleanup();
-      console.log(`[AdMob] 🧹 État nettoyé après erreur`);
       
       return { 
         success: false, 
         rewarded: false, 
-        error: readableError 
+        error: this.state.lastError 
       };
     }
   }
 
-  /**
-   * Applique la récompense immédiate côté client (recommandation Google)
-   * La validation SSV côté serveur se fera en parallèle pour sécurité
-   */
-  private static async applyImmediateClientReward(userId: string, rewardType: string, rewardAmount: number): Promise<void> {
-    try {
-      console.log('AdMob: Applying immediate client-side reward for optimal UX');
-      
-      // Use Supabase client for secure API calls
-      const { data, error } = await supabase.functions.invoke('validate-ad-reward', {
-        body: {
-          user_id: userId,
-          reward_type: rewardType,
-          reward_amount: rewardAmount,
-          ad_duration: 30,
-          source: 'client_immediate'
-        }
-      });
+  static cleanup(): void {
+    this.state.isAdLoaded = false;
+    this.state.isAdLoading = false;
+  }
 
-      if (!error && data) {
-        console.log('AdMob: Immediate client reward applied successfully');
-      } else {
-        console.warn('AdMob: Failed to apply immediate client reward, SSV will handle it');
-      }
-    } catch (error) {
-      console.warn('AdMob: Error applying immediate client reward:', error);
+  static async preloadAd(userId?: string, rewardType?: string, rewardAmount?: number): Promise<void> {
+    if (userId && rewardType && rewardAmount && !this.state.isAdLoaded && !this.state.isAdLoading) {
+      // Préchargement silencieux en arrière-plan
+      setTimeout(() => {
+        this.loadRewardedAd(userId, rewardType, rewardAmount).catch(() => {
+          // Échec silencieux du préchargement
+        });
+      }, 5000);
     }
   }
 
@@ -459,7 +318,6 @@ export class AdMobService {
     };
   }
 
-  // Fonction de diagnostic complète
   static async getDiagnosticInfo() {
     const isNative = await Capacitor.isNativePlatform();
     const connectivity = await this.testConnectivity();
@@ -474,31 +332,17 @@ export class AdMobService {
         connectivity
       },
       configuration: {
-        appId: 'ca-app-pub-4824355487707598~3701914540', // From capacitor.config.ts
+        appId: 'ca-app-pub-4824355487707598~3701914540',
         adUnitId: this.REWARDED_AD_ID,
-        isTestMode: this.IS_DEV,
-        ssvUrl: 'https://osfexuqvlpxrfaukfobn.supabase.co/functions/v1/validate-ad-reward'
+        isTestMode: this.IS_DEV
       },
       validation: {
         isUsingTestIds: this.REWARDED_AD_ID.includes('3940256099942544'),
         isProductionMode: !this.IS_DEV,
-        idsMatch: true // App ID and Ad Unit ID are from same account
+        idsMatch: true
       },
       environment: 'production',
       timestamp: new Date().toISOString()
     };
-  }
-
-  static async preloadAd(userId?: string, rewardType?: string, rewardAmount?: number): Promise<void> {
-    if (!this.state.isAdLoaded && !this.state.isAdLoading && userId && rewardType && rewardAmount) {
-      console.log('AdMob: Preloading production ad...');
-      await this.loadRewardedAd(userId, rewardType, rewardAmount);
-    }
-  }
-
-  static cleanup(): void {
-    console.log('AdMob: Cleanup method called');
-    this.state.isAdLoaded = false;
-    this.state.isAdLoading = false;
   }
 }
