@@ -23,7 +23,6 @@ export const LadderModal = ({
   const {
     harvestLeaders,
     coinsLeaders,
-    prestigeLeaders,
     levelLeaders,
     loading,
     currentUserRanks
@@ -151,7 +150,7 @@ export const LadderModal = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-4 bg-white/50 flex-shrink-0">
+          <TabsList className="grid w-full grid-cols-3 bg-white/50 flex-shrink-0">
             <TabsTrigger value="harvests" className="text-xs">
               <TrendingUp className="h-3 w-3 mr-1" />
               Récoltes
@@ -159,10 +158,6 @@ export const LadderModal = ({
             <TabsTrigger value="coins" className="text-xs">
               <Coins className="h-3 w-3 mr-1" />
               Pièces
-            </TabsTrigger>
-            <TabsTrigger value="prestige" className="text-xs">
-              <Crown className="h-3 w-3 mr-1" />
-              Prestige
             </TabsTrigger>
             <TabsTrigger value="level" className="text-xs">
               <Star className="h-3 w-3 mr-1" />
@@ -197,18 +192,6 @@ export const LadderModal = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="prestige" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
-              <CurrentUserRank category="prestige" />
-              <div className="flex-1 min-h-0">
-                <ScrollArea className="h-[400px]">
-                  <div className="pr-4">
-                    {loading ? <LoadingSkeleton /> : <div className="space-y-2 pb-4">
-                         {prestigeLeaders.map((player, index) => <LeaderboardCard key={player.user_id || player.id} player={player} rank={index + 1} value={player.prestige_level || 0} icon={<Crown className="h-3 w-3 text-purple-600" />} suffix=" Prestige" nextPlayerValue={index > 0 ? prestigeLeaders[index - 1].prestige_level || 0 : undefined} />)}
-                      </div>}
-                  </div>
-                </ScrollArea>
-              </div>
-            </TabsContent>
 
             <TabsContent value="level" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
               <CurrentUserRank category="level" />
