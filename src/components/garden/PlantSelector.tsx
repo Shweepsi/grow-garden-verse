@@ -240,7 +240,7 @@ export const PlantSelector = ({
                             </h4>
                             <div className="flex items-center justify-center gap-1">
                               <span className="text-xs text-red-500 font-bold">
-                                {plantType.level_required}
+                                niv.{plantType.level_required}
                               </span>
                             </div>
                           </div>
