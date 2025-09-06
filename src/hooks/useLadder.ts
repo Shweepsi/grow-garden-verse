@@ -31,42 +31,24 @@ export const useLadder = () => {
         .from('profiles')
         .select('id, username');
 
-      // Récupérer les bots
-      const { data: bots, error: botsError } = await supabase
-        .from('leaderboard_bots')
-        .select('id, username, total_harvests, created_at');
-
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
-      if (botsError) throw botsError;
 
       // Créer un map des profils pour une recherche rapide
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
-      // Combiner et formater les données
-      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
-        ...(gardens || []).map(g => ({
-          user_id: g.user_id,
-          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
-          total_harvests: g.total_harvests,
-          coins: 0,
-          level: 0,
-          prestige_level: 0,
-          premium_status: g.premium_status || false,
-          is_bot: false,
-          created_at: g.created_at
-        })),
-        ...(bots || []).map(b => ({
-          id: b.id,
-          username: b.username,
-          total_harvests: b.total_harvests,
-          coins: 0,
-          level: 0,
-          prestige_level: 0,
-          is_bot: true,
-          created_at: b.created_at
-        }))
-      ];
+      // Formater les données des joueurs réels uniquement
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = (gardens || []).map(g => ({
+        user_id: g.user_id,
+        username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+        total_harvests: g.total_harvests,
+        coins: 0,
+        level: 0,
+        prestige_level: 0,
+        premium_status: g.premium_status || false,
+        is_bot: false,
+        created_at: g.created_at
+      }));
 
       // Trier par récoltes décroissantes, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
@@ -92,42 +74,24 @@ export const useLadder = () => {
         .from('profiles')
         .select('id, username');
 
-      // Récupérer les bots
-      const { data: bots, error: botsError } = await supabase
-        .from('leaderboard_bots')
-        .select('id, username, coins, created_at');
-
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
-      if (botsError) throw botsError;
 
       // Créer un map des profils pour une recherche rapide
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
-      // Combiner et formater les données
-      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
-        ...(gardens || []).map(g => ({
-          user_id: g.user_id,
-          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
-          total_harvests: 0,
-          coins: g.coins,
-          level: 0,
-          prestige_level: 0,
-          premium_status: g.premium_status || false,
-          is_bot: false,
-          created_at: g.created_at
-        })),
-        ...(bots || []).map(b => ({
-          id: b.id,
-          username: b.username,
-          total_harvests: 0,
-          coins: b.coins,
-          level: 0,
-          prestige_level: 0,
-          is_bot: true,
-          created_at: b.created_at
-        }))
-      ];
+      // Formater les données des joueurs réels uniquement
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = (gardens || []).map(g => ({
+        user_id: g.user_id,
+        username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+        total_harvests: 0,
+        coins: g.coins,
+        level: 0,
+        prestige_level: 0,
+        premium_status: g.premium_status || false,
+        is_bot: false,
+        created_at: g.created_at
+      }));
 
       // Trier par pièces décroissantes, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
@@ -153,42 +117,24 @@ export const useLadder = () => {
         .from('profiles')
         .select('id, username');
 
-      // Récupérer les bots
-      const { data: bots, error: botsError } = await supabase
-        .from('leaderboard_bots')
-        .select('id, username, prestige_level, created_at');
-
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
-      if (botsError) throw botsError;
 
       // Créer un map des profils pour une recherche rapide
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
-      // Combiner et formater les données
-      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
-        ...(gardens || []).map(g => ({
-          user_id: g.user_id,
-          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
-          total_harvests: 0,
-          coins: 0,
-          level: 0,
-          prestige_level: g.prestige_level || 0,
-          premium_status: g.premium_status || false,
-          is_bot: false,
-          created_at: g.created_at
-        })),
-        ...(bots || []).map(b => ({
-          id: b.id,
-          username: b.username,
-          total_harvests: 0,
-          coins: 0,
-          level: 0,
-          prestige_level: b.prestige_level || 0,
-          is_bot: true,
-          created_at: b.created_at
-        }))
-      ];
+      // Formater les données des joueurs réels uniquement
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = (gardens || []).map(g => ({
+        user_id: g.user_id,
+        username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+        total_harvests: 0,
+        coins: 0,
+        level: 0,
+        prestige_level: g.prestige_level || 0,
+        premium_status: g.premium_status || false,
+        is_bot: false,
+        created_at: g.created_at
+      }));
 
       // Trier par prestige décroissant, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
@@ -214,44 +160,25 @@ export const useLadder = () => {
         .from('profiles')
         .select('id, username');
 
-      // Récupérer les bots
-      const { data: bots, error: botsError } = await supabase
-        .from('leaderboard_bots')
-        .select('id, username, level, experience, created_at');
-
       if (gardensError) throw gardensError;
       if (profilesError) throw profilesError;
-      if (botsError) throw botsError;
 
       // Créer un map des profils pour une recherche rapide
       const profileMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
-      // Combiner et formater les données
-      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = [
-        ...(gardens || []).map(g => ({
-          user_id: g.user_id,
-          username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
-          total_harvests: 0,
-          coins: 0,
-          level: g.level || 1,
-          experience: g.experience || 0,
-          prestige_level: 0,
-          premium_status: g.premium_status || false,
-          is_bot: false,
-          created_at: g.created_at
-        })),
-        ...(bots || []).map(b => ({
-          id: b.id,
-          username: b.username,
-          total_harvests: 0,
-          coins: 0,
-          level: b.level || 1,
-          experience: b.experience || 0,
-          prestige_level: 0,
-          is_bot: true,
-          created_at: b.created_at
-        }))
-      ];
+      // Formater les données des joueurs réels uniquement
+      const allPlayers: (LeaderboardPlayer & { created_at: string })[] = (gardens || []).map(g => ({
+        user_id: g.user_id,
+        username: profileMap.get(g.user_id) || 'Jardinier Anonyme',
+        total_harvests: 0,
+        coins: 0,
+        level: g.level || 1,
+        experience: g.experience || 0,
+        prestige_level: 0,
+        premium_status: g.premium_status || false,
+        is_bot: false,
+        created_at: g.created_at
+      }));
 
       // Trier par niveau puis expérience décroissants, puis par date croissante en cas d'égalité, et limiter à 100
       return allPlayers
