@@ -632,10 +632,6 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
-      get_user_prestige_rank: {
-        Args: { target_user_id: string }
-        Returns: number
-      }
       harvest_plant_transaction: {
         Args: {
           p_new_coins: number
