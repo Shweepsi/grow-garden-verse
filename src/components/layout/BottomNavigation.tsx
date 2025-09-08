@@ -66,7 +66,7 @@ export const BottomNavigation = () => {
                     
                     {/* Counter badge for upgrades */}
                     {path === '/upgrades' && availableUpgradesCount > 0 && (
-                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold animate-pulse">
+                      <div className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
                         {availableUpgradesCount > 9 ? '9+' : availableUpgradesCount}
                       </div>
                     )}
