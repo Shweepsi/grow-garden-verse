@@ -1,9 +1,10 @@
 
-import { Home, TrendingUp, User } from 'lucide-react';
+import { Home, TrendingUp, User, Crown } from 'lucide-react';
 import { ShoppingCart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useGameData } from '@/hooks/useGameData';
+import { usePrestigeAvailability } from '@/hooks/usePrestigeAvailability';
 import { useMemo } from 'react';
 import { MINIMUM_COINS_RESERVE } from '@/constants';
 
@@ -13,6 +14,7 @@ export const BottomNavigation = () => {
   
   const { data: gameData } = useGameData();
   const { getSequentialUpgrades, isUpgradePurchased } = useUpgrades();
+  const { isPrestigeAvailable } = usePrestigeAvailability();
   
   // Calculate available upgrades count
   const availableUpgradesCount = useMemo(() => {
@@ -69,6 +71,13 @@ export const BottomNavigation = () => {
                   {path === '/upgrades' && availableUpgradesCount > 0 && (
                     <div className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
                       {availableUpgradesCount > 9 ? '9+' : availableUpgradesCount}
+                    </div>
+                  )}
+
+                  {/* Prestige badge for profile */}
+                  {path === '/profile' && isPrestigeAvailable && (
+                    <div className="absolute top-1 right-1 bg-gradient-to-r from-yellow-500 to-purple-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                      <Crown className="h-3 w-3" />
                     </div>
                   )}
                   
