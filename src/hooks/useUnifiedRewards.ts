@@ -194,10 +194,26 @@ export const useUnifiedRewards = () => {
               return { success: false, error: result.error };
             }
           } else if (!adResult.success) {
-            console.error('❌ Échec affichage publicité:', adResult.error);
+            console.error('❌ Échec affichage publicité:', adResult.error, adResult.errorCode);
+            
+            let errorTitle = "Erreur publicitaire";
+            let errorDescription = adResult.error || "Impossible d'afficher la publicité";
+            
+            // Messages spécifiques selon le code d'erreur
+            if (adResult.errorCode === 'NO_FILL') {
+              errorTitle = "Aucune publicité disponible";
+              errorDescription = "Aucune publicité n'est disponible pour le moment. Ceci est normal pour les nouvelles applications.";
+            } else if (adResult.errorCode === 'NETWORK_ERROR') {
+              errorTitle = "Problème de connexion";
+              errorDescription = "Vérifiez votre connexion internet et réessayez.";
+            } else if (adResult.errorCode === 'APP_NOT_APPROVED') {
+              errorTitle = "Application en attente";
+              errorDescription = "Votre application attend encore l'approbation AdMob.";
+            }
+            
             toast({
-              title: "Erreur publicitaire", 
-              description: adResult.error || "Impossible d'afficher la publicité",
+              title: errorTitle, 
+              description: errorDescription,
               variant: "destructive"
             });
             return { success: false, error: adResult.error || 'Erreur publicitaire' };

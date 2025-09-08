@@ -22,7 +22,13 @@ interface DiagnosticInfo {
     adLoaded: boolean;
     adLoading: boolean;
     lastError: string | null;
+    lastErrorCode: string | null;
     adUnitId: string;
+    testAdUnitId: string;
+    isTestMode: boolean;
+    retryCount: number;
+    maxRetries: number;
+    lastRetryAt: number | null;
   };
   rewards: {
     available: boolean;
@@ -66,7 +72,13 @@ export function AdSystemDiagnostics() {
           adLoaded: admobState.isAdLoaded,
           adLoading: admobState.isAdLoading,
           lastError: admobState.lastError,
-          adUnitId: admobDiagnostics.adUnitId
+          lastErrorCode: admobState.lastErrorCode,
+          adUnitId: admobDiagnostics.adUnitId,
+          testAdUnitId: admobDiagnostics.testAdUnitId,
+          isTestMode: admobState.isTestMode,
+          retryCount: admobState.retryCount,
+          maxRetries: admobDiagnostics.retryInfo.maxRetries,
+          lastRetryAt: admobState.lastRetryAt
         },
         rewards: {
           available: rewardState?.available || false,
@@ -88,7 +100,7 @@ export function AdSystemDiagnostics() {
     }
   };
 
-  const testAdFlow = async () => {
+  const testAdFlow = async (useTestMode: boolean = false) => {
     if (!user) {
       toast({
         title: "Authentification requise",
@@ -101,23 +113,29 @@ export function AdSystemDiagnostics() {
     setIsTestingAd(true);
     try {
       toast({
-        description: "Test du flux publicitaire en cours...",
+        description: `Test du flux publicitaire en cours... (${useTestMode ? 'MODE TEST' : 'MODE PROD'})`,
       });
 
+      // Configurer le mode test si demandé
+      if (useTestMode) {
+        AdMobSimpleService.setTestMode(true);
+      }
+
       // Test d'initialisation
-      const initialized = await AdMobSimpleService.initialize();
+      const initialized = await AdMobSimpleService.initialize(useTestMode);
       if (!initialized) {
         throw new Error('Échec initialisation AdMob');
       }
 
       toast({
-        description: "✅ AdMob initialisé",
+        description: `✅ AdMob initialisé (${useTestMode ? 'TEST' : 'PROD'})`,
       });
 
       // Test de chargement
       const loaded = await AdMobSimpleService.loadAd();
       if (!loaded) {
-        throw new Error('Échec chargement publicité');
+        const state = AdMobSimpleService.getState();
+        throw new Error(`Échec chargement: ${state.lastError} (${state.lastErrorCode})`);
       }
 
       toast({
@@ -132,7 +150,7 @@ export function AdSystemDiagnostics() {
           description: `Publicité affichée avec succès. Récompensé: ${result.rewarded ? 'Oui' : 'Non'}`,
         });
       } else {
-        throw new Error(result.error || 'Échec affichage');
+        throw new Error(`${result.error} (${result.errorCode})`);
       }
 
     } catch (error) {
@@ -147,6 +165,15 @@ export function AdSystemDiagnostics() {
       // Actualiser les diagnostics après le test
       setTimeout(runDiagnostics, 1000);
     }
+  };
+
+  const toggleTestMode = () => {
+    const newTestMode = !AdMobSimpleService.isTestMode();
+    AdMobSimpleService.setTestMode(newTestMode);
+    toast({
+      description: `Mode ${newTestMode ? 'test' : 'production'} activé`,
+    });
+    runDiagnostics();
   };
 
   const getStatusIcon = (status: boolean) => {
@@ -221,20 +248,46 @@ export function AdSystemDiagnostics() {
 
         {/* Statut AdMob */}
         <div>
-          <h3 className="font-semibold mb-3">État AdMob</h3>
-          <div className="space-y-2">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">État AdMob</h3>
+            <Button
+              variant={diagnostics.admob.isTestMode ? "default" : "outline"}
+              size="sm"
+              onClick={toggleTestMode}
+              className="text-xs"
+            >
+              {diagnostics.admob.isTestMode ? 'Mode TEST' : 'Mode PROD'}
+            </Button>
+          </div>
+          <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {getStatusBadge(diagnostics.admob.initialized, 'Initialisé')}
               {getStatusBadge(diagnostics.admob.adLoaded, 'Pub chargée')}
               {getStatusBadge(!diagnostics.admob.adLoading, 'Prêt')}
+              {diagnostics.admob.isTestMode && (
+                <Badge variant="secondary" className="text-xs">
+                  🧪 TEST
+                </Badge>
+              )}
             </div>
             
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-gray-600 space-y-1">
               <p><strong>Ad Unit ID:</strong> {diagnostics.admob.adUnitId}</p>
-              {diagnostics.admob.lastError && (
-                <p className="text-red-600 mt-1">
-                  <strong>Dernière erreur:</strong> {diagnostics.admob.lastError}
+              {diagnostics.admob.isTestMode && (
+                <p><strong>Test Unit ID:</strong> {diagnostics.admob.testAdUnitId}</p>
+              )}
+              
+              {diagnostics.admob.retryCount > 0 && (
+                <p className="text-orange-600">
+                  <strong>Tentatives:</strong> {diagnostics.admob.retryCount}/{diagnostics.admob.maxRetries}
                 </p>
+              )}
+              
+              {diagnostics.admob.lastError && (
+                <div className="text-red-600 mt-2 p-2 bg-red-50 rounded border">
+                  <p><strong>Erreur:</strong> {diagnostics.admob.lastErrorCode}</p>
+                  <p className="mt-1 whitespace-pre-wrap">{diagnostics.admob.lastError}</p>
+                </div>
               )}
             </div>
           </div>
@@ -284,25 +337,39 @@ export function AdSystemDiagnostics() {
 
         {/* Test Complet */}
         <div className="space-y-3">
-          <Button 
-            onClick={testAdFlow}
-            disabled={isTestingAd || !user || !diagnostics.platform.isNative}
-            className="w-full"
-            variant={diagnostics.platform.isNative ? "default" : "secondary"}
-          >
-            {isTestingAd ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Test en cours...
-              </>
-            ) : (
-              'Tester le flux complet'
-            )}
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              onClick={() => testAdFlow(false)}
+              disabled={isTestingAd || !user || !diagnostics.platform.isNative}
+              variant="outline"
+              size="sm"
+            >
+              {isTestingAd ? (
+                <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                '🏭'
+              )}
+              Test Prod
+            </Button>
+            
+            <Button 
+              onClick={() => testAdFlow(true)}
+              disabled={isTestingAd || !user || !diagnostics.platform.isNative}
+              variant="default"
+              size="sm"
+            >
+              {isTestingAd ? (
+                <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                '🧪'
+              )}
+              Test Mode
+            </Button>
+          </div>
           
           {!diagnostics.platform.isNative && (
             <p className="text-xs text-center text-gray-500">
-              Test disponible uniquement sur mobile
+              Tests disponibles uniquement sur mobile
             </p>
           )}
           
@@ -310,6 +377,17 @@ export function AdSystemDiagnostics() {
             <p className="text-xs text-center text-red-500">
               Connexion requise pour tester
             </p>
+          )}
+          
+          {diagnostics.admob.lastErrorCode === 'NO_FILL' && (
+            <div className="text-xs bg-blue-50 border border-blue-200 rounded p-2">
+              <p className="font-medium text-blue-800">💡 Conseil pour NO_FILL:</p>
+              <p className="text-blue-700 mt-1">
+                • Utilisez le mode test pour vérifier l'intégration<br/>
+                • Les nouvelles apps ont souvent peu de pubs disponibles<br/>
+                • Vérifiez que votre app est approuvée dans AdMob
+              </p>
+            </div>
           )}
         </div>
       </CardContent>
