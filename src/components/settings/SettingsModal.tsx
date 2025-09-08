@@ -15,11 +15,11 @@ interface SettingsModalProps {
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Paramètres d'accessibilité</DialogTitle>
         </DialogHeader>
-        <div className="py-4 space-y-6">
+        <div className="py-4 space-y-6 overflow-y-auto flex-1 min-h-0">
           <FontSizeSelector />
           <AdSystemDiagnostics />
         </div>
