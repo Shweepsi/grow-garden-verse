@@ -63,14 +63,14 @@ export const BottomNavigation = () => {
                     <Icon className={`h-5 w-5 mb-0.5 transition-all duration-300 ${
                       isActive ? 'transform scale-110' : 'group-hover:scale-110'
                     }`} />
-                    
-                    {/* Counter badge for upgrades */}
-                    {path === '/upgrades' && availableUpgradesCount > 0 && (
-                      <div className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
-                        {availableUpgradesCount > 9 ? '9+' : availableUpgradesCount}
-                      </div>
-                    )}
                   </div>
+                  
+                  {/* Counter badge for upgrades */}
+                  {path === '/upgrades' && availableUpgradesCount > 0 && (
+                    <div className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                      {availableUpgradesCount > 9 ? '9+' : availableUpgradesCount}
+                    </div>
+                  )}
                   
                   <span className={`mobile-text-xs font-medium transition-all duration-300 text-center leading-tight ${
                     isActive ? 'font-bold' : ''
