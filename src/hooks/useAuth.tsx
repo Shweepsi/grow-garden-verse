@@ -61,7 +61,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     if (error) {
-      toast.error(error.message);
+      // Gérer les différents types d'erreurs
+      if (error.message.includes('User already registered')) {
+        toast.error('Un compte existe déjà avec cette adresse email. Essayez de vous connecter.');
+      } else if (error.message.includes('already been registered')) {
+        toast.error('Cette adresse email est déjà utilisée. Connectez-vous plutôt.');
+      } else if (error.message.includes('email address not authorized')) {
+        toast.error('Cette adresse email n\'est pas autorisée.');
+      } else {
+        toast.error(error.message);
+      }
     } else {
       toast.success('Inscription réussie ! Vérifiez votre email.');
     }
