@@ -2,10 +2,33 @@
 import { Home, TrendingUp, User } from 'lucide-react';
 import { ShoppingCart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useUpgrades } from '@/hooks/useUpgrades';
+import { useGameData } from '@/hooks/useGameData';
+import { useMemo } from 'react';
+import { MINIMUM_COINS_RESERVE } from '@/constants';
 
 export const BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  
+  const { data: gameData } = useGameData();
+  const { getSequentialUpgrades, isUpgradePurchased } = useUpgrades();
+  
+  // Calculate available upgrades count
+  const availableUpgradesCount = useMemo(() => {
+    const playerLevel = gameData?.garden?.level || 1;
+    const coins = gameData?.garden?.coins || 0;
+    const gems = gameData?.garden?.gems || 0;
+    const sequentialUpgrades = getSequentialUpgrades();
+    
+    return sequentialUpgrades.filter(upgrade => {
+      const hasLevel = playerLevel >= upgrade.level_required;
+      const hasCoins = coins >= upgrade.cost_coins + MINIMUM_COINS_RESERVE;
+      const hasGems = gems >= upgrade.cost_gems;
+      const notPurchased = !isUpgradePurchased(upgrade.id);
+      return hasLevel && hasCoins && hasGems && notPurchased;
+    }).length;
+  }, [gameData?.garden?.level, gameData?.garden?.coins, gameData?.garden?.gems, getSequentialUpgrades, isUpgradePurchased]);
 
   const navigationItems = [
     { path: '/garden', icon: Home, label: 'Jardin' },
@@ -36,9 +59,18 @@ export const BottomNavigation = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-green-500 to-green-400 rounded-lg opacity-20 animate-pulse"></div>
                   )}
                   
-                  <Icon className={`h-5 w-5 mb-0.5 transition-all duration-300 ${
-                    isActive ? 'transform scale-110' : 'group-hover:scale-110'
-                  }`} />
+                  <div className="relative">
+                    <Icon className={`h-5 w-5 mb-0.5 transition-all duration-300 ${
+                      isActive ? 'transform scale-110' : 'group-hover:scale-110'
+                    }`} />
+                    
+                    {/* Counter badge for upgrades */}
+                    {path === '/upgrades' && availableUpgradesCount > 0 && (
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold animate-pulse">
+                        {availableUpgradesCount > 9 ? '9+' : availableUpgradesCount}
+                      </div>
+                    )}
+                  </div>
                   
                   <span className={`mobile-text-xs font-medium transition-all duration-300 text-center leading-tight ${
                     isActive ? 'font-bold' : ''
