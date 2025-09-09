@@ -189,28 +189,12 @@ export class EconomyService {
     return Math.floor(baseAmount * permanentMultiplier);
   }
 
-  // Calculate gem rewards for harvesting based on plant rarity and gem chance
-  static calculateGemReward(rarity: string, gemChance: number): number {
+  // Calculate gem rewards for harvesting - simplified to drop 0 or 1 gem based on chance
+  static calculateGemReward(gemChance: number): number {
     if (!gemChance || gemChance <= 0) return 0;
     
-    // Random check based on gem chance (0-1)
-    if (Math.random() > gemChance) return 0;
-    
-    // Base gem rewards by rarity
-    const rarityMultipliers: { [key: string]: number } = {
-      'common': 1,
-      'uncommon': 2,
-      'rare': 3,
-      'epic': 5,
-      'legendary': 8
-    };
-    
-    const baseGems = rarityMultipliers[rarity?.toLowerCase()] || 1;
-    
-    // Add some randomness (1-3x base gems)
-    const randomMultiplier = 1 + Math.random() * 2;
-    
-    return Math.floor(baseGems * randomMultiplier);
+    // Simple probability check - return 1 gem if successful, 0 if not
+    return Math.random() < gemChance ? 1 : 0;
   }
 
   // Calculate experience reward (alias for getExperienceReward for consistency)

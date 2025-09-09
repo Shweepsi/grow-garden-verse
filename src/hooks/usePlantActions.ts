@@ -135,10 +135,7 @@ export const usePlantActions = () => {
         expMultiplier
       );
       
-      const gemReward = EconomyService.calculateGemReward(
-        plantType.rarity,
-        gemChance
-      );
+      const gemReward = EconomyService.calculateGemReward(gemChance);
       
       // Appliquer le boost aux gemmes
       const boostedGems = applyGemsBoost(gemReward);
