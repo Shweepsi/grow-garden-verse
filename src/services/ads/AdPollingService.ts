@@ -8,8 +8,8 @@ export interface PollingOptions {
 }
 
 export class AdPollingService {
-  private static readonly DEFAULT_MAX_ATTEMPTS = 30;
-  private static readonly DEFAULT_INTERVAL_MS = 1000;
+  private static readonly DEFAULT_MAX_ATTEMPTS = 40;
+  private static readonly DEFAULT_INTERVAL_MS = 500;
 
   static async pollForReward(
     selectedReward: AdReward,

@@ -105,8 +105,13 @@ export const useUnifiedRewards = () => {
   const claimReward = async (rewardType: string, rewardAmount: number): Promise<{ success: boolean; error?: string; message?: string }> => {
     console.log('🔧 claimReward called with:', { rewardType, rewardAmount, isPremium, userId: user?.id });
     
+    // Store attempt timestamp for diagnostics
+    localStorage.setItem('lastRewardAttempt', new Date().toISOString());
+    localStorage.setItem('lastRewardStatus', 'En cours...');
+    
     if (!user) {
       console.log('❌ No user found');
+      localStorage.setItem('lastRewardStatus', 'Échec: Utilisateur non connecté');
       return { success: false, error: 'Utilisateur non connecté' };
     }
 
@@ -131,6 +136,7 @@ export const useUnifiedRewards = () => {
           // Get the reward config from database for accurate notification
           const rewardConfig = availableRewards.find(r => r.type === reward.type);
           
+          localStorage.setItem('lastRewardStatus', 'Succès: Boost premium activé');
           toast({
             description: `${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
           });
@@ -138,6 +144,7 @@ export const useUnifiedRewards = () => {
           return { success: true, message: 'Boost premium activé avec succès' };
         } else {
           console.log('❌ Premium claim failed:', result.error);
+          localStorage.setItem('lastRewardStatus', `Échec: ${result.error}`);
           toast({
             title: "Erreur",
             description: result.error || 'Erreur lors de la réclamation',
@@ -171,6 +178,12 @@ export const useUnifiedRewards = () => {
           if (adResult.success && adResult.rewarded) {
             console.log('✅ Publicité regardée avec succès');
             
+            // Afficher immédiatement un toast de progression
+            toast({
+              description: "🎯 Publicité terminée ! Attribution de votre récompense...",
+              duration: 10000
+            });
+            
             // Réclamer la récompense via l'edge function
             const result = await UnifiedRewardService.claimReward(reward, false, false);
             console.log('🎬 Résultat réclamation:', result);
@@ -178,14 +191,19 @@ export const useUnifiedRewards = () => {
             if (result.success) {
               const rewardConfig = availableRewards.find(r => r.type === reward.type);
               
-              toast({
-                description: `${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
-              });
+              // Toast de confirmation avec délai pour laisser le temps à l'attribution
+              setTimeout(() => {
+                localStorage.setItem('lastRewardStatus', 'Succès: Boost activé après publicité');
+                toast({
+                  description: `✅ ${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
+                });
+              }, 3000);
               
               await refreshState();
               return { success: true, message: 'Publicité regardée et boost activé' };
             } else {
               console.error('❌ Échec réclamation après publicité:', result.error);
+              localStorage.setItem('lastRewardStatus', `Échec: ${result.error}`);
               toast({
                 title: "Erreur",
                 description: result.error || 'Erreur lors de la distribution',
@@ -211,6 +229,7 @@ export const useUnifiedRewards = () => {
               errorDescription = "Votre application attend encore l'approbation AdMob.";
             }
             
+            localStorage.setItem('lastRewardStatus', `Échec publicitaire: ${errorTitle}`);
             toast({
               title: errorTitle, 
               description: errorDescription,

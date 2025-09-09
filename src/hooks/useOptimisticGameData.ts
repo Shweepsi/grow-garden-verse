@@ -24,8 +24,10 @@ export const useOptimisticGameData = () => {
         .reduce((sum, update) => sum + update.amount, 0),
       gems: (gameData.garden.gems || 0) + optimisticUpdates
         .filter(update => update.type === 'gems')
-        .reduce((sum, update) => sum + update.amount, 0)
-    } as PlayerGarden : null
+        .reduce((sum, update) => sum + update.amount, 0),
+      // Add indicator for pending updates
+      _hasOptimisticUpdates: optimisticUpdates.length > 0
+    } as PlayerGarden & { _hasOptimisticUpdates?: boolean } : null
   };
 
   // Add optimistic update
@@ -39,10 +41,10 @@ export const useOptimisticGameData = () => {
 
     setOptimisticUpdates(prev => [...prev, update]);
 
-    // PHASE 1: Extend optimistic updates to 10 seconds for better persistence
+    // Extend optimistic updates to 20 seconds for better persistence during slow attribution
     setTimeout(() => {
       setOptimisticUpdates(prev => prev.filter(u => u.id !== update.id));
-    }, 10000);
+    }, 20000);
   }, []);
 
   // Clear all optimistic updates when real data arrives

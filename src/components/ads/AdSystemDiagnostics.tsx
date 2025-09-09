@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { RefreshCw, CheckCircle, XCircle, AlertCircle, Smartphone, Wifi } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, AlertCircle, Smartphone, Wifi, Clock } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { AdMobSimpleService } from '@/services/ads/AdMobSimpleService';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,6 +35,8 @@ interface DiagnosticInfo {
     dailyCount: number;
     maxDaily: number;
     isPremium: boolean;
+    lastRewardAt?: string;
+    lastRewardStatus?: string;
   };
   connectivity: {
     online: boolean;
@@ -44,7 +46,7 @@ interface DiagnosticInfo {
 
 export function AdSystemDiagnostics() {
   const { user } = useAuth();
-  const { rewardState } = useUnifiedRewards();
+  const { rewardState, refreshState } = useUnifiedRewards();
   const { isPremium } = usePremiumStatus();
   const { toast } = useToast();
   const [diagnostics, setDiagnostics] = useState<DiagnosticInfo | null>(null);
@@ -84,7 +86,9 @@ export function AdSystemDiagnostics() {
           available: rewardState?.available || false,
           dailyCount: rewardState?.dailyCount || 0,
           maxDaily: rewardState?.maxDaily || 5,
-          isPremium: isPremium
+          isPremium: isPremium,
+          lastRewardAt: localStorage.getItem('lastRewardAttempt'),
+          lastRewardStatus: localStorage.getItem('lastRewardStatus')
         },
         connectivity: {
           online: navigator.onLine,
@@ -174,6 +178,30 @@ export function AdSystemDiagnostics() {
       description: `Mode ${newTestMode ? 'test' : 'production'} activé`,
     });
     runDiagnostics();
+  };
+
+  const forceSync = async () => {
+    try {
+      toast({
+        description: "🔄 Synchronisation forcée en cours...",
+      });
+      
+      // Force refresh rewards state
+      await refreshState();
+      
+      // Update diagnostics
+      await runDiagnostics();
+      
+      toast({
+        description: "✅ Synchronisation terminée",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de synchronisation",
+        description: "Impossible de synchroniser les récompenses",
+        variant: "destructive"
+      });
+    }
   };
 
   const getStatusIcon = (status: boolean) => {
@@ -314,6 +342,20 @@ export function AdSystemDiagnostics() {
               </Badge>
             </div>
           </div>
+          
+          {(diagnostics.rewards.lastRewardAt || diagnostics.rewards.lastRewardStatus) && (
+            <div className="mt-3 text-xs text-gray-600 space-y-1">
+              {diagnostics.rewards.lastRewardAt && (
+                <p className="flex items-center gap-2">
+                  <Clock className="w-3 h-3" />
+                  <strong>Dernière tentative:</strong> {new Date(diagnostics.rewards.lastRewardAt).toLocaleString()}
+                </p>
+              )}
+              {diagnostics.rewards.lastRewardStatus && (
+                <p><strong>Statut:</strong> {diagnostics.rewards.lastRewardStatus}</p>
+              )}
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -337,6 +379,18 @@ export function AdSystemDiagnostics() {
 
         {/* Test Complet */}
         <div className="space-y-3">
+          <div className="mb-2">
+            <Button 
+              onClick={forceSync}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Forcer la synchronisation des récompenses
+            </Button>
+          </div>
+          
           <div className="grid grid-cols-2 gap-2">
             <Button 
               onClick={() => testAdFlow(false)}
