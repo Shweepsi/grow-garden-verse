@@ -653,6 +653,16 @@ export type Database = {
         }
         Returns: Json
       }
+      plant_direct_atomic: {
+        Args: {
+          p_base_growth_seconds: number
+          p_cost_amount: number
+          p_plant_type_id: string
+          p_plot_number: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       validate_robot_plant_level: {
         Args: { p_plant_type_id: string; p_robot_level: number }
         Returns: boolean

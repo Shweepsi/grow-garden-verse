@@ -4,10 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { EconomyService } from '@/services/EconomyService';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { ValidationCacheService } from '@/services/ValidationCacheService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useDirectPlanting = () => {
@@ -17,6 +17,19 @@ export const useDirectPlanting = () => {
   const [plantingPlotNumber, setPlantingPlotNumber] = useState<number | null>(null);
   const { triggerCoinAnimation } = useAnimations();
 
+  // Cache plant types when gameData is available
+  useEffect(() => {
+    if (gameData?.plantTypes) {
+      ValidationCacheService.cachePlantTypes(gameData.plantTypes);
+    }
+    if (gameData?.garden && gameData?.plots) {
+      ValidationCacheService.cachePlayerData({
+        garden: gameData.garden,
+        plots: gameData.plots
+      });
+    }
+  }, [gameData]);
+
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, expectedCost }: {
       plotNumber: number;
@@ -25,214 +38,161 @@ export const useDirectPlanting = () => {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Marquer cette parcelle comme en cours de plantation
       setPlantingPlotNumber(plotNumber);
 
-      // Validation stricte du numéro de parcelle
+      // Basic validation
       if (!plotNumber || plotNumber < 1 || plotNumber > MAX_PLOTS) {
         throw new Error('Numéro de parcelle invalide');
       }
 
-      console.log(`🌱 Début de la plantation directe sur la parcelle ${plotNumber}`);
+      console.log(`🌱 Optimized direct planting on plot ${plotNumber}`);
 
-      // FORCER un refresh complet du cache avant validation
-      console.log('🔄 Invalidation forcée du cache pour éviter les conflits');
-      await queryClient.invalidateQueries({ queryKey: ['gameData', user.id] });
-      await new Promise(resolve => setTimeout(resolve, 200)); // Délai pour garantir la mise à jour
+      // Smart validation using cache
+      const cachedPlayerData = ValidationCacheService.getCachedPlayerData();
+      const cachedPlantType = ValidationCacheService.getCachedPlantType(plantTypeId);
 
-      // VALIDATION DIRECTE via DB (ignorer le cache pour la validation)
-      console.log('🔍 Récupération des données fraîches depuis la DB');
-      const [plotResult, gardenResult, plantTypeResult] = await Promise.all([
-        supabase
-          .from('garden_plots')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('plot_number', plotNumber)
-          .single(),
-        supabase
-          .from('player_gardens')
-          .select('*')
-          .eq('user_id', user.id)
-          .single(),
-        supabase
-          .from('plant_types')
-          .select('*')
-          .eq('id', plantTypeId)
-          .single()
-      ]);
+      let garden = cachedPlayerData?.garden;
+      let plot = cachedPlayerData?.plots?.find((p: any) => p.plot_number === plotNumber);
+      let plantType = cachedPlantType;
 
-      if (plotResult.error) {
-        console.error('❌ Erreur parcelle:', plotResult.error);
-        throw new Error(`Erreur lors de la récupération de la parcelle: ${plotResult.error.message}`);
+      // Only fetch from DB if cache miss or critical validation
+      if (!garden || !plot || !plantType) {
+        console.log('🔍 Cache miss, fetching from DB');
+        const [plotResult, gardenResult, plantTypeResult] = await Promise.all([
+          !plot ? supabase
+            .from('garden_plots')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('plot_number', plotNumber)
+            .single() : { data: plot, error: null },
+          !garden ? supabase
+            .from('player_gardens')
+            .select('*')
+            .eq('user_id', user.id)
+            .single() : { data: garden, error: null },
+          !plantType ? supabase
+            .from('plant_types')
+            .select('*')
+            .eq('id', plantTypeId)
+            .single() : { data: plantType, error: null }
+        ]);
+
+        if (plotResult.error) throw new Error(`Plot error: ${plotResult.error.message}`);
+        if (gardenResult.error) throw new Error(`Garden error: ${gardenResult.error.message}`);
+        if (plantTypeResult.error) throw new Error('Plant type not found');
+
+        plot = plotResult.data;
+        garden = gardenResult.data;
+        plantType = plantTypeResult.data;
       }
 
-      if (gardenResult.error) {
-        console.error('❌ Erreur jardin:', gardenResult.error);
-        throw new Error(`Erreur lors de la récupération du jardin: ${gardenResult.error.message}`);
-      }
-
-      if (plantTypeResult.error || !plantTypeResult.data) {
-        throw new Error('Type de plante non trouvé');
-      }
-
-      const plot = plotResult.data;
-      const garden = gardenResult.data;
-      const plantType = plantTypeResult.data;
-
-      console.log('📊 Données fraîches récupérées:', { 
-        plot: { number: plot.plot_number, unlocked: plot.unlocked, plant_type: plot.plant_type, planted_at: plot.planted_at },
-        garden: { coins: garden.coins, level: garden.level },
-        plantType: { name: plantType.display_name, level_required: plantType.level_required }
-      });
-
-      if (!plot) {
-        throw new Error('Parcelle non trouvée');
-      }
-
-      if (!plot.unlocked) {
-        throw new Error('Cette parcelle n\'est pas encore débloquée');
-      }
-
-      // VALIDATION STRICTE: vérifier que la parcelle est vraiment vide
-      const isEmpty = plot.plant_type === null && plot.planted_at === null;
-      console.log('🔍 Vérification stricte de la parcelle:', { 
-        plotNumber, 
-        plant_type: plot.plant_type, 
-        planted_at: plot.planted_at,
-        isEmpty 
-      });
-
-      if (!isEmpty) {
-        console.error('❌ Parcelle occupée (DB):', plot);
-        throw new Error(`Cette parcelle contient déjà une plante (type: ${plot.plant_type})`);
-      }
-
-      console.log('🌱 Type de plante:', plantType.display_name);
-
-      if (!garden) {
-        throw new Error('Jardin non trouvé');
-      }
-
-      // Vérifier le niveau requis
+      // Quick validations
+      if (!plot?.unlocked) throw new Error('Plot not unlocked');
+      if (plot.plant_type || plot.planted_at) throw new Error('Plot already occupied');
+      
       const playerLevel = garden.level || 1;
       const requiredLevel = plantType.level_required || 1;
-      
-      if (playerLevel < requiredLevel) {
-        throw new Error(`Niveau ${requiredLevel} requis pour cette plante`);
-      }
+      if (playerLevel < requiredLevel) throw new Error(`Level ${requiredLevel} required`);
 
-      // Obtenir les multiplicateurs complets (permanent + boosts)
-      let multipliers;
-      try {
-        multipliers = getCompleteMultipliers();
-        console.log('💪 Multiplicateurs complets (permanent + boosts):', multipliers);
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
-        multipliers = { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0, coins: 1, gems: 1 };
-      }
-
-      // Calculer le coût avec multiplicateurs
+      // Get multipliers
+      const multipliers = getCompleteMultipliers();
       const baseCost = EconomyService.getPlantDirectCost(requiredLevel);
       const actualCost = EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction || 1);
 
-      // Vérification du coût attendu (sécurité anti-cheat basique)
+      // Cost validation
       if (Math.abs(actualCost - expectedCost) > 1) {
-        console.warn(`⚠️ Écart de coût détecté: attendu ${expectedCost}, calculé ${actualCost}`);
-        throw new Error('Erreur de coût, veuillez recharger la page');
+        throw new Error('Cost mismatch, please reload');
       }
-
-      // Vérifier les fonds
       if (!EconomyService.canAffordPlant(garden.coins, actualCost)) {
-        throw new Error('Pas assez de pièces pour planter');
+        throw new Error('Insufficient coins');
       }
 
-      console.log(`💰 Coût de plantation: ${actualCost} pièces`);
-
-      // Calculer le temps de croissance avec les boosts (pour l'affichage et le debug)
       const baseGrowthSeconds = plantType.base_growth_seconds || 60;
-      const growthBoosts = { getBoostMultiplier: () => multipliers.growth };
-      const adjustedGrowthTime = PlantGrowthService.calculateGrowthTime(baseGrowthSeconds, growthBoosts);
 
-      console.log(`⏰ Direct planting growth time: ${baseGrowthSeconds}s -> ${adjustedGrowthTime}s (growth boost: x${multipliers.growth})`);
-
-      const now = new Date().toISOString();
-
-      console.log('💰 ÉTAPE 1: Déduction des pièces AVANT plantation pour éviter les inconsistances');
+      console.log(`⚡ Using atomic DB function for plot ${plotNumber}`);
       
-      // DÉDUIRE LES PIÈCES EN PREMIER pour éviter les plantations gratuites en cas d'erreur
-      const { error: updateGardenError } = await supabase
-        .from('player_gardens')
-        .update({
-          coins: (garden.coins || 0) - actualCost,
-          last_played: now
-        })
-        .eq('user_id', user.id);
+      // Use the new atomic function
+      const { data: result, error } = await supabase.rpc('plant_direct_atomic', {
+        p_user_id: user.id,
+        p_plot_number: plotNumber,
+        p_plant_type_id: plantTypeId,
+        p_cost_amount: actualCost,
+        p_base_growth_seconds: baseGrowthSeconds
+      });
 
-      if (updateGardenError) {
-        console.error('❌ Erreur déduction pièces:', updateGardenError);
-        throw new Error(`Erreur lors de la déduction des pièces: ${updateGardenError.message}`);
+      if (error) {
+        console.error('❌ Atomic function error:', error);
+        throw new Error(`Planting failed: ${error.message}`);
       }
 
-      console.log('💰 Pièces déduites avec succès');
+      // Type the result properly
+      const typedResult = result as {
+        success: boolean;
+        error?: string;
+        planted_at?: string;
+        new_coin_balance?: number;
+        plant_name?: string;
+      };
 
-      console.log('🌱 ÉTAPE 2: Plantation sur la parcelle');
-      
-      // ENSUITE planter - si ça échoue, les pièces auront été déduites (cohérent)
-      const { error: updatePlotError } = await supabase
-        .from('garden_plots')
-        .update({
-          plant_type: plantTypeId,
-          planted_at: now,
-          growth_time_seconds: baseGrowthSeconds, // CHANGEMENT: temps de base au lieu d'adjustedGrowthTime
-          updated_at: now
-        })
-        .eq('user_id', user.id)
-        .eq('plot_number', plotNumber);
-
-      if (updatePlotError) {
-        console.error('❌ Erreur plantation (pièces déjà déduites):', updatePlotError);
-        // Les pièces ont été déduites mais la plantation a échoué
-        // C'est cohérent car l'utilisateur a "perdu" ses pièces pour une plantation ratée
-        throw new Error(`Erreur lors de la plantation: ${updatePlotError.message}`);
+      if (!typedResult.success) {
+        throw new Error(typedResult.error || 'Planting failed');
       }
 
-      console.log('🌱 Plantation réussie sur la parcelle');
-
-      // Enregistrer la transaction
-      try {
-        await supabase
-          .from('coin_transactions')
-          .insert({
-            user_id: user.id,
-            amount: -actualCost,
-            transaction_type: 'plant',
-            description: `Plantation de ${plantType.display_name}`
-          });
-        console.log('💳 Transaction enregistrée');
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de l\'enregistrement de la transaction:', error);
-      }
-
-      console.log('✅ Plantation directe terminée avec succès');
+      console.log('✅ Atomic planting successful:', typedResult);
       
-      // Déclencher l'animation de déduction des pièces
+      // Clear player data cache to force refresh
+      ValidationCacheService.clearPlayerData();
+      
+      // Trigger coin animation
       triggerCoinAnimation(-actualCost);
       
-      // Retourner les données nécessaires pour la mise à jour optimiste
       return {
         plotNumber,
         plantTypeId,
         actualCost,
-        adjustedGrowthTime: baseGrowthSeconds, // CHANGEMENT: retourner le temps de base
-        plantedAt: now
+        adjustedGrowthTime: baseGrowthSeconds,
+        plantedAt: typedResult.planted_at || new Date().toISOString(),
+        newCoinBalance: typedResult.new_coin_balance || (garden.coins - actualCost)
       };
     },
     onMutate: async ({ plotNumber, plantTypeId, expectedCost }) => {
-      console.log('🔄 DÉSACTIVATION TEMPORAIRE des mises à jour optimistes pour debug');
+      console.log('🚀 Optimistic update enabled');
       
-      // DÉSACTIVER temporairement les mises à jour optimistes
-      // pour éliminer les conflits cache/DB et identifier la source du problème
+      // Cancel outgoing refetches so they don't override optimistic update
+      await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
+      
+      // Snapshot previous value
       const previousData = queryClient.getQueryData(['gameData', user?.id]);
+      
+      // Optimistically update to new value
+      if (previousData) {
+        queryClient.setQueryData(['gameData', user?.id], (old: any) => {
+          if (!old?.garden || !old?.plots) return old;
+          
+          const updatedPlots = old.plots.map((plot: any) => {
+            if (plot.plot_number === plotNumber) {
+              return {
+                ...plot,
+                plant_type: plantTypeId,
+                planted_at: new Date().toISOString(),
+                growth_time_seconds: old.plantTypes?.find((pt: any) => pt.id === plantTypeId)?.base_growth_seconds || 60,
+                updated_at: new Date().toISOString()
+              };
+            }
+            return plot;
+          });
+          
+          return {
+            ...old,
+            garden: {
+              ...old.garden,
+              coins: old.garden.coins - expectedCost
+            },
+            plots: updatedPlots
+          };
+        });
+      }
+      
       return { previousData };
     },
     onSuccess: (data) => {
