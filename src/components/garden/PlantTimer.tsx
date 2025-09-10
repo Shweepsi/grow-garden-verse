@@ -1,5 +1,5 @@
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { Clock } from 'lucide-react';
 import { useGardenClock } from '@/contexts/GardenClockContext';
@@ -14,6 +14,7 @@ interface PlantTimerProps {
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className = "" }: PlantTimerProps) => {
   const calculations = useUnifiedCalculations();
   const now = useGardenClock();
+  const [localTime, setLocalTime] = useState(Date.now());
 
   const { timeRemaining, isReady } = useMemo(() => {
     if (!plantedAt) return { timeRemaining: 0, isReady: false };
@@ -36,7 +37,27 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
       timeRemaining: calculations.getTimeRemaining(plantedAt, mockPlot),
       isReady: calculations.isPlantReady(plantedAt, mockPlot)
     };
-  }, [now, plantedAt, growthTimeSeconds, plotNumber, calculations]);
+  }, [localTime, plantedAt, growthTimeSeconds, plotNumber, calculations]);
+
+  // Timer plus fréquent quand il reste moins d'une minute
+  useEffect(() => {
+    if (!plantedAt || isReady || timeRemaining > 60) {
+      return;
+    }
+
+    // Mise à jour chaque seconde quand il reste moins d'une minute
+    const interval = setInterval(() => {
+      setLocalTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [plantedAt, isReady, timeRemaining]);
+
+  // Synchroniser avec le GardenClock pour les timers longs
+  useEffect(() => {
+    if (timeRemaining <= 60) return; // Ne pas interférer avec le timer haute fréquence
+    setLocalTime(now);
+  }, [now, timeRemaining]);
 
   if (!plantedAt || isReady) return null;
 
