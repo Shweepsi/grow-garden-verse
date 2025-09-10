@@ -58,10 +58,10 @@ export const useGameData = () => {
       return result;
     },
     enabled: !!user?.id,
-    // OPTIMISATION: Polling adaptatif pour réduire les requêtes inutiles
+    // PHASE 1: Smart adaptive polling with dramatic optimization
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data?.plots) return 10000; // 10 secondes par défaut
+      if (!data?.plots) return 30000; // 30 seconds default (increased from 10s)
       
       // Créer un objet boosts pour PlantGrowthService
       const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
@@ -77,9 +77,9 @@ export const useGameData = () => {
         return !PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
       });
       
-      // OPTIMISATION: Réduire drastiquement le polling quand il n'y a pas d'activité
+      // PHASE 1: Dramatic polling reduction when no activity
       if (growingPlants.length === 0) {
-        return 60000; // 1 minute si aucune plante ne pousse
+        return 300000; // 5 minutes if no growing plants (increased from 1 min)
       }
       
       // Calculer le temps restant le plus court en tenant compte des boosts
@@ -93,11 +93,12 @@ export const useGameData = () => {
         }).filter(time => time !== Infinity)
       );
       
-      // PHASE 1: Ultra-reactive intervals with 1s maximum for premium rewards
-      if (shortestTimeRemaining < 5) return 1000;    // 1s pour < 5s restantes
-      if (shortestTimeRemaining < 30) return 1000;   // 1s pour < 30s restantes (ultra-réactif)
-      if (shortestTimeRemaining < 120) return 1000;  // 1s pour < 2min restantes (ultra-réactif)
-      return 3000; // 3s pour le reste (réduit de 30s à 3s)
+      // PHASE 1: Optimized intervals for better performance
+      if (shortestTimeRemaining < 3) return 1000;    // 1s only for final 3 seconds
+      if (shortestTimeRemaining < 10) return 2000;   // 2s for < 10s remaining
+      if (shortestTimeRemaining < 30) return 5000;   // 5s for < 30s remaining
+      if (shortestTimeRemaining < 120) return 10000; // 10s for < 2min remaining
+      return 30000; // 30s for longer growth times (increased from 3s)
     },
     // PHASE 1: Ultra-reactive for rewards with dynamic stale time
     structuralSharing: true,

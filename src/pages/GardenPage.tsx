@@ -32,8 +32,13 @@ export const GardenPage = () => {
     };
   }, []);
 
+  // Calculate garden state for clock optimization
+  const hasActivePlants = gameState.plots.some(plot => 
+    plot.plant_type && plot.planted_at && plot.unlocked
+  );
+
   return (
-    <GardenClockProvider>
+    <GardenClockProvider hasActivePlants={hasActivePlants}>
       <div className="h-full overflow-hidden">
         {/* Content without header */}
         <div className="px-3 pb-6 space-y-3 h-full overflow-y-auto">
