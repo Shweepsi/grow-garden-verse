@@ -3,14 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
-import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
-import { useGameMultipliers } from '@/hooks/useGameMultipliers';
+import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 
 export const useGameData = () => {
   const { user } = useAuth();
-  const calculations = useUnifiedCalculations();
   const queryClient = useQueryClient();
-  const { getCombinedBoostMultiplier } = useGameMultipliers();
 
   // OPTIMISATION: Réduire les invalidations automatiques pour éviter les conflits avec les mises à jour optimistes
   // Les real-time subscriptions sont désactivées car nous gérons manuellement les mises à jour via optimistic updates
@@ -18,7 +15,7 @@ export const useGameData = () => {
   // Periodic cache cleanup to prevent memory leaks
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      calculations.clearCache();
+      UnifiedCalculationService.clearCache();
     }, 300000); // Clean up every 5 minutes
 
     return () => {
@@ -59,46 +56,33 @@ export const useGameData = () => {
       return result;
     },
     enabled: !!user?.id,
-    // OPTIMISATION: Polling adaptatif pour réduire les requêtes inutiles
+    // SIMPLIFIED: Remove complex calculations to avoid circular dependencies
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data?.plots) return 10000; // 10 secondes par défaut
+      if (!data?.plots) return 10000; // 10 seconds default
       
-      // Créer un objet boosts pour PlantGrowthService
-      const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-      
-      // Vérifier s'il y a des plantes qui poussent (en tenant compte des boosts)
+      // Check if there are growing plants (simplified without hooks)
       const growingPlants = data.plots.filter(plot => {
         if (!plot.planted_at || !plot.plant_type) return false;
         
         const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
         if (!plantType) return false;
         
-        const mockPlot = { growth_time_seconds: plantType.base_growth_seconds || 60 } as any;
-        return !calculations.isPlantReady(plot.planted_at, mockPlot);
+        // Simple ready check without multipliers to avoid circular dependency
+        const plantedAt = new Date(plot.planted_at).getTime();
+        const now = Date.now();
+        const baseGrowthTime = (plantType.base_growth_seconds || 60) * 1000;
+        const timePassed = now - plantedAt;
+        
+        return timePassed < baseGrowthTime; // Still growing
       });
       
-      // OPTIMISATION: Réduire drastiquement le polling quand il n'y a pas d'activité
+      // Reduce polling when no activity
       if (growingPlants.length === 0) {
-        return 60000; // 1 minute si aucune plante ne pousse
+        return 60000; // 1 minute if no plants growing
       }
       
-      // Calculer le temps restant le plus court en tenant compte des boosts
-      const shortestTimeRemaining = Math.min(
-        ...growingPlants.map(plot => {
-          const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
-          if (!plantType) return Infinity;
-          
-          const mockPlot = { growth_time_seconds: plantType.base_growth_seconds || 60 } as any;
-          return calculations.getTimeRemaining(plot.planted_at!, mockPlot);
-        }).filter(time => time !== Infinity)
-      );
-      
-      // PHASE 1: Ultra-reactive intervals with 1s maximum for premium rewards
-      if (shortestTimeRemaining < 5) return 1000;    // 1s pour < 5s restantes
-      if (shortestTimeRemaining < 30) return 1000;   // 1s pour < 30s restantes (ultra-réactif)
-      if (shortestTimeRemaining < 120) return 1000;  // 1s pour < 2min restantes (ultra-réactif)
-      return 3000; // 3s pour le reste (réduit de 30s à 3s)
+      return 5000; // 5 seconds when plants are growing
     },
     // PHASE 1: Ultra-reactive for rewards with dynamic stale time
     structuralSharing: true,
