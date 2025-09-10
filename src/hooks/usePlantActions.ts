@@ -103,11 +103,12 @@ export const usePlantActions = () => {
 
       console.log('✅ Plante prête pour la récolte');
 
-      // UNIFIED CALCULATIONS: Use the same service as backend
+      // UNIFIED CALCULATIONS: Use the same service as backend (EXCLUDING gems - backend only)
       const backendParams = calculations.createBackendParams(plot, plantType, garden);
-      const boostedGems = applyGemsBoost(backendParams.gemReward);
+      // SOLUTION A: Frontend no longer calculates gems - backend handles all gem logic
+      const noGems = 0;
 
-      console.log(`💰 Récompenses calculées (unified): ${backendParams.harvestReward} pièces, ${backendParams.expReward} EXP, ${backendParams.gemReward} gemmes (${boostedGems} avec boost)`);
+      console.log(`💰 Récompenses calculées (unified - no frontend gems): ${backendParams.harvestReward} pièces, ${backendParams.expReward} EXP, gems handled by backend only`);
 
       // UNIFIED BACKEND CALL: Use exact same parameters
       console.log('🚀 Utilisation de la transaction atomique unified avec synchronisation parfaite');
@@ -117,7 +118,7 @@ export const usePlantActions = () => {
         p_plot_number: plotNumber,
         p_harvest_reward: backendParams.harvestReward,
         p_exp_reward: backendParams.expReward,
-        p_gem_reward: boostedGems,
+        p_gem_reward: noGems, // SOLUTION A: Backend calculates gems independently
         p_growth_time_seconds: backendParams.actualGrowthTime,
         p_multipliers: calculations.multipliers as any
       });
@@ -226,7 +227,7 @@ export const usePlantActions = () => {
           old.garden?.permanent_multiplier || 1
         );
         const expReward = calculations.calculateExpReward(plantType.level_required, plantType.rarity);
-        const gemReward = 0; // Conservative: no gems in optimistic update
+        const gemReward = 0; // SOLUTION A: No gems in optimistic update - backend only
 
         return {
           ...old,
