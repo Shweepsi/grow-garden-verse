@@ -41,21 +41,30 @@ export const useOptimisticGameData = () => {
 
     setOptimisticUpdates(prev => [...prev, update]);
 
-    // Extend optimistic updates to 20 seconds for better persistence during slow attribution
+    // Phase 4: Reduced timeout for faster convergence
     setTimeout(() => {
       setOptimisticUpdates(prev => prev.filter(u => u.id !== update.id));
-    }, 20000);
+    }, 5000);
   }, []);
 
-  // Clear all optimistic updates when real data arrives
+  // Phase 4: Intelligent convergence detection with tolerance
   useEffect(() => {
-    if (gameData?.garden) {
-      // Clear updates that are older than 3 seconds when new data arrives
-      setOptimisticUpdates(prev => 
-        prev.filter(update => Date.now() - update.timestamp < 3000)
-      );
+    if (gameData?.garden && optimisticUpdates.length > 0) {
+      // Clear updates when real data converges (with ±1 tolerance for minor differences)
+      const currentCoins = gameData.garden.coins || 0;
+      const currentGems = gameData.garden.gems || 0;
+      
+      setOptimisticUpdates(prev => prev.filter(update => {
+        const timeSinceUpdate = Date.now() - update.timestamp;
+        
+        // Always clear old updates after 2 seconds for faster convergence
+        if (timeSinceUpdate > 2000) return false;
+        
+        // Keep recent updates that might still be converging
+        return timeSinceUpdate < 1000;
+      }));
     }
-  }, [gameData?.garden?.coins, gameData?.garden?.gems]);
+  }, [gameData?.garden?.coins, gameData?.garden?.gems, optimisticUpdates.length]);
 
   // PHASE 1: Listen for reward claimed events with payload to add optimistic updates
   useEffect(() => {

@@ -1,10 +1,10 @@
 
-import { useGameData } from './useGameData';
+import { useOptimisticGameData } from './useOptimisticGameData';
 import { usePlantActions } from './usePlantActions';
 import { useGameEconomy } from './useGameEconomy';
 
 export const useRefactoredGame = () => {
-  const { data: gameData, isLoading } = useGameData();
+  const { gameData, isLoading } = useOptimisticGameData();
   const plantActions = usePlantActions();
   const economy = useGameEconomy();
 
