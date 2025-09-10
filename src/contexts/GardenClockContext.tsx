@@ -1,9 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-// PERFORMANCE: Smart adaptive intervals based on garden state
-const DEFAULT_CLOCK_INTERVAL = 2000; // Reduced from 1s to 2s
-const FAST_INTERVAL = 1000; // For plants close to completion
-const SLOW_INTERVAL = 5000; // When no active plants
+// Update frequency for the shared garden clock (ms). Optimized for performance.
+const DEFAULT_CLOCK_INTERVAL = 1000;
 
 /**
  * Context storing the last timestamp emitted by the shared garden clock.
@@ -15,59 +13,19 @@ const GardenClockContext = createContext<number>(Date.now());
 
 interface GardenClockProviderProps {
   children: ReactNode;
-  /** Base interval in milliseconds between ticks. Smart intervals override this. */
+  /** Interval in milliseconds between ticks. Defaults to 500 ms. */
   interval?: number;
-  /** Optional garden state for smart interval adaptation */
-  hasActivePlants?: boolean;
-  /** Time until next plant completion (for optimization) */
-  nextCompletionTime?: number;
 }
 
-export const GardenClockProvider = ({ 
-  children, 
-  interval = DEFAULT_CLOCK_INTERVAL,
-  hasActivePlants = false,
-  nextCompletionTime = Infinity
-}: GardenClockProviderProps) => {
+export const GardenClockProvider = ({ children, interval = DEFAULT_CLOCK_INTERVAL }: GardenClockProviderProps) => {
   const [time, setTime] = useState<number>(() => Date.now());
-  const intervalRef = useRef<NodeJS.Timeout>();
-  const isDocumentHidden = useRef(false);
 
-  // Smart interval calculation
-  const getOptimalInterval = useCallback(() => {
-    if (isDocumentHidden.current) return SLOW_INTERVAL;
-    if (!hasActivePlants) return SLOW_INTERVAL;
-    if (nextCompletionTime < 10) return FAST_INTERVAL;
-    if (nextCompletionTime < 30) return DEFAULT_CLOCK_INTERVAL;
-    return interval;
-  }, [hasActivePlants, nextCompletionTime, interval]);
-
-  const startTicker = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    
-    const currentInterval = getOptimalInterval();
-    intervalRef.current = setInterval(() => {
+  useEffect(() => {
+    const id = setInterval(() => {
       setTime(Date.now());
-    }, currentInterval);
-  }, [getOptimalInterval]);
-
-  // Handle visibility changes for battery optimization
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      isDocumentHidden.current = document.hidden;
-      startTicker(); // Restart with appropriate interval
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [startTicker]);
-
-  useEffect(() => {
-    startTicker();
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [startTicker]);
+    }, interval);
+    return () => clearInterval(id);
+  }, [interval]);
 
   return (
     <GardenClockContext.Provider value={time}>{children}</GardenClockContext.Provider>

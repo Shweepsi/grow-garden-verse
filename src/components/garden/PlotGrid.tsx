@@ -1,13 +1,15 @@
 
-import { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { GardenPlot, PlantType } from '@/types/game';
 import { PlotCard } from './PlotCard';
 import { PlantSelector } from './PlantSelector';
 import { PassiveIncomeRobot } from './PassiveIncomeRobot';
 import { useDirectPlanting } from '@/hooks/useDirectPlanting';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
-import { useOptimizedPlantStates } from '@/hooks/useOptimizedPlantStates';
-import { PerformanceService } from '@/services/PerformanceService';
+import { usePlantStates } from '@/hooks/usePlantStates';
+import { toast } from 'sonner';
+import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -17,7 +19,7 @@ interface PlotGridProps {
   onUnlockPlot: (plotNumber: number) => void;
 }
 
-export const PlotGrid = memo(({ 
+export const PlotGrid = ({ 
   plots, 
   plantTypes, 
   coins,
@@ -29,7 +31,8 @@ export const PlotGrid = memo(({
   const [showRobotInterface, setShowRobotInterface] = useState(false);
   
   const { plantDirect, isPlantingPlot } = useDirectPlanting();
-  const { plantStates, getPlantState, hasActivePlants } = useOptimizedPlantStates(plots, plantTypes);
+  const { getCombinedBoostMultiplier } = useGameMultipliers();
+  const { plantStates, getPlantState } = usePlantStates(plots, plantTypes);
   const { 
     hasPassiveRobot, 
     robotPlantType,
@@ -57,19 +60,13 @@ export const PlotGrid = memo(({
     }
   }, [hasPassiveRobot, robotPlantType, calculateOfflineRewards, claimOfflineRewards]);
 
-  // Optimized click handler with performance monitoring
+  // Optimiser le handler de clic avec useCallback
   const handlePlotClick = useCallback((plot: GardenPlot) => {
-    const finishMeasure = PerformanceService.startRenderMeasure();
-    
-    if (!plot.unlocked) {
-      finishMeasure();
-      return;
-    }
+    if (!plot.unlocked) return;
     
     // Parcelle 1 avec robot passif actif
     if (plot.plot_number === 1 && hasPassiveRobot) {
       setShowRobotInterface(true);
-      finishMeasure();
       return;
     }
     
@@ -83,17 +80,12 @@ export const PlotGrid = memo(({
       // Feedback immédiat optimiste
       onHarvestPlant(plot.plot_number);
     }
-    
-    finishMeasure();
   }, [hasPassiveRobot, onHarvestPlant, getPlantState]);
 
-  // Optimized selection handlers with debouncing
-  const handlePlantSelection = useCallback(
-    PerformanceService.debounce((plotNumber: number, plantTypeId: string, cost: number) => {
-      plantDirect(plotNumber, plantTypeId, cost);
-    }, 300),
-    [plantDirect]
-  );
+  // Optimiser les handlers de sélection
+  const handlePlantSelection = useCallback((plotNumber: number, plantTypeId: string, cost: number) => {
+    plantDirect(plotNumber, plantTypeId, cost);
+  }, [plantDirect]);
 
   const handleClosePlantSelector = useCallback(() => {
     setShowPlantSelector(false);
@@ -165,6 +157,4 @@ export const PlotGrid = memo(({
       />
     </>
   );
-});
-
-PlotGrid.displayName = 'PlotGrid';
+};

@@ -64,71 +64,40 @@ export class PlantGrowthService {
   }
 
   static isReadyToHarvest(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): boolean {
-    const boostMultiplier = boosts?.getBoostMultiplier('growth_speed') || 1;
-    const cacheKey = this.getCacheKey(plantedAt, growthTimeSeconds, boostMultiplier);
-    
-    // Check readiness cache
-    const readinessCache = this.readinessCache.get(cacheKey);
-    if (readinessCache && this.isCacheValid(readinessCache.timestamp)) {
-      return readinessCache.isReady;
-    }
-    
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
     
     const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
     const requiredTime = adjustedGrowthTime * 1000;
-    const isReady = (now - plantedTime) >= requiredTime;
     
-    // Cache readiness result
-    this.readinessCache.set(cacheKey, {
-      isReady,
-      timestamp: Date.now()
-    });
-    
-    return isReady;
+    return (now - plantedTime) >= requiredTime;
   }
 
-  // Enhanced cache with performance optimization
-  private static growthTimeCache = new Map<string, { value: number; timestamp: number; hits: number }>();
+  // Cache for growth time calculations to avoid repeated computations
+  private static growthTimeCache = new Map<string, number>();
   private static updateIntervalCache = new Map<number, number>();
-  private static readinessCache = new Map<string, { isReady: boolean; timestamp: number }>();
-  private static progressCache = new Map<string, { progress: number; timestamp: number }>();
-  
-  // Cache TTL in milliseconds
-  private static readonly CACHE_TTL = 1000; // 1 second for dynamic values
-  private static readonly STATIC_CACHE_TTL = 30000; // 30 seconds for static calculations
 
   private static getCacheKey(plantedAt: string, growthTimeSeconds: number, boostMultiplier?: number): string {
     return `${plantedAt}_${growthTimeSeconds}_${boostMultiplier || 1}`;
-  }
-
-  private static isCacheValid(timestamp: number, ttl: number = this.CACHE_TTL): boolean {
-    return Date.now() - timestamp < ttl;
   }
 
   static getTimeRemaining(plantedAt: string, growthTimeSeconds: number, boosts?: { getBoostMultiplier: (type: string) => number }): number {
     const boostMultiplier = boosts?.getBoostMultiplier('growth_speed') || 1;
     const cacheKey = this.getCacheKey(plantedAt, growthTimeSeconds, boostMultiplier);
     
-    // Check cache first with timestamp validation
-    const cached = this.growthTimeCache.get(cacheKey);
-    if (cached && this.isCacheValid(cached.timestamp)) {
-      cached.hits++;
+    // Check cache first
+    if (this.growthTimeCache.has(cacheKey)) {
+      const adjustedGrowthTime = this.growthTimeCache.get(cacheKey)!;
       const plantedTime = new Date(plantedAt).getTime();
       const now = Date.now();
-      const requiredTime = cached.value * 1000;
+      const requiredTime = adjustedGrowthTime * 1000;
       const elapsed = now - plantedTime;
       return Math.max(0, Math.ceil((requiredTime - elapsed) / 1000));
     }
     
-    // Calculate and cache with metadata
+    // Calculate and cache
     const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
-    this.growthTimeCache.set(cacheKey, {
-      value: adjustedGrowthTime,
-      timestamp: Date.now(),
-      hits: 1
-    });
+    this.growthTimeCache.set(cacheKey, adjustedGrowthTime);
     
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
@@ -146,27 +115,22 @@ export class PlantGrowthService {
     const boostMultiplier = boosts?.getBoostMultiplier('growth_speed') || 1;
     const cacheKey = this.getCacheKey(plantedAt, growthTimeSeconds, boostMultiplier);
     
-    // Check progress cache first
-    const progressCache = this.progressCache.get(cacheKey);
-    if (progressCache && this.isCacheValid(progressCache.timestamp)) {
-      return progressCache.progress;
+    // Check cache first
+    if (this.growthTimeCache.has(cacheKey)) {
+      const adjustedGrowthTime = this.growthTimeCache.get(cacheKey)!;
+      const plantedTime = new Date(plantedAt).getTime();
+      const now = Date.now();
+      const requiredTime = adjustedGrowthTime * 1000;
+      const elapsed = now - plantedTime;
+      
+      // Calcul précis du pourcentage de progression (0-100)
+      const progress = Math.min(100, Math.max(0, (elapsed / requiredTime) * 100));
+      return progress;
     }
     
-    // Check growth time cache
-    const growthCache = this.growthTimeCache.get(cacheKey);
-    let adjustedGrowthTime: number;
-    
-    if (growthCache && this.isCacheValid(growthCache.timestamp, this.STATIC_CACHE_TTL)) {
-      adjustedGrowthTime = growthCache.value;
-      growthCache.hits++;
-    } else {
-      adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
-      this.growthTimeCache.set(cacheKey, {
-        value: adjustedGrowthTime,
-        timestamp: Date.now(),
-        hits: 1
-      });
-    }
+    // Calculate and cache
+    const adjustedGrowthTime = this.calculateGrowthTime(growthTimeSeconds, boosts);
+    this.growthTimeCache.set(cacheKey, adjustedGrowthTime);
     
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
@@ -175,13 +139,6 @@ export class PlantGrowthService {
     
     // Calcul précis du pourcentage de progression (0-100)
     const progress = Math.min(100, Math.max(0, (elapsed / requiredTime) * 100));
-    
-    // Cache progress result
-    this.progressCache.set(cacheKey, {
-      progress,
-      timestamp: Date.now()
-    });
-    
     return progress;
   }
 
@@ -212,49 +169,16 @@ export class PlantGrowthService {
     this.updateIntervalCache.clear();
   }
 
-  // Enhanced cache cleanup with performance metrics
+  // Clean up old cache entries to prevent memory leaks
   static cleanupCache(maxAge: number = 300000): void { // 5 minutes default
     const now = Date.now();
-    let cleanedCount = 0;
     
-    // Clean up growth time cache entries
-    for (const [key, entry] of this.growthTimeCache.entries()) {
-      if (now - entry.timestamp > maxAge || entry.hits === 0) {
+    // Clean up growth time cache entries older than maxAge
+    for (const [key, value] of this.growthTimeCache.entries()) {
+      const timestamp = parseInt(key.split('_')[0]);
+      if (now - timestamp > maxAge) {
         this.growthTimeCache.delete(key);
-        cleanedCount++;
       }
     }
-    
-    // Clean up readiness cache
-    for (const [key, entry] of this.readinessCache.entries()) {
-      if (now - entry.timestamp > this.CACHE_TTL) {
-        this.readinessCache.delete(key);
-        cleanedCount++;
-      }
-    }
-    
-    // Clean up progress cache
-    for (const [key, entry] of this.progressCache.entries()) {
-      if (now - entry.timestamp > this.CACHE_TTL) {
-        this.progressCache.delete(key);
-        cleanedCount++;
-      }
-    }
-    
-    if (cleanedCount > 0) {
-      console.log(`🧹 Cleaned ${cleanedCount} cache entries`);
-    }
-  }
-
-  // Get cache statistics for performance monitoring
-  static getCacheStats() {
-    const totalHits = Array.from(this.growthTimeCache.values()).reduce((sum, entry) => sum + entry.hits, 0);
-    return {
-      growthCacheSize: this.growthTimeCache.size,
-      readinessCacheSize: this.readinessCache.size,
-      progressCacheSize: this.progressCache.size,
-      totalCacheHits: totalHits,
-      intervalCacheSize: this.updateIntervalCache.size
-    };
   }
 }
