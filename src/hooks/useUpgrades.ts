@@ -4,13 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
-import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useUpgrades = () => {
   const { user } = useAuth();
-  const calculations = useUnifiedCalculations();
   const queryClient = useQueryClient();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
 
