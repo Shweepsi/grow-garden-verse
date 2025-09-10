@@ -2,8 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
-import { EconomyService } from '@/services/EconomyService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { MAX_PLOTS } from '@/constants';
@@ -11,7 +10,8 @@ import { MAX_PLOTS } from '@/constants';
 export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { getCompleteMultipliers, applyGemsBoost, getCombinedBoostMultiplier } = useGameMultipliers();
+  const calculations = useUnifiedCalculations();
+  const { applyGemsBoost } = useGameMultipliers();
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
@@ -85,73 +85,41 @@ export const usePlantActions = () => {
 
       console.log('🌱 Plante trouvée:', plantType.display_name);
 
-      // Obtenir les multiplicateurs complets (permanents + boosts temporaires)
-      let multipliers;
-      try {
-        multipliers = getCompleteMultipliers();
-        console.log('💪 Multiplicateurs complets (permanent + boosts):', multipliers);
-      } catch (error) {
-        console.warn('⚠️ Erreur lors de la récupération des multiplicateurs, utilisation des valeurs par défaut:', error);
-        multipliers = { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0, coins: 1, gems: 1 };
-      }
+      // UNIFIED VERIFICATION: Use the same logic as backend
+      console.log('💪 Multiplicateurs unifiés:', calculations.multipliers);
       
-      // Vérification robuste de la maturité avec application des boosts
-      const baseGrowthTime = plantType.base_growth_seconds || 60;
-      const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
+      const harvestCheck = calculations.canHarvestPlant(plot);
       
-      if (!isReady) {
-        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, baseGrowthTime, boosts);
-        const timeString = timeRemaining > 60 
-          ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
-          : `${timeRemaining}s`;
-        console.log(`⏰ Plante pas encore prête avec boosts, temps restant: ${timeString}`);
-        throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
+      if (!harvestCheck.canHarvest) {
+        if (harvestCheck.timeRemaining) {
+          const timeString = harvestCheck.timeRemaining > 60 
+            ? `${Math.floor(harvestCheck.timeRemaining / 60)}m ${harvestCheck.timeRemaining % 60}s`
+            : `${harvestCheck.timeRemaining}s`;
+          console.log(`⏰ Plante pas encore prête (unified check), temps restant: ${timeString}`);
+          throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
+        }
+        throw new Error(harvestCheck.reason || 'Impossible de récolter cette plante');
       }
 
       console.log('✅ Plante prête pour la récolte');
 
-      // Phase 1: Use plot.growth_time_seconds instead of base_growth_seconds for synchronization
-      const actualGrowthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
-      const plantLevel = Math.max(1, plantType.level_required || 1);
-      const playerLevel = Math.max(1, garden.level || 1);
-      const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
-      const expMultiplier = Math.max(0.1, multipliers.exp || 1);
-      const plantCostReduction = Math.max(0.1, multipliers.plantCostReduction || 1);
-      const gemChance = Math.max(0, Math.min(1, multipliers.gemChance || 0));
-      
-      const harvestReward = EconomyService.getHarvestReward(
-        plantType.level_required,
-        actualGrowthTime,
-        playerLevel,
-        harvestMultiplier,
-        plantCostReduction,
-        garden.permanent_multiplier || 1
-      );
-      
-      const expReward = EconomyService.calculateExpReward(
-        plantType.level_required,
-        plantType.rarity,
-        expMultiplier
-      );
-      
-      // Phase 2: Let backend calculate gems (eliminate frontend randomness)
-      const gemReward = EconomyService.calculateGemReward(gemChance);
-      const boostedGems = applyGemsBoost(gemReward);
+      // UNIFIED CALCULATIONS: Use the same service as backend
+      const backendParams = calculations.createBackendParams(plot, plantType, garden);
+      const boostedGems = applyGemsBoost(backendParams.gemReward);
 
-      console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes (${boostedGems} avec boost)`);
+      console.log(`💰 Récompenses calculées (unified): ${backendParams.harvestReward} pièces, ${backendParams.expReward} EXP, ${backendParams.gemReward} gemmes (${boostedGems} avec boost)`);
 
-      // Phase 3: Call improved atomic function with precise parameters
-      console.log('🚀 Utilisation de la transaction atomique harvest_plant_transaction avec synchronisation');
+      // UNIFIED BACKEND CALL: Use exact same parameters
+      console.log('🚀 Utilisation de la transaction atomique unified avec synchronisation parfaite');
       
       const { data: transactionResult, error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
         p_user_id: user.id,
         p_plot_number: plotNumber,
-        p_harvest_reward: harvestReward,
-        p_exp_reward: expReward,
+        p_harvest_reward: backendParams.harvestReward,
+        p_exp_reward: backendParams.expReward,
         p_gem_reward: boostedGems,
-        p_growth_time_seconds: actualGrowthTime,
-        p_multipliers: multipliers
+        p_growth_time_seconds: backendParams.actualGrowthTime,
+        p_multipliers: calculations.multipliers as any
       });
 
       if (transactionError) {
@@ -172,10 +140,10 @@ export const usePlantActions = () => {
 
       // Déclencher les animations de récompense de manière asynchrone
       setTimeout(() => {
-        triggerCoinAnimation(harvestReward);
-        triggerXpAnimation(expReward);
-        if (boostedGems > 0) {
-          triggerGemAnimation(boostedGems);
+        triggerCoinAnimation(result.harvest_reward);
+        triggerXpAnimation(result.exp_reward);
+        if (result.gem_reward > 0) {
+          triggerGemAnimation(result.gem_reward);
         }
       }, 0);
 
@@ -183,16 +151,16 @@ export const usePlantActions = () => {
       const logPromises = [];
       
       // Enregistrer la transaction
-      logPromises.push(
-        supabase
-          .from('coin_transactions')
-          .insert({
-            user_id: user.id,
-            amount: harvestReward,
-            transaction_type: 'harvest',
-            description: `Récolte de ${plantType.display_name || plantType.name}`
-          })
-      );
+        logPromises.push(
+          supabase
+            .from('coin_transactions')
+            .insert({
+              user_id: user.id,
+              amount: result.harvest_reward,
+              transaction_type: 'harvest',
+              description: `Récolte de ${plantType.display_name || plantType.name}`
+            })
+        );
 
       // Enregistrer la découverte
       logPromises.push(
@@ -250,28 +218,15 @@ export const usePlantActions = () => {
         const plantType = old.plantTypes?.find((pt: any) => pt.id === plot.plant_type);
         if (!plantType) return old;
 
-        // Phase 1: Use plot.growth_time_seconds for optimistic calculations too
-        const actualGrowthTime = plot.growth_time_seconds || plantType.base_growth_seconds;
-        const harvestMultiplier = getCombinedBoostMultiplier('coin_boost');
-        const gemMultiplier = getCombinedBoostMultiplier('gem_boost');
-        
-        const harvestReward = EconomyService.getHarvestReward(
+        // UNIFIED OPTIMISTIC CALCULATIONS: Use the same service
+        const harvestReward = calculations.calculateHarvestReward(
           plantType.level_required,
-          actualGrowthTime,
+          plot,
           old.garden?.level || 1,
-          harvestMultiplier,
-          1,
           old.garden?.permanent_multiplier || 1
         );
-        
-        const expReward = EconomyService.calculateExpReward(
-          plantType.level_required,
-          plantType.rarity,
-          1
-        );
-        
-        // Phase 2: Conservative optimistic gem estimation (no randomness)
-        const gemReward = 0; // Let backend calculate gems to avoid rollbacks
+        const expReward = calculations.calculateExpReward(plantType.level_required, plantType.rarity);
+        const gemReward = 0; // Conservative: no gems in optimistic update
 
         return {
           ...old,

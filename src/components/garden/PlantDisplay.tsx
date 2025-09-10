@@ -8,6 +8,7 @@ interface PlantDisplayProps {
   growthTimeSeconds: number;
   progress: number;
   isReady: boolean;
+  plotNumber?: number;
 }
 
 export const PlantDisplay = memo(({
@@ -15,7 +16,8 @@ export const PlantDisplay = memo(({
   plantedAt,
   growthTimeSeconds,
   progress,
-  isReady
+  isReady,
+  plotNumber
 }: PlantDisplayProps) => {
   const getRarityColor = (rarity?: string) => {
     switch (rarity) {
@@ -68,7 +70,8 @@ export const PlantDisplay = memo(({
         </div> :         <div className={`transition-colors duration-300 ${progress > 75 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
           <PlantTimer 
             plantedAt={plantedAt} 
-            growthTimeSeconds={plantType.base_growth_seconds || 60} 
+            growthTimeSeconds={plantType.base_growth_seconds || 60}
+            plotNumber={plotNumber || 1}
             className="mobile-text-xs" 
           />
         </div>}

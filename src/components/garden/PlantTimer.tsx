@@ -1,28 +1,42 @@
 
 import { useMemo } from 'react';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { Clock } from 'lucide-react';
-import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useGardenClock } from '@/contexts/GardenClockContext';
 
 interface PlantTimerProps {
   plantedAt: string | null;
   growthTimeSeconds: number;
+  plotNumber: number; // Added to get the actual plot data
   className?: string;
 }
 
-export const PlantTimer = ({ plantedAt, growthTimeSeconds, className = "" }: PlantTimerProps) => {
-  const { getCombinedBoostMultiplier } = useGameMultipliers();
+export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className = "" }: PlantTimerProps) => {
+  const calculations = useUnifiedCalculations();
   const now = useGardenClock();
 
   const { timeRemaining, isReady } = useMemo(() => {
     if (!plantedAt) return { timeRemaining: 0, isReady: false };
-    const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
+    
+    // UNIFIED CALCULATION: Use the same logic as backend  
+    const mockPlot = { 
+      growth_time_seconds: growthTimeSeconds, 
+      planted_at: plantedAt, 
+      plant_type: 'mock',
+      id: 'mock',
+      user_id: 'mock',
+      plot_number: plotNumber,
+      unlocked: true,
+      plant_metadata: null,
+      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
+    } as any;
+    
     return {
-      timeRemaining: PlantGrowthService.getTimeRemaining(plantedAt, growthTimeSeconds, boosts),
-      isReady: PlantGrowthService.isPlantReady(plantedAt, growthTimeSeconds, boosts)
+      timeRemaining: calculations.getTimeRemaining(plantedAt, mockPlot),
+      isReady: calculations.isPlantReady(plantedAt, mockPlot)
     };
-  }, [now, plantedAt, growthTimeSeconds, getCombinedBoostMultiplier]);
+  }, [now, plantedAt, growthTimeSeconds, plotNumber, calculations]);
 
   if (!plantedAt || isReady) return null;
 
