@@ -168,12 +168,14 @@ export const usePlantActions = () => {
 
       console.log('✅ Transaction atomique réussie');
 
-      // Déclencher les animations de récompense
-      triggerCoinAnimation(harvestReward);
-      triggerXpAnimation(expReward);
-      if (boostedGems > 0) {
-        triggerGemAnimation(boostedGems);
-      }
+      // Déclencher les animations de récompense de manière asynchrone
+      setTimeout(() => {
+        triggerCoinAnimation(harvestReward);
+        triggerXpAnimation(expReward);
+        if (boostedGems > 0) {
+          triggerGemAnimation(boostedGems);
+        }
+      }, 0);
 
       // OPTIMISATION: Batching des logs pour réduire les requêtes
       const logPromises = [];
@@ -201,10 +203,12 @@ export const usePlantActions = () => {
           })
       );
 
-      // Exécuter tous les logs en parallèle (non-bloquant)
-      Promise.allSettled(logPromises).catch(error => {
-        console.warn('⚠️ Erreur lors de l\'enregistrement des logs:', error);
-      });
+      // Exécuter tous les logs en parallèle et de manière asynchrone (non-bloquant)
+      setTimeout(() => {
+        Promise.allSettled(logPromises).catch(error => {
+          console.warn('⚠️ Erreur lors de l\'enregistrement des logs:', error);
+        });
+      }, 0);
 
       // Messages de réussite  
       if (newLevel > (garden.level || 1)) {
@@ -229,8 +233,61 @@ export const usePlantActions = () => {
       };
     },
     onMutate: async (plotNumber: number) => {
-      // DÉSACTIVATION TEMPORAIRE des mises à jour optimistes pour éviter les conflits
-      // Animation de récolte immédiate sans modification des données
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['gameData', user?.id]);
+
+      // Optimistically update the UI
+      queryClient.setQueryData(['gameData', user?.id], (old: any) => {
+        if (!old) return old;
+
+        const plot = old.plots?.find((p: any) => p.plot_number === plotNumber);
+        if (!plot || !plot.plant_type) return old;
+
+        const plantType = old.plantTypes?.find((pt: any) => pt.id === plot.plant_type);
+        if (!plantType) return old;
+
+        // Calculate optimistic rewards
+        const harvestMultiplier = getCombinedBoostMultiplier('coin_boost');
+        const gemMultiplier = getCombinedBoostMultiplier('gem_boost');
+        
+        const harvestReward = EconomyService.getHarvestReward(
+          plantType.level_required,
+          plantType.base_growth_seconds,
+          old.garden?.level || 1,
+          harvestMultiplier,
+          1,
+          old.garden?.permanent_multiplier || 1
+        );
+        
+        const expReward = EconomyService.calculateExpReward(
+          plantType.level_required,
+          plantType.rarity,
+          1
+        );
+        
+        const gemReward = EconomyService.calculateGemReward(0.1) * gemMultiplier;
+
+        return {
+          ...old,
+          garden: {
+            ...old.garden,
+            coins: (old.garden?.coins || 0) + harvestReward,
+            gems: (old.garden?.gems || 0) + gemReward,
+            experience: (old.garden?.experience || 0) + expReward,
+            total_harvests: (old.garden?.total_harvests || 0) + 1,
+          },
+          plots: old.plots.map((p: any) => 
+            p.plot_number === plotNumber 
+              ? { ...p, plant_type: null, planted_at: null, growth_time_seconds: null }
+              : p
+          )
+        };
+      });
+
+      // Immediate visual feedback
       const plotElement = document.querySelector(`[data-plot="${plotNumber}"]`) as HTMLElement;
       if (plotElement) {
         plotElement.style.transform = 'scale(1.05)';
@@ -244,11 +301,22 @@ export const usePlantActions = () => {
         }, 150);
       }
       
-      return { previousData: null };
+      return { previousData };
     },
     onSuccess: (data) => {
-      // Force un refetch complet pour éviter les incohérences
-      queryClient.invalidateQueries({ queryKey: ['gameData', user?.id] });
+      // Selective invalidation - mark as stale but don't refetch immediately
+      // The optimistic update should be mostly accurate
+      setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['gameData', user?.id],
+          refetchType: 'none' // Just mark as stale, don't refetch
+        });
+      }, 100);
+
+      // Success feedback
+      toast.success(`🌱 ${data.plantType?.display_name || 'Plante'} récoltée!`, {
+        description: `+${data.harvestReward} pièces, +${data.expReward} XP${data.gemReward > 0 ? `, +${data.gemReward} gemmes` : ''}`
+      });
     },
     onError: (error: any, variables, context) => {
       // Rollback en cas d'erreur
