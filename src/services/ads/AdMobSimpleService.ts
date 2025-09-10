@@ -1,5 +1,6 @@
 import { AdMob, RewardAdOptions } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
+import { AdMonitoringService } from './AdMonitoringService';
 
 interface SimpleAdState {
   isInitialized: boolean;
@@ -10,6 +11,11 @@ interface SimpleAdState {
   isTestMode: boolean;
   retryCount: number;
   lastRetryAt: number | null;
+  errorCount: number;
+  unknownErrorCount: number;
+  lastUnknownErrorAt: number | null;
+  autoFallbackEnabled: boolean;
+  fallbackTriggered: boolean;
 }
 
 interface AdResult {
@@ -29,6 +35,8 @@ export class AdMobSimpleService {
   private static readonly TEST_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917'; // Google test ID
   private static readonly MAX_RETRY_COUNT = 3;
   private static readonly RETRY_DELAYS = [2000, 5000, 10000]; // 2s, 5s, 10s
+  private static readonly MAX_UNKNOWN_ERRORS = 3; // Threshold for auto-fallback
+  private static readonly UNKNOWN_ERROR_WINDOW = 10 * 60 * 1000; // 10 minutes
   
   private static state: SimpleAdState = {
     isInitialized: false,
@@ -38,7 +46,12 @@ export class AdMobSimpleService {
     lastErrorCode: null,
     isTestMode: false,
     retryCount: 0,
-    lastRetryAt: null
+    lastRetryAt: null,
+    errorCount: 0,
+    unknownErrorCount: 0,
+    lastUnknownErrorAt: null,
+    autoFallbackEnabled: true,
+    fallbackTriggered: false
   };
 
   static async initialize(testMode: boolean = false): Promise<boolean> {
@@ -96,12 +109,14 @@ export class AdMobSimpleService {
       };
 
       console.log(`[AdMobSimple] 🔄 Chargement pub (${this.state.isTestMode ? 'TEST' : 'PROD'}): ${adUnitId}`);
+      AdMonitoringService.startAdLoad();
       await AdMob.prepareRewardVideoAd(options);
       
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
       this.state.retryCount = 0;
       
+      AdMonitoringService.recordAdSuccess();
       console.log('[AdMobSimple] ✅ Publicité chargée');
       return true;
     } catch (error) {
@@ -111,6 +126,8 @@ export class AdMobSimpleService {
       const { message, code } = this.parseError(error as Error);
       this.state.lastError = message;
       this.state.lastErrorCode = code;
+      
+      AdMonitoringService.recordAdFailure(code, message);
 
       // Retry logic pour erreurs récupérables
       if (this.shouldRetry(error as Error, retryCount)) {
@@ -213,8 +230,19 @@ export class AdMobSimpleService {
 
   private static parseError(error: Error): { message: string; code: string } {
     const errorStr = error.toString().toLowerCase();
+    const fullError = error.toString();
     let code = 'UNKNOWN';
     let message = 'Erreur lors du chargement de la publicité';
+
+    // Log detailed error information for UNKNOWN errors
+    console.error('[AdMobSimple] 🔍 Detailed error analysis:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      fullString: fullError,
+      lowerString: errorStr,
+      timestamp: new Date().toISOString()
+    });
 
     // Codes d'erreur AdMob courants
     if (errorStr.includes('no_fill') || errorStr.includes('no ad available')) {
@@ -235,9 +263,44 @@ export class AdMobSimpleService {
     } else if (errorStr.includes('app_not_approved')) {
       code = 'APP_NOT_APPROVED';
       message = '📱 Application en attente d\'approbation AdMob';
+    } else {
+      // Enhanced UNKNOWN error handling
+      console.warn('[AdMobSimple] ⚠️ UNKNOWN ERROR detected:', {
+        originalError: fullError,
+        errorType: typeof error,
+        hasMessage: !!error.message,
+        hasStack: !!error.stack,
+        isAdMobError: fullError.includes('AdMob') || fullError.includes('admob'),
+        timestamp: new Date().toISOString()
+      });
+      
+      this.handleUnknownError();
+      message = '❓ Erreur inconnue AdMob - Vérifiez la console AdMob';
     }
 
+    // Track error counts
+    this.state.errorCount++;
+    
     return { message, code };
+  }
+
+  private static handleUnknownError(): void {
+    const now = Date.now();
+    this.state.unknownErrorCount++;
+    this.state.lastUnknownErrorAt = now;
+
+    // Check if we should trigger auto-fallback to test mode
+    if (this.state.autoFallbackEnabled && 
+        !this.state.fallbackTriggered && 
+        !this.state.isTestMode &&
+        this.state.unknownErrorCount >= this.MAX_UNKNOWN_ERRORS) {
+      
+      console.warn(`[AdMobSimple] 🚨 ${this.state.unknownErrorCount} erreurs UNKNOWN détectées - Activation du mode test automatique`);
+      this.state.fallbackTriggered = true;
+      this.state.isTestMode = true;
+      this.state.isInitialized = false; // Force reinit
+      this.cleanup();
+    }
   }
 
   private static getErrorMessage(error: Error): string {
@@ -261,8 +324,31 @@ export class AdMobSimpleService {
         currentRetries: this.state.retryCount,
         lastRetryAt: this.state.lastRetryAt,
         retryDelays: this.RETRY_DELAYS
-      }
+      },
+      errorTracking: {
+        totalErrors: this.state.errorCount,
+        unknownErrors: this.state.unknownErrorCount,
+        lastUnknownErrorAt: this.state.lastUnknownErrorAt,
+        autoFallbackEnabled: this.state.autoFallbackEnabled,
+        fallbackTriggered: this.state.fallbackTriggered,
+        maxUnknownErrorsThreshold: this.MAX_UNKNOWN_ERRORS,
+        unknownErrorWindow: this.UNKNOWN_ERROR_WINDOW
+      },
+      monitoring: AdMonitoringService.exportDiagnostics()
     };
+  }
+
+  static resetErrorTracking(): void {
+    this.state.errorCount = 0;
+    this.state.unknownErrorCount = 0;
+    this.state.lastUnknownErrorAt = null;
+    this.state.fallbackTriggered = false;
+    console.log('[AdMobSimple] 🔄 Compteurs d\'erreur réinitialisés');
+  }
+
+  static setAutoFallback(enabled: boolean): void {
+    this.state.autoFallbackEnabled = enabled;
+    console.log(`[AdMobSimple] 🔧 Auto-fallback ${enabled ? 'activé' : 'désactivé'}`);
   }
 
   static setTestMode(enabled: boolean): void {
