@@ -212,7 +212,6 @@ export const usePlantActions = () => {
 
       // Messages de réussite  
       if (newLevel > (garden.level || 1)) {
-        toast.success(`🎉 Niveau ${newLevel} atteint !`);
         console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
       }
 
@@ -314,9 +313,7 @@ export const usePlantActions = () => {
       }, 100);
 
       // Success feedback
-      toast.success(`🌱 ${data.plantType?.display_name || 'Plante'} récoltée!`, {
-        description: `+${data.harvestReward} pièces, +${data.expReward} XP${data.gemReward > 0 ? `, +${data.gemReward} gemmes` : ''}`
-      });
+      console.log(`🌱 ${data.plantType?.display_name || 'Plante'} récoltée! +${data.harvestReward} pièces, +${data.expReward} XP${data.gemReward > 0 ? `, +${data.gemReward} gemmes` : ''}`);
     },
     onError: (error: any, variables, context) => {
       // Rollback en cas d'erreur
