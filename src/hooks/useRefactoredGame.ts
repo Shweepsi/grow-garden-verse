@@ -1,11 +1,10 @@
 
-import { useOptimisticGameData } from './useOptimisticGameData';
+import { useGameData } from './useGameData';
 import { usePlantActions } from './usePlantActions';
 import { useGameEconomy } from './useGameEconomy';
 
 export const useRefactoredGame = () => {
-  // PHASE 1: Utiliser useOptimisticGameData pour une source de vérité unifiée
-  const { gameData, isLoading } = useOptimisticGameData();
+  const { data: gameData, isLoading } = useGameData();
   const plantActions = usePlantActions();
   const economy = useGameEconomy();
 

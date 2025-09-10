@@ -634,15 +634,15 @@ export type Database = {
       }
       harvest_plant_transaction: {
         Args: {
-          p_exp_reward: number
-          p_gem_reward: number
-          p_growth_time_seconds: number
-          p_harvest_reward: number
-          p_multipliers?: Json
+          p_new_coins: number
+          p_new_exp: number
+          p_new_gems: number
+          p_new_harvests: number
+          p_new_level: number
           p_plot_number: number
           p_user_id: string
         }
-        Returns: Json
+        Returns: undefined
       }
       increment_ad_count_atomic: {
         Args: {
