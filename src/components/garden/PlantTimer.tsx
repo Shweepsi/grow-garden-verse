@@ -45,12 +45,29 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
                      timeRemaining < 120 ? 'text-yellow-600' : 
                      'text-gray-600';
 
+  // Format time display based on remaining duration
+  const formatTime = (seconds: number): string => {
+    if (seconds <= 0) return 'Prêt !';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 1) {
+      return `${minutes}m`;
+    } else if (minutes === 1) {
+      return `1m ${remainingSeconds}s`;
+    } else {
+      return `${remainingSeconds}s`;
+    }
+  };
+
   return (
     <div className={`flex items-center gap-1 text-xs transition-colors duration-300 ${urgencyClass} ${className}`}>
       <Clock className="h-3 w-3" />
-      <span className="font-medium">{timeRemaining > 0 
-        ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
-        : 'Prêt !'}</span>
+      <span className="font-medium">{formatTime(timeRemaining)}</span>
     </div>
   );
 };

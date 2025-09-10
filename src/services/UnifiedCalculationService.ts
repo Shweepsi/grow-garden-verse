@@ -40,13 +40,10 @@ export class UnifiedCalculationService {
 
   /**
    * CORE CALCULATION: Time remaining until harvest
+   * Note: No cache for real-time updates
    */
   static getTimeRemaining(plantedAt: string, plot: GardenPlot, boostMultiplier: number = 1): number {
     if (!plantedAt || !plot.growth_time_seconds) return 0;
-    
-    const cacheKey = `time_${plantedAt}_${plot.growth_time_seconds}_${boostMultiplier}`;
-    const cached = this.getCachedValue(cacheKey);
-    if (cached !== null) return cached;
     
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
@@ -55,7 +52,6 @@ export class UnifiedCalculationService {
     const elapsed = now - plantedTime;
     
     const remaining = Math.max(0, Math.ceil((requiredTime - elapsed) / 1000));
-    this.setCachedValue(cacheKey, remaining);
     
     return remaining;
   }
