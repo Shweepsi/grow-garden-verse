@@ -118,15 +118,17 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * CORE CALCULATION: Gem rewards (deterministic for backend consistency)
+   * CORE CALCULATION: Gem rewards (probabilistic system)
    */
   static calculateGemReward(gemChance: number, useRandomness: boolean = true): number {
     if (!gemChance || gemChance <= 0) return 0;
     
     if (!useRandomness) {
-      // Deterministic calculation for backend consistency
-      // Fixed: Use actual gemChance value instead of impossible 0.5 threshold
-      return gemChance >= 0.05 ? 1 : 0;
+      // Even for backend, use probabilistic calculation for fairness
+      // Use a deterministic seed based on timestamp for backend consistency within same second
+      const seed = Math.floor(Date.now() / 1000) % 1000;
+      const pseudoRandom = (seed * 9301 + 49297) % 233280 / 233280;
+      return pseudoRandom < gemChance ? 1 : 0;
     }
     
     // Random calculation for frontend predictions
