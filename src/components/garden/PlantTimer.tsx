@@ -1,5 +1,5 @@
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { Clock } from 'lucide-react';
 import { useGardenClock } from '@/contexts/GardenClockContext';
@@ -14,7 +14,6 @@ interface PlantTimerProps {
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className = "" }: PlantTimerProps) => {
   const calculations = useUnifiedCalculations();
   const now = useGardenClock();
-  const [localTime, setLocalTime] = useState(Date.now());
 
   const { timeRemaining, isReady } = useMemo(() => {
     if (!plantedAt) return { timeRemaining: 0, isReady: false };
@@ -37,27 +36,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
       timeRemaining: calculations.getTimeRemaining(plantedAt, mockPlot),
       isReady: calculations.isPlantReady(plantedAt, mockPlot)
     };
-  }, [localTime, plantedAt, growthTimeSeconds, plotNumber, calculations]);
-
-  // Timer plus fréquent quand il reste moins d'une minute
-  useEffect(() => {
-    if (!plantedAt || isReady || timeRemaining > 60) {
-      return;
-    }
-
-    // Mise à jour chaque seconde quand il reste moins d'une minute
-    const interval = setInterval(() => {
-      setLocalTime(Date.now());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [plantedAt, isReady, timeRemaining]);
-
-  // Synchroniser avec le GardenClock pour les timers longs
-  useEffect(() => {
-    if (timeRemaining <= 60) return; // Ne pas interférer avec le timer haute fréquence
-    setLocalTime(now);
-  }, [now, timeRemaining]);
+  }, [now, plantedAt, growthTimeSeconds, plotNumber, calculations]);
 
   if (!plantedAt || isReady) return null;
 
@@ -70,11 +49,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
     <div className={`flex items-center gap-1 text-xs transition-colors duration-300 ${urgencyClass} ${className}`}>
       <Clock className="h-3 w-3" />
       <span className="font-medium">{timeRemaining > 0 
-        ? timeRemaining > 60 
-          ? `${Math.ceil(timeRemaining / 60)}m` // Plus d'une minute : seulement les minutes
-          : timeRemaining >= 60 
-            ? `1m ${timeRemaining % 60}s` // Exactement une minute
-            : `${timeRemaining}s` // Moins d'une minute : seulement les secondes
+        ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
         : 'Prêt !'}</span>
     </div>
   );
