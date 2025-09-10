@@ -1,6 +1,5 @@
 import { useUpgrades } from './useUpgrades';
 import { useActiveBoosts } from './useActiveBoosts';
-import { useGameEconomy } from './useGameEconomy';
 
 export interface GameMultipliers {
   harvest: number;
@@ -19,7 +18,6 @@ export interface GameMultipliers {
 export const useGameMultipliers = () => {
   const { getActiveMultipliers } = useUpgrades();
   const { getBoostMultiplier, boosts } = useActiveBoosts();
-  const { applyCoinsBoost, applyGemsBoost } = useGameEconomy();
 
   /**
    * Retourne uniquement les multiplicateurs permanents (sans boosts temporaires)
@@ -107,6 +105,18 @@ export const useGameMultipliers = () => {
       default:
         return 1;
     }
+  };
+
+  // Fonction pour appliquer les boosts aux gains de pièces
+  const applyCoinsBoost = (amount: number): number => {
+    const coinBoostMultiplier = getBoostMultiplier('coin_boost');
+    return Math.floor(amount * coinBoostMultiplier);
+  };
+
+  // Fonction pour appliquer les boosts aux gains de gemmes
+  const applyGemsBoost = (amount: number): number => {
+    const gemBoostMultiplier = getBoostMultiplier('gem_boost');
+    return Math.floor(amount * gemBoostMultiplier);
   };
 
   const applyAllBoosts = (coins: number, gems: number) => {

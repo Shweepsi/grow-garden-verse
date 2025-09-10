@@ -3,14 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
-import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useGameEconomy = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { getBoostMultiplier } = useActiveBoosts();
   const { triggerCoinAnimation } = useAnimations();
 
   const unlockPlotMutation = useMutation({
@@ -72,22 +69,8 @@ export const useGameEconomy = () => {
     }
   });
 
-  // Fonction pour appliquer les boosts aux gains de pièces
-  const applyCoinsBoost = (amount: number): number => {
-    const coinBoostMultiplier = getBoostMultiplier('coin_boost');
-    return Math.floor(amount * coinBoostMultiplier);
-  };
-
-  // Fonction pour appliquer les boosts aux gains de gemmes
-  const applyGemsBoost = (amount: number): number => {
-    const gemBoostMultiplier = getBoostMultiplier('gem_boost');
-    return Math.floor(amount * gemBoostMultiplier);
-  };
-
   return {
     unlockPlot: (plotNumber: number) => unlockPlotMutation.mutate(plotNumber),
-    isUnlocking: unlockPlotMutation.isPending,
-    applyCoinsBoost,
-    applyGemsBoost
+    isUnlocking: unlockPlotMutation.isPending
   };
 };
