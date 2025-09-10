@@ -11,7 +11,7 @@ export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const calculations = useUnifiedCalculations();
-  const { applyGemsBoost } = useGameMultipliers();
+  // SOLUTION A: No longer need gem boost application - backend handles everything
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
