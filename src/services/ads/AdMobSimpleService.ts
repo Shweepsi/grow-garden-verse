@@ -204,13 +204,9 @@ export class AdMobSimpleService {
   }
 
   private static preloadNext(): void {
-    // Préchargement silencieux après 5 secondes
-    setTimeout(() => {
-      this.loadAd().catch(() => {
-        // Échec silencieux du préchargement
-        console.log('[AdMobSimple] ⚠️ Échec préchargement silencieux');
-      });
-    }, 5000);
+    // Déléguer le préchargement au service dédié
+    // Le service AdPreloadService gérera la logique de préchargement
+    console.log('[AdMobSimple] 📲 Préchargement délégué au service');
   }
 
   private static shouldRetry(error: Error, currentRetryCount: number): boolean {

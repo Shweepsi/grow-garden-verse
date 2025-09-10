@@ -6,6 +6,9 @@ import { usePremiumStatus } from './usePremiumStatus';
 import { useGameData } from './useGameData';
 import { useToast } from '@/hooks/use-toast';
 import { AdMobSimpleService } from '@/services/ads/AdMobSimpleService';
+import { AdRetryService } from '@/services/ads/AdRetryService';
+import { AdPreloadService } from '@/services/ads/AdPreloadService';
+import { AdEffectsService } from '@/services/ads/AdEffectsService';
 import type { AdReward, AdState } from '@/types/ads';
 
 
@@ -52,10 +55,12 @@ export const useUnifiedRewards = () => {
     loadAvailableRewards();
   }, [gameData?.garden?.level]);
 
-  // Initialisation d'AdMob pour les utilisateurs non-premium
+  // Initialisation d'AdMob et préchargement pour les utilisateurs non-premium
   useEffect(() => {
     if (!isPremium && user) {
       AdMobSimpleService.initialize();
+      // Démarrer le préchargement automatique
+      AdPreloadService.startBackgroundPreloading();
     }
   }, [isPremium, user]);
 
@@ -167,18 +172,24 @@ export const useUnifiedRewards = () => {
           return { success: false, error: 'Limite quotidienne atteinte' };
         }
         
-        // Utilisateur normal : regarder une publicité d'abord
+        // Utilisateur normal : regarder une publicité avec retry intelligent
         try {
-          console.log('🎬 Affichage de la publicité...');
+          console.log('🎬 Affichage de la publicité avec retry intelligent...');
           setAdLoading(true);
           
-          const adResult = await AdMobSimpleService.showAd();
+          const adResult = await AdRetryService.executeWithRetry(
+            () => AdMobSimpleService.showAd()
+          );
+          
           console.log('📺 Résultat publicité:', adResult);
           
           if (adResult.success && adResult.rewarded) {
             console.log('✅ Publicité regardée avec succès');
             
-            // Afficher immédiatement un toast de progression
+            // Effet visuel immédiat
+            AdEffectsService.triggerBoostActivation(reward);
+            
+            // Toast de progression
             toast({
               description: "🎯 Publicité terminée ! Attribution de votre récompense...",
               duration: 10000
@@ -191,13 +202,16 @@ export const useUnifiedRewards = () => {
             if (result.success) {
               const rewardConfig = availableRewards.find(r => r.type === reward.type);
               
-              // Toast de confirmation avec délai pour laisser le temps à l'attribution
+              // Planifier le prochain préchargement
+              AdPreloadService.scheduleNextPreload();
+              
+              // Toast de confirmation avec délai
               setTimeout(() => {
                 localStorage.setItem('lastRewardStatus', 'Succès: Boost activé après publicité');
                 toast({
                   description: `✅ ${rewardConfig?.emoji || reward.emoji} ${rewardConfig?.description || reward.description} activé pour ${rewardConfig?.duration || 60} minutes`
                 });
-              }, 3000);
+              }, 2000);
               
               await refreshState();
               return { success: true, message: 'Publicité regardée et boost activé' };
@@ -205,37 +219,12 @@ export const useUnifiedRewards = () => {
               console.error('❌ Échec réclamation après publicité:', result.error);
               localStorage.setItem('lastRewardStatus', `Échec: ${result.error}`);
               toast({
-                title: "Erreur",
-                description: result.error || 'Erreur lors de la distribution',
+                title: "Erreur de distribution",
+                description: result.error || 'Erreur lors de la distribution de la récompense',
                 variant: "destructive"
               });
               return { success: false, error: result.error };
             }
-          } else if (!adResult.success) {
-            console.error('❌ Échec affichage publicité:', adResult.error, adResult.errorCode);
-            
-            let errorTitle = "Erreur publicitaire";
-            let errorDescription = adResult.error || "Impossible d'afficher la publicité";
-            
-            // Messages spécifiques selon le code d'erreur
-            if (adResult.errorCode === 'NO_FILL') {
-              errorTitle = "Aucune publicité disponible";
-              errorDescription = "Aucune publicité n'est disponible pour le moment. Ceci est normal pour les nouvelles applications.";
-            } else if (adResult.errorCode === 'NETWORK_ERROR') {
-              errorTitle = "Problème de connexion";
-              errorDescription = "Vérifiez votre connexion internet et réessayez.";
-            } else if (adResult.errorCode === 'APP_NOT_APPROVED') {
-              errorTitle = "Application en attente";
-              errorDescription = "Votre application attend encore l'approbation AdMob.";
-            }
-            
-            localStorage.setItem('lastRewardStatus', `Échec publicitaire: ${errorTitle}`);
-            toast({
-              title: errorTitle, 
-              description: errorDescription,
-              variant: "destructive"
-            });
-            return { success: false, error: adResult.error || 'Erreur publicitaire' };
           } else {
             console.error('❌ Publicité non complétée');
             toast({
@@ -248,25 +237,17 @@ export const useUnifiedRewards = () => {
         } catch (adError) {
           console.error('💥 Erreur publicité:', adError);
           
-          let errorMessage = 'Erreur lors de l\'affichage de la publicité';
-          let errorTitle = "Erreur publicité";
+          // Messages d'erreur explicites et actionables
+          const errorInfo = AdRetryService.getActionableErrorMessage(adError as Error);
           
-          if (adError instanceof Error) {
-            if (adError.message.includes('mobile')) {
-              errorTitle = "Application mobile requise";
-              errorMessage = "Les publicités ne sont disponibles que sur l'application mobile";
-            } else if (adError.message.includes('connexion') || adError.message.includes('network')) {
-              errorTitle = "Problème de connexion";
-              errorMessage = "Vérifiez votre connexion internet et réessayez";
-            }
-          }
-          
+          localStorage.setItem('lastRewardStatus', `Échec: ${errorInfo.title}`);
           toast({
-            title: errorTitle,
-            description: errorMessage,
+            title: errorInfo.title,
+            description: `${errorInfo.message}${errorInfo.action ? `\n\n${errorInfo.action}` : ''}`,
             variant: "destructive"
           });
-          return { success: false, error: errorMessage };
+          
+          return { success: false, error: errorInfo.message };
         }
       }
     } catch (error) {

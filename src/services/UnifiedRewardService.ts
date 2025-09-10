@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { AdCacheService } from '@/services/ads/AdCacheService';
 import type { AdReward, AdState } from '@/types/ads';
 
 /**
@@ -29,12 +30,15 @@ export class UnifiedRewardService {
 
   /**
    * Récupère les récompenses disponibles pour un niveau de joueur donné
+   * Utilise le cache intelligent AdCacheService
    */
   static async getAvailableRewards(playerLevel: number): Promise<AdReward[]> {
     try {
-      if (this.rewardsCache.has(playerLevel)) {
-        const cached = this.rewardsCache.get(playerLevel);
-        if (cached) return cached;
+      // Vérifier le cache intelligent d'abord
+      const cached = AdCacheService.getCachedRewards(playerLevel);
+      if (cached) {
+        console.log(`[UnifiedRewardService] 📋 Récompenses depuis cache pour niveau ${playerLevel}`);
+        return cached;
       }
 
       const { data: configs, error } = await supabase
@@ -63,7 +67,10 @@ export class UnifiedRewardService {
       });
 
       const sortedRewards = this.sortRewards(rewards);
-      this.rewardsCache.set(playerLevel, sortedRewards);
+      
+      // Utiliser le cache intelligent avec TTL
+      AdCacheService.cacheRewards(playerLevel, sortedRewards);
+      console.log(`[UnifiedRewardService] 💾 Récompenses mises en cache pour niveau ${playerLevel}`);
       
       return sortedRewards;
     } catch (error) {
@@ -165,7 +172,8 @@ export class UnifiedRewardService {
    * Force le rechargement des récompenses pour un niveau donné
    */
   static async forceReloadRewards(playerLevel: number): Promise<AdReward[]> {
-    this.rewardsCache.delete(playerLevel);
+    AdCacheService.clearRewardsCache(playerLevel);
+    console.log(`[UnifiedRewardService] 🔄 Cache forcé pour niveau ${playerLevel}`);
     return this.getAvailableRewards(playerLevel);
   }
 
@@ -173,6 +181,7 @@ export class UnifiedRewardService {
    * Nettoie tout le cache des récompenses
    */
   static clearAllRewardsCache(): void {
-    this.rewardsCache.clear();
+    AdCacheService.clearAllRewardsCache();
+    console.log('[UnifiedRewardService] 🗑️ Cache complet nettoyé');
   }
 }
