@@ -12,10 +12,12 @@ import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useDirectPlanting = () => {
   const { user } = useAuth();
+  const calculations = useUnifiedCalculations();
   const queryClient = useQueryClient();
   const { data: gameData } = useGameData();
   const [plantingPlotNumber, setPlantingPlotNumber] = useState<number | null>(null);
   const { triggerCoinAnimation } = useAnimations();
+  const { getCompleteMultipliers } = useGameMultipliers();
 
   // Cache plant types when gameData is available
   useEffect(() => {
@@ -219,13 +221,12 @@ export const useDirectPlanting = () => {
     }
   });
 
-  const { getCompleteMultipliers } = useGameMultipliers();
 
   return {
     plantDirect: (plotNumber: number, plantTypeId: string, expectedCost: number) => 
       plantDirectMutation.mutate({ plotNumber, plantTypeId, expectedCost }),
     isPlanting: plantDirectMutation.isPending,
     isPlantingPlot: (plotNumber: number) => plantingPlotNumber === plotNumber,
-    getActiveMultipliers: getCompleteMultipliers
+    getActiveMultipliers: () => calculations.multipliers
   };
 };

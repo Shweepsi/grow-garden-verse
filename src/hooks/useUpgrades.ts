@@ -5,10 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
+import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useUpgrades = () => {
   const { user } = useAuth();
+  const calculations = useUnifiedCalculations();
   const queryClient = useQueryClient();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
 
@@ -157,7 +159,7 @@ export const useUpgrades = () => {
 
   // Calculer tous les multiplicateurs actifs
   const getActiveMultipliers = () => {
-    return EconomyService.calculateActiveMultipliers(playerUpgrades);
+    return UnifiedCalculationService.calculateActiveMultipliers(playerUpgrades);
   };
 
   // Obtenir les améliorations de déblocage automatique

@@ -5,11 +5,13 @@ import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameData } from '@/hooks/useGameData';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
+import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
 
 export const usePassiveIncomeRobot = () => {
   const { user } = useAuth();
+  const calculations = useUnifiedCalculations();
   const queryClient = useQueryClient();
   const { getPermanentMultipliersOnly } = useGameMultipliers();
   const { data: gameData } = useGameData();
@@ -59,7 +61,7 @@ export const usePassiveIncomeRobot = () => {
   );
 
   // Calculer le niveau du robot et la plante correspondante
-  const robotLevel = getRobotLevel(playerUpgrades);
+  const robotLevel = UnifiedCalculationService.getRobotLevel(playerUpgrades);
   const robotPlantLevel = Math.max(1, Math.min(robotLevel, 10));
 
   // Récupérer la plante correspondant au niveau du robot
@@ -106,14 +108,14 @@ export const usePassiveIncomeRobot = () => {
     const multipliers = getPermanentMultipliersOnly();
     const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
     
-    return EconomyService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier);
+    return calculations.getRobotPassiveIncome(robotLevel, permanentMultiplier);
   };
 
   // Synchroniser le robot avec son niveau quand il change
   useEffect(() => {
     if (!gameData?.garden) return;
     
-    const currentRobotLevel = EconomyService.getRobotLevel(playerUpgrades);
+    const currentRobotLevel = UnifiedCalculationService.getRobotLevel(playerUpgrades);
     
     // Vérifier si le robot_level dans la DB correspond au niveau calculé
     if (gameData.garden.robot_level !== currentRobotLevel) {
@@ -219,7 +221,7 @@ export const usePassiveIncomeRobot = () => {
       const now = new Date().toISOString();
 
       // Mettre à jour le niveau du robot pour être sûr qu'il correspond aux upgrades
-      const currentRobotLevel = EconomyService.getRobotLevel(playerUpgrades);
+      const currentRobotLevel = UnifiedCalculationService.getRobotLevel(playerUpgrades);
       
       const { error } = await supabase
         .from('player_gardens')

@@ -17,6 +17,7 @@ export interface PlantState {
  * Évite les calculs redondants en calculant tout d'un coup
  */
 export const usePlantStates = (plots: GardenPlot[], plantTypes: PlantType[]) => {
+  const calculations = useUnifiedCalculations();
   const { getCombinedBoostMultiplier } = useGameMultipliers();
   const now = useGardenClock();
 

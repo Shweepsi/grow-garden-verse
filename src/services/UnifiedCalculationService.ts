@@ -214,6 +214,69 @@ export class UnifiedCalculationService {
   }
 
   /**
+   * Calculate robot level from player upgrades
+   */
+  static getRobotLevel(playerUpgrades: any[]): number {
+    let maxLevel = 1; // Base level: autoharvest = level 1
+    
+    // Check if auto harvest is unlocked first
+    const hasAutoHarvest = playerUpgrades.some(upgrade => 
+      upgrade.level_upgrades?.effect_type === 'auto_harvest'
+    );
+    
+    if (!hasAutoHarvest) {
+      return 0; // No robot if auto harvest not unlocked
+    }
+    
+    playerUpgrades.forEach(upgrade => {
+      const levelUpgrade = upgrade.level_upgrades;
+      if (levelUpgrade?.effect_type === 'robot_level') {
+        maxLevel = Math.max(maxLevel, Math.floor(levelUpgrade.effect_value));
+      }
+    });
+    
+    return maxLevel;
+  }
+
+  /**
+   * Calculate active multipliers from player upgrades
+   */
+  static calculateActiveMultipliers(playerUpgrades: any[]) {
+    const multipliers = {
+      harvest: 1,
+      growth: 1,
+      exp: 1,
+      plantCostReduction: 1,
+      gemChance: 0
+    };
+
+    playerUpgrades.forEach(upgrade => {
+      const levelUpgrade = upgrade.level_upgrades;
+      if (!levelUpgrade) return;
+
+      switch (levelUpgrade.effect_type) {
+        case 'harvest_multiplier':
+          multipliers.harvest *= levelUpgrade.effect_value;
+          break;
+        case 'growth_speed':
+          multipliers.growth *= levelUpgrade.effect_value;
+          break;
+        case 'exp_multiplier':
+          multipliers.exp *= levelUpgrade.effect_value;
+          break;
+        case 'plant_cost_reduction':
+          multipliers.plantCostReduction *= levelUpgrade.effect_value;
+          break;
+        case 'gem_chance':
+          multipliers.gemChance += levelUpgrade.effect_value;
+          break;
+      }
+    });
+
+    return multipliers;
+  }
+
+  /**
    * Clear all caches
    */
   static clearCache(): void {
