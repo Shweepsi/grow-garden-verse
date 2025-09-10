@@ -125,7 +125,8 @@ export class UnifiedCalculationService {
     
     if (!useRandomness) {
       // Deterministic calculation for backend consistency
-      return gemChance >= 0.5 ? 1 : 0;
+      // Fixed: Use actual gemChance value instead of impossible 0.5 threshold
+      return gemChance >= 0.05 ? 1 : 0;
     }
     
     // Random calculation for frontend predictions
