@@ -95,13 +95,13 @@ export const usePlantActions = () => {
         multipliers = { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0, coins: 1, gems: 1 };
       }
       
-      // Vérification robuste de la maturité avec application des boosts
-      const baseGrowthTime = plantType.base_growth_seconds || 60;
+      // PHASE 1: Utiliser growth_time_seconds réel de la parcelle au lieu de base_growth_seconds
+      const actualGrowthTime = plot.growth_time_seconds || plantType.base_growth_seconds || 60;
       const boosts = { getBoostMultiplier: getCombinedBoostMultiplier };
-      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
+      const isReady = PlantGrowthService.isPlantReady(plot.planted_at, actualGrowthTime, boosts);
       
       if (!isReady) {
-        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, baseGrowthTime, boosts);
+        const timeRemaining = PlantGrowthService.getTimeRemaining(plot.planted_at, actualGrowthTime, boosts);
         const timeString = timeRemaining > 60 
           ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
           : `${timeRemaining}s`;
@@ -111,9 +111,8 @@ export const usePlantActions = () => {
 
       console.log('✅ Plante prête pour la récolte');
 
-      // Calculer les récompenses avec validation renforcée et tous les multiplicateurs
+      // PHASE 1: Calculer les récompenses avec temps de croissance réel
       const plantLevel = Math.max(1, plantType.level_required || 1);
-      const baseGrowthSeconds = Math.max(1, plantType.base_growth_seconds || 60);
       const playerLevel = Math.max(1, garden.level || 1);
       const harvestMultiplier = Math.max(0.1, multipliers.harvest || 1);
       const expMultiplier = Math.max(0.1, multipliers.exp || 1);
@@ -122,7 +121,7 @@ export const usePlantActions = () => {
       
       const harvestReward = EconomyService.getHarvestReward(
         plantType.level_required,
-        baseGrowthSeconds,
+        actualGrowthTime, // Utiliser le temps réel
         playerLevel,
         harvestMultiplier,
         plantCostReduction,
@@ -135,45 +134,41 @@ export const usePlantActions = () => {
         expMultiplier
       );
       
+      // PHASE 2: Laisser le backend calculer les gemmes (aléatoire)
       const gemReward = EconomyService.calculateGemReward(gemChance);
-      
-      // Appliquer le boost aux gemmes
       const boostedGems = applyGemsBoost(gemReward);
 
       console.log(`💰 Récompenses calculées: ${harvestReward} pièces, ${expReward} EXP, ${gemReward} gemmes (${boostedGems} avec boost)`);
 
-      const newExp = Math.max(0, (garden.experience || 0) + expReward);
-      const newLevel = Math.max(1, Math.floor(Math.sqrt(newExp / 100)) + 1);
-      const newCoins = Math.max(0, (garden.coins || 0) + harvestReward);
-      const newGems = Math.max(0, (garden.gems || 0) + boostedGems);
-      const newHarvests = Math.max(0, (garden.total_harvests || 0) + 1);
-
-      // Utiliser la fonction atomique SQL pour une meilleure cohérence des données
-      console.log('🚀 Utilisation de la transaction atomique harvest_plant_transaction');
+      // PHASE 3: Utiliser la nouvelle fonction atomique qui retourne les valeurs exactes
+      console.log('🚀 Utilisation de la transaction atomique améliorée');
       
-      const { error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
+      const { data: rawResult, error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
         p_user_id: user.id,
         p_plot_number: plotNumber,
-        p_new_coins: newCoins,
-        p_new_gems: newGems,
-        p_new_exp: newExp,
-        p_new_level: newLevel,
-        p_new_harvests: newHarvests
+        p_harvest_reward: harvestReward,
+        p_exp_reward: expReward,
+        p_gem_reward: boostedGems,
+        p_growth_time_seconds: actualGrowthTime,
+        p_multipliers: JSON.stringify(multipliers)
       });
 
-      if (transactionError) {
-        console.error('❌ Erreur transaction atomique:', transactionError);
-        throw new Error(`Erreur lors de la transaction: ${transactionError.message}`);
+      // Type the transaction result properly
+      const transactionResult = rawResult as any;
+
+      if (transactionError || !transactionResult?.success) {
+        console.error('❌ Erreur transaction atomique:', transactionError || transactionResult);
+        throw new Error(`Erreur lors de la transaction: ${transactionError?.message || transactionResult?.error || 'Transaction failed'}`);
       }
 
-      console.log('✅ Transaction atomique réussie');
+      console.log('✅ Transaction atomique réussie', transactionResult);
 
-      // Déclencher les animations de récompense de manière asynchrone
+      // Déclencher les animations avec les valeurs exactes du backend
       setTimeout(() => {
-        triggerCoinAnimation(harvestReward);
-        triggerXpAnimation(expReward);
-        if (boostedGems > 0) {
-          triggerGemAnimation(boostedGems);
+        triggerCoinAnimation(Number(transactionResult.harvest_reward));
+        triggerXpAnimation(Number(transactionResult.exp_reward));
+        if (Number(transactionResult.gem_reward) > 0) {
+          triggerGemAnimation(Number(transactionResult.gem_reward));
         }
       }, 0);
 
@@ -210,24 +205,26 @@ export const usePlantActions = () => {
         });
       }, 0);
 
-      // Messages de réussite  
-      if (newLevel > (garden.level || 1)) {
-        console.log(`🔥 Nouveau niveau atteint: ${newLevel}`);
+      // Messages de réussite avec valeurs exactes du backend
+      if (Number(transactionResult.final_level) > Number(transactionResult.old_level)) {
+        console.log(`🔥 Nouveau niveau atteint: ${transactionResult.final_level}`);
       }
 
       console.log('✅ Récolte terminée avec succès');
       
-      // Retourner les données pour la mise à jour optimiste
+      // PHASE 3: Retourner les valeurs exactes du backend pour synchronisation parfaite
       return {
         plotNumber,
-        newCoins,
-        newGems,
-        newExp,
-        newLevel,
-        newHarvests,
-        harvestReward,
-        expReward,
-        gemReward: boostedGems,
+        // Valeurs finales exactes du backend
+        newCoins: Number(transactionResult.final_coins),
+        newGems: Number(transactionResult.final_gems),
+        newExp: Number(transactionResult.final_experience),
+        newLevel: Number(transactionResult.final_level),
+        newHarvests: Number(transactionResult.final_harvests),
+        // Récompenses exactes
+        harvestReward: Number(transactionResult.harvest_reward),
+        expReward: Number(transactionResult.exp_reward),
+        gemReward: Number(transactionResult.gem_reward),
         plantType
       };
     },
@@ -248,13 +245,14 @@ export const usePlantActions = () => {
         const plantType = old.plantTypes?.find((pt: any) => pt.id === plot.plant_type);
         if (!plantType) return old;
 
-        // Calculate optimistic rewards
+        // PHASE 1: Calculs optimistes avec temps de croissance réel
         const harvestMultiplier = getCombinedBoostMultiplier('coin_boost');
         const gemMultiplier = getCombinedBoostMultiplier('gem_boost');
+        const actualGrowthTime = plot.growth_time_seconds || plantType.base_growth_seconds;
         
         const harvestReward = EconomyService.getHarvestReward(
           plantType.level_required,
-          plantType.base_growth_seconds,
+          actualGrowthTime, // Utiliser le temps réel
           old.garden?.level || 1,
           harvestMultiplier,
           1,
@@ -267,7 +265,8 @@ export const usePlantActions = () => {
           1
         );
         
-        const gemReward = EconomyService.calculateGemReward(0.1) * gemMultiplier;
+        // PHASE 2: Estimation conservative pour les gemmes (pas de calcul aléatoire)
+        const gemReward = Math.floor(EconomyService.calculateGemReward(0.05) * gemMultiplier);
 
         return {
           ...old,

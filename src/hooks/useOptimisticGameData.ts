@@ -41,21 +41,36 @@ export const useOptimisticGameData = () => {
 
     setOptimisticUpdates(prev => [...prev, update]);
 
-    // Extend optimistic updates to 20 seconds for better persistence during slow attribution
+    // PHASE 4: Réduire la durée des mises à jour optimistes à 5 secondes
     setTimeout(() => {
       setOptimisticUpdates(prev => prev.filter(u => u.id !== update.id));
-    }, 20000);
+    }, 5000);
   }, []);
 
-  // Clear all optimistic updates when real data arrives
+  // PHASE 4: Convergence intelligente - nettoyer seulement si les données convergent
   useEffect(() => {
     if (gameData?.garden) {
-      // Clear updates that are older than 3 seconds when new data arrives
-      setOptimisticUpdates(prev => 
-        prev.filter(update => Date.now() - update.timestamp < 3000)
-      );
+      // Calculer si les données ont convergé
+      const currentOptimistic = optimisticUpdates.reduce((acc, update) => {
+        acc[update.type] = (acc[update.type] || 0) + update.amount;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const coinsMatch = Math.abs((currentOptimistic.coins || 0)) < 10; // Tolérance de 10 pièces
+      const gemsMatch = Math.abs((currentOptimistic.gems || 0)) < 2;   // Tolérance de 2 gemmes
+      
+      if (coinsMatch && gemsMatch) {
+        // Données convergées, nettoyer les mises à jour
+        setOptimisticUpdates([]);
+        console.log('🎯 Données convergées, nettoyage des mises à jour optimistes');
+      } else {
+        // Garder seulement les mises à jour récentes (< 2 secondes)
+        setOptimisticUpdates(prev => 
+          prev.filter(update => Date.now() - update.timestamp < 2000)
+        );
+      }
     }
-  }, [gameData?.garden?.coins, gameData?.garden?.gems]);
+  }, [gameData?.garden?.coins, gameData?.garden?.gems, optimisticUpdates]);
 
   // PHASE 1: Listen for reward claimed events with payload to add optimistic updates
   useEffect(() => {
