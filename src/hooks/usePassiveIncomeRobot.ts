@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameData } from '@/hooks/useGameData';
-import { EconomyService } from '@/services/EconomyService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
 
@@ -59,8 +59,8 @@ export const usePassiveIncomeRobot = () => {
   );
 
   // Calculer le niveau du robot et la plante correspondante
-  const robotLevel = EconomyService.getRobotLevel(playerUpgrades);
-  const robotPlantLevel = EconomyService.getRobotPlantLevel(robotLevel);
+  const robotLevel = getRobotLevel(playerUpgrades);
+  const robotPlantLevel = Math.max(1, Math.min(robotLevel, 10));
 
   // Récupérer la plante correspondant au niveau du robot
   const { data: robotPlantType } = useQuery({

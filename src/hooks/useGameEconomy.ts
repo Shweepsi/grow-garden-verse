@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { EconomyService } from '@/services/EconomyService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { useAnimations } from '@/contexts/AnimationContext';
 
@@ -30,7 +30,7 @@ export const useGameEconomy = () => {
         throw new Error('Jardin non trouvé');
       }
 
-      if (!EconomyService.canAffordUpgrade(garden.coins, cost)) {
+      if (garden.coins < (cost + 100)) { // Keep 100 coins reserve
         throw new Error('Pas assez de pièces (minimum 100 pièces à conserver)');
       }
 

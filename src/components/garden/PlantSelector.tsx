@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins, TrendingUp, Clock, Percent, Timer, Award } from 'lucide-react';
-import { EconomyService } from '@/services/EconomyService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
@@ -24,6 +24,7 @@ export const PlantSelector = ({
   coins,
   onPlantDirect
 }: PlantSelectorProps) => {
+  const calculations = useUnifiedCalculations();
   const {
     data: gameData
   } = useGameData();
@@ -33,21 +34,23 @@ export const PlantSelector = ({
   const playerLevel = gameData?.garden?.level || 1;
   const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
 
+  useAndroidBackButton(isOpen, onClose);
+
   // Obtenir les multiplicateurs complets (permanent + boosts)
   const multipliers = getCompleteMultipliers();
   const getPlantCost = (plantType: PlantType): number => {
-    const baseCost = EconomyService.getPlantDirectCost(plantType.level_required || 1);
-    return EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction);
+    const baseCost = calculations.getPlantDirectCost(plantType.level_required || 1);
+    return Math.floor(baseCost * multipliers.plantCostReduction);
   };
   const getPlantBaseCost = (plantType: PlantType): number => {
-    return EconomyService.getPlantDirectCost(plantType.level_required || 1);
+    return calculations.getPlantDirectCost(plantType.level_required || 1);
   };
   const getPlantReward = (plantType: PlantType): number => {
-    const baseReward = EconomyService.getHarvestReward(plantType.level_required || 1, plantType.base_growth_seconds || 60, playerLevel, multipliers.harvest, multipliers.plantCostReduction, permanentMultiplier);
-    return baseReward;
+    const mockPlot = { growth_time_seconds: plantType.base_growth_seconds || 60 } as any;
+    return calculations.calculateHarvestReward(plantType.level_required || 1, mockPlot, playerLevel, permanentMultiplier);
   };
   const getAdjustedGrowthTime = (baseGrowthSeconds: number): number => {
-    return EconomyService.getAdjustedGrowthTime(baseGrowthSeconds, multipliers.growth);
+    return Math.floor(baseGrowthSeconds / multipliers.growth);
   };
   const formatGrowthTime = (seconds: number): string => {
     if (seconds < 60) {
@@ -69,8 +72,8 @@ export const PlantSelector = ({
   };
 
   // Filtrer les plantes selon le niveau du joueur
-  const availablePlants = plantTypes.filter(plant => EconomyService.canAccessPlant(plant.level_required || 1, playerLevel)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
-  const lockedPlants = plantTypes.filter(plant => !EconomyService.canAccessPlant(plant.level_required || 1, playerLevel)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
+  const availablePlants = plantTypes.filter(plant => playerLevel >= (plant.level_required || 1)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
+  const lockedPlants = plantTypes.filter(plant => playerLevel < (plant.level_required || 1)).sort((a, b) => (a.level_required || 1) - (b.level_required || 1));
   // Bouton retour
   useAndroidBackButton(isOpen, onClose);
   return <Dialog open={isOpen} onOpenChange={onClose}>
@@ -139,7 +142,7 @@ export const PlantSelector = ({
                 const reward = getPlantReward(plantType);
                 const profit = reward - adjustedCost;
                 const adjustedGrowthTime = getAdjustedGrowthTime(plantType.base_growth_seconds);
-                const canAfford = EconomyService.canAffordPlant(coins, adjustedCost);
+                const canAfford = coins >= adjustedCost;
                 const hasCostReduction = multipliers.plantCostReduction < 1;
                 // Un multiplicateur de croissance > 1 signifie une croissance plus rapide (temps réduit),
                 // donc on considère qu'il y a un bonus si la valeur est STRICTEMENT supérieure à 1.

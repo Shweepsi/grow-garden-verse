@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
-import { EconomyService } from '@/services/EconomyService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useAnimations } from '@/contexts/AnimationContext';
 
 export const useUpgrades = () => {
@@ -63,7 +63,7 @@ export const useUpgrades = () => {
       if (!garden) throw new Error('Jardin non trouvé');
       
       // Utiliser EconomyService pour vérifier si on peut acheter l'amélioration
-      if (!EconomyService.canAffordUpgrade(garden.coins, costCoins)) {
+      if (garden.coins < (costCoins + 100)) { // Keep 100 coins reserve
         throw new Error('Pas assez de pièces (gardez 100 pièces de réserve)');
       }
       

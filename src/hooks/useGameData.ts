@@ -3,11 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 export const useGameData = () => {
   const { user } = useAuth();
+  const calculations = useUnifiedCalculations();
   const queryClient = useQueryClient();
   const { getCombinedBoostMultiplier } = useGameMultipliers();
 
@@ -17,7 +18,7 @@ export const useGameData = () => {
   // Periodic cache cleanup to prevent memory leaks
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      PlantGrowthService.cleanupCache();
+      calculations.clearCache();
     }, 300000); // Clean up every 5 minutes
 
     return () => {
@@ -73,8 +74,8 @@ export const useGameData = () => {
         const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
         if (!plantType) return false;
         
-        const baseGrowthTime = plantType.base_growth_seconds || 60;
-        return !PlantGrowthService.isPlantReady(plot.planted_at, baseGrowthTime, boosts);
+        const mockPlot = { growth_time_seconds: plantType.base_growth_seconds || 60 } as any;
+        return !calculations.isPlantReady(plot.planted_at, mockPlot);
       });
       
       // OPTIMISATION: Réduire drastiquement le polling quand il n'y a pas d'activité
@@ -88,8 +89,8 @@ export const useGameData = () => {
           const plantType = data.plantTypes?.find(pt => pt.id === plot.plant_type);
           if (!plantType) return Infinity;
           
-          const baseGrowthTime = plantType.base_growth_seconds || 60;
-          return PlantGrowthService.getTimeRemaining(plot.planted_at!, baseGrowthTime, boosts);
+          const mockPlot = { growth_time_seconds: plantType.base_growth_seconds || 60 } as any;
+          return calculations.getTimeRemaining(plot.planted_at!, mockPlot);
         }).filter(time => time !== Infinity)
       );
       

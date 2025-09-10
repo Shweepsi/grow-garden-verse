@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { GardenPlot, PlantType } from '@/types/game';
 import { Lock, Sprout } from 'lucide-react';
 import { MemoizedPlantDisplay } from './PlantDisplay';
-import { EconomyService } from '@/services/EconomyService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { PlantState } from '@/hooks/usePlantStates';
 
 interface PlotCardProps {
@@ -41,7 +41,7 @@ export const PlotCard = memo(({
 
   // Memoiser la vérification de la capacité d'achat
   const canAffordUnlock = useMemo(() => 
-    EconomyService.canAffordUpgrade(coins, unlockCost),
+    coins >= (unlockCost + 100), // Keep 100 coins reserve
     [coins, unlockCost]
   );
 

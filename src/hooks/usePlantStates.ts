@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { GardenPlot, PlantType } from '@/types/game';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useGameMultipliers } from './useGameMultipliers';
 import { useGardenClock } from '@/contexts/GardenClockContext';
 
@@ -51,9 +51,10 @@ export const usePlantStates = (plots: GardenPlot[], plantTypes: PlantType[]) => 
       }
 
       const baseGrowthTime = plantType.base_growth_seconds || 60;
-      const progress = PlantGrowthService.calculateGrowthProgress(plot.planted_at, baseGrowthTime, boosts);
-      const isReady = PlantGrowthService.isReadyToHarvest(plot.planted_at, baseGrowthTime, boosts);
-      const timeRemaining = isReady ? 0 : PlantGrowthService.getTimeRemaining(plot.planted_at, baseGrowthTime, boosts);
+      const mockPlot = { growth_time_seconds: baseGrowthTime, planted_at: plot.planted_at } as any;
+      const progress = calculations.getGrowthProgress(plot.planted_at, mockPlot);
+      const isReady = calculations.isPlantReady(plot.planted_at, mockPlot);
+      const timeRemaining = isReady ? 0 : calculations.getTimeRemaining(plot.planted_at, mockPlot);
 
       return {
         plotNumber: plot.plot_number,

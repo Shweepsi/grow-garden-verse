@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
-import { EconomyService } from '@/services/EconomyService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { ValidationCacheService } from '@/services/ValidationCacheService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
@@ -96,14 +96,14 @@ export const useDirectPlanting = () => {
 
       // Get multipliers
       const multipliers = getCompleteMultipliers();
-      const baseCost = EconomyService.getPlantDirectCost(requiredLevel);
-      const actualCost = EconomyService.getAdjustedPlantCost(baseCost, multipliers.plantCostReduction || 1);
+      const baseCost = calculations.getPlantDirectCost(requiredLevel);
+      const actualCost = Math.floor(baseCost * (multipliers.plantCostReduction || 1));
 
       // Cost validation
       if (Math.abs(actualCost - expectedCost) > 1) {
         throw new Error('Cost mismatch, please reload');
       }
-      if (!EconomyService.canAffordPlant(garden.coins, actualCost)) {
+      if (garden.coins < actualCost) {
         throw new Error('Insufficient coins');
       }
 

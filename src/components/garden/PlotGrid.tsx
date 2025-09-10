@@ -8,7 +8,7 @@ import { useDirectPlanting } from '@/hooks/useDirectPlanting';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { usePlantStates } from '@/hooks/usePlantStates';
 import { toast } from 'sonner';
-import { PlantGrowthService } from '@/services/PlantGrowthService';
+import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 
 interface PlotGridProps {
