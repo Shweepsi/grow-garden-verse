@@ -50,14 +50,23 @@ useEffect(() => {
     }
   };
 
+  const handleExperienceGained = () => {
+    // Force component re-render for level updates
+    if (mounted.current) {
+      console.log('🎉 Header notified of experience gain - will update level');
+    }
+  };
+
   gameDataEmitter.on('reward-claimed', handleRewardClaimed);
   gameDataEmitter.on('coins-claimed', handleRewardClaimed);
   gameDataEmitter.on('gems-claimed', handleRewardClaimed);
+  gameDataEmitter.on('experience-gained', handleExperienceGained);
 
   return () => {
     gameDataEmitter.off('reward-claimed', handleRewardClaimed);
     gameDataEmitter.off('coins-claimed', handleRewardClaimed);
     gameDataEmitter.off('gems-claimed', handleRewardClaimed);
+    gameDataEmitter.off('experience-gained', handleExperienceGained);
   };
 }, []);
 

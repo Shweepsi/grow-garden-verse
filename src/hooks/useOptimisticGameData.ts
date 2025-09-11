@@ -69,10 +69,12 @@ export const useOptimisticGameData = () => {
   // PHASE 1: Listen for reward claimed events with payload to add optimistic updates
   useEffect(() => {
     const handleRewardClaimed = (payload?: { type: string; amount: number }) => {
-      if (payload && payload.amount && (payload.type === 'coins' || payload.type === 'gems')) {
+      if (payload && payload.amount && (payload.type === 'coins' || payload.type === 'gems' || payload.type === 'experience')) {
         // Add immediate optimistic update with exact amount
         console.log(`🚀 PHASE 1: Adding optimistic update for ${payload.type}: +${payload.amount}`);
-        addOptimisticUpdate(payload.type as 'coins' | 'gems', payload.amount);
+        if (payload.type === 'coins' || payload.type === 'gems') {
+          addOptimisticUpdate(payload.type as 'coins' | 'gems', payload.amount);
+        }
       }
       
       // Clear old optimistic updates when reward is claimed
@@ -82,9 +84,11 @@ export const useOptimisticGameData = () => {
     };
 
     gameDataEmitter.on('reward-claimed', handleRewardClaimed);
+    gameDataEmitter.on('experience-gained', handleRewardClaimed);
 
     return () => {
       gameDataEmitter.off('reward-claimed', handleRewardClaimed);
+      gameDataEmitter.off('experience-gained', handleRewardClaimed);
     };
   }, [addOptimisticUpdate]);
 

@@ -6,6 +6,7 @@ import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { MAX_PLOTS } from '@/constants';
+import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
 
 export const usePlantActions = () => {
   const { user } = useAuth();
@@ -263,6 +264,13 @@ export const usePlantActions = () => {
       return { previousData };
     },
     onSuccess: (data) => {
+      // Émettre les événements pour la mise à jour en temps réel
+      gameDataEmitter.emit('experience-gained', { type: 'experience', amount: data.expReward });
+      gameDataEmitter.emit('reward-claimed', { type: 'coins', amount: data.harvestReward });
+      if (data.gemReward > 0) {
+        gameDataEmitter.emit('reward-claimed', { type: 'gems', amount: data.gemReward });
+      }
+
       // Selective invalidation - mark as stale but don't refetch immediately
       // The optimistic update should be mostly accurate
       setTimeout(() => {
