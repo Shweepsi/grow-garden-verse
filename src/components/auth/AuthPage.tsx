@@ -13,6 +13,7 @@ export const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const { signUp, signIn, resetPassword } = useAuth();
 
@@ -40,6 +41,12 @@ export const AuthPage = () => {
     setLoading(false);
   };
 
+  const handleBackToLogin = () => {
+    setShowResetForm(false);
+    setResetEmailSent(false);
+    setEmail('');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-blue-50 to-green-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -60,73 +67,88 @@ export const AuthPage = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Connexion</TabsTrigger>
               <TabsTrigger value="signup">Inscription</TabsTrigger>
-              <TabsTrigger value="reset">Mot de passe oublié</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Mot de passe</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Se connecter
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="reset">
-              {resetEmailSent ? (
-                <div className="text-center space-y-4">
-                  <div className="text-green-600 font-medium">
-                    Email envoyé !
+              {showResetForm ? (
+                resetEmailSent ? (
+                  <div className="text-center space-y-4">
+                    <div className="text-green-600 font-medium">
+                      Email envoyé !
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Vérifiez votre boîte mail et suivez les instructions pour réinitialiser votre mot de passe.
+                    </p>
+                    <Button 
+                      variant="outline"
+                      onClick={handleBackToLogin}
+                      className="w-full"
+                    >
+                      Retour à la connexion
+                    </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Vérifiez votre boîte mail et suivez les instructions pour réinitialiser votre mot de passe.
-                  </p>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setResetEmailSent(false)}
-                    className="w-full"
-                  >
-                    Retour
-                  </Button>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-medium">Réinitialiser le mot de passe</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Entrez votre email pour recevoir un lien de réinitialisation
+                      </p>
+                    </div>
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          placeholder="Votre adresse email"
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        disabled={loading}
+                      >
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Envoyer le lien
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="ghost"
+                        onClick={handleBackToLogin}
+                        className="w-full"
+                      >
+                        Retour à la connexion
+                      </Button>
+                    </form>
+                  </div>
+                )
               ) : (
-                <form onSubmit={handleResetPassword} className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
+                    <Label htmlFor="signin-email">Email</Label>
                     <Input
-                      id="reset-email"
+                      id="signin-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      placeholder="Votre adresse email"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Mot de passe</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
                     />
                   </div>
                   <Button 
@@ -135,8 +157,17 @@ export const AuthPage = () => {
                     disabled={loading}
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Envoyer le lien de réinitialisation
+                    Se connecter
                   </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowResetForm(true)}
+                      className="text-sm text-muted-foreground hover:text-green-600 underline"
+                    >
+                      Mot de passe oublié ?
+                    </button>
+                  </div>
                 </form>
               )}
             </TabsContent>
