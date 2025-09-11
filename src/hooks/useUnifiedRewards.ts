@@ -240,6 +240,11 @@ export const useUnifiedRewards = () => {
           // Messages d'erreur explicites et actionables
           const errorInfo = AdRetryService.getActionableErrorMessage(adError as Error);
           
+          // Vérifier si un refresh est recommandé
+          if (AdMobSimpleService.shouldRecommendRefresh()) {
+            console.log('[UnifiedRewards] 🔄 Refresh recommandé après échec');
+          }
+          
           localStorage.setItem('lastRewardStatus', `Échec: ${errorInfo.title}`);
           toast({
             title: errorInfo.title,
