@@ -592,6 +592,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      delete_user_data: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       get_active_effects: {
         Args: { p_user_id: string }
         Returns: {

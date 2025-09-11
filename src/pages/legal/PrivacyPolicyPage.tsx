@@ -34,7 +34,7 @@ export const PrivacyPolicyPage = () => {
     setIsDeleting(true);
     
     try {
-      // Supprimer toutes les données associées à l'utilisateur
+      // Appeler la fonction pour supprimer toutes les données utilisateur
       const { error: deleteError } = await supabase.rpc('delete_user_data', {
         target_user_id: user.id
       });
@@ -45,16 +45,9 @@ export const PrivacyPolicyPage = () => {
         return;
       }
       
-      // Supprimer le compte utilisateur
-      const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+      toast.success('Vos données ont été supprimées avec succès. Vous allez être déconnecté.');
       
-      if (authError) {
-        console.error('Erreur lors de la suppression du compte:', authError);
-        toast.error('Erreur lors de la suppression du compte. Contactez le support.');
-        return;
-      }
-      
-      toast.success('Votre compte a été supprimé avec succès.');
+      // Déconnecter l'utilisateur
       await signOut();
       
     } catch (error) {
@@ -119,8 +112,8 @@ export const PrivacyPolicyPage = () => {
               <div className="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">
                 <h3 className="text-md font-semibold text-red-800 mb-2">Suppression de compte</h3>
                 <p className="text-sm text-red-700 mb-3">
-                  Cette action supprimera définitivement votre compte et toutes vos données de jeu. 
-                  Cette action est irréversible.
+                  Cette action supprimera toutes vos données de jeu et vous déconnectera. 
+                  Pour supprimer définitivement votre compte Supabase, contactez le support.
                 </p>
                 <Button
                   onClick={handleDeleteAccount}
@@ -130,7 +123,7 @@ export const PrivacyPolicyPage = () => {
                   className="flex items-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  {isDeleting ? 'Suppression en cours...' : 'Supprimer mon compte'}
+                  {isDeleting ? 'Suppression en cours...' : 'Supprimer mes données'}
                 </Button>
               </div>
             )}
