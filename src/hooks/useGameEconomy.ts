@@ -57,7 +57,9 @@ export const useGameEconomy = () => {
       return { cost };
     },
     onSuccess: (data, variables) => {
+      // Invalidate immédiatement pour forcer la mise à jour des composants
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
+      queryClient.refetchQueries({ queryKey: ['gameData'] });
       
       // Animation de soustraction des pièces pour le déblocage
       triggerCoinAnimation(-data.cost);
