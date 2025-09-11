@@ -13,7 +13,8 @@ export const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp, signIn } = useAuth();
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const { signUp, signIn, resetPassword } = useAuth();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +27,16 @@ export const AuthPage = () => {
     e.preventDefault();
     setLoading(true);
     await signIn(email, password);
+    setLoading(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await resetPassword(email);
+    if (!error) {
+      setResetEmailSent(true);
+    }
     setLoading(false);
   };
 
@@ -49,9 +60,10 @@ export const AuthPage = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="signin">Connexion</TabsTrigger>
               <TabsTrigger value="signup">Inscription</TabsTrigger>
+              <TabsTrigger value="reset">Mot de passe oublié</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
@@ -85,6 +97,48 @@ export const AuthPage = () => {
                   Se connecter
                 </Button>
               </form>
+            </TabsContent>
+            
+            <TabsContent value="reset">
+              {resetEmailSent ? (
+                <div className="text-center space-y-4">
+                  <div className="text-green-600 font-medium">
+                    Email envoyé !
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Vérifiez votre boîte mail et suivez les instructions pour réinitialiser votre mot de passe.
+                  </p>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setResetEmailSent(false)}
+                    className="w-full"
+                  >
+                    Retour
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="Votre adresse email"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Envoyer le lien de réinitialisation
+                  </Button>
+                </form>
+              )}
             </TabsContent>
             
             <TabsContent value="signup">
