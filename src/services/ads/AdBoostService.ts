@@ -69,8 +69,8 @@ export class AdBoostService {
       case 'gem_boost':
         return {
           icon: '💎',
-          label: `Gemmes ×${effectValue}`,
-          description: `Multiplie les gains de gemmes par ${effectValue} pendant 1 heure`
+          label: `Chance Gemmes ×${effectValue}`,
+          description: `Multiplie la chance de trouver des gemmes par ${effectValue} pendant 1 heure`
         };
       case 'growth_speed':
       case 'growth_boost':

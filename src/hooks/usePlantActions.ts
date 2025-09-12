@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
+import { useHarvestMutationLock } from '@/hooks/useHarvestMutationLock';
 import { MAX_PLOTS } from '@/constants';
 import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
 
@@ -12,35 +13,40 @@ export const usePlantActions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const calculations = useUnifiedCalculations();
-  // SOLUTION A: No longer need gem boost application - backend handles everything
+  const { acquireHarvestLock, releaseHarvestLock, isLocked } = useHarvestMutationLock();
   const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Validation stricte du numéro de parcelle
-      if (!plotNumber || plotNumber < 1 || plotNumber > MAX_PLOTS) {
-        throw new Error('Numéro de parcelle invalide');
-      }
+      // SYSTÈME DE VERROUILLAGE: Empêcher les récoltes simultanées
+      await acquireHarvestLock(plotNumber);
+      
+      try {
+        // Validation stricte du numéro de parcelle
+        if (!plotNumber || plotNumber < 1 || plotNumber > MAX_PLOTS) {
+          throw new Error('Numéro de parcelle invalide');
+        }
 
-      console.log(`🌾 Début de la récolte pour la parcelle ${plotNumber}`);
+        const harvestId = `harvest_${plotNumber}_${Date.now()}`;
+        console.log(`🌾 [${harvestId}] Début de la récolte pour la parcelle ${plotNumber}`);
 
-      // OPTIMISATION: Obtenir les données depuis le cache d'abord
-      const cachedData = queryClient.getQueryData(['gameData', user.id]) as any;
-      let plot, garden, plantType;
+        // OPTIMISATION: Obtenir les données depuis le cache d'abord
+        const cachedData = queryClient.getQueryData(['gameData', user.id]) as any;
+        let plot, garden, plantType;
 
-      if (cachedData) {
-        plot = cachedData.plots?.find((p: any) => p.plot_number === plotNumber);
-        garden = cachedData.garden;
-        plantType = cachedData.plantTypes?.find((pt: any) => pt.id === plot?.plant_type);
-        
-        console.log('📋 Utilisation des données en cache pour la validation rapide');
-      }
+        if (cachedData) {
+          plot = cachedData.plots?.find((p: any) => p.plot_number === plotNumber);
+          garden = cachedData.garden;
+          plantType = cachedData.plantTypes?.find((pt: any) => pt.id === plot?.plant_type);
+          
+          console.log(`📋 [${harvestId}] Utilisation des données en cache pour la validation rapide`);
+        }
 
-      // Fallback sur les requêtes réseau si les données ne sont pas en cache
-      if (!plot || !garden || !plantType) {
-        console.log('🌐 Données manquantes en cache, requête réseau...');
+        // Fallback sur les requêtes réseau si les données ne sont pas en cache
+        if (!plot || !garden || !plantType) {
+          console.log(`🌐 [${harvestId}] Données manquantes en cache, requête réseau...`);
         
         // Obtenir les infos en parallèle pour plus de rapidité
         const [plotResult, gardenResult] = await Promise.all([
@@ -84,70 +90,72 @@ export const usePlantActions = () => {
         throw new Error('Type de plante introuvable');
       }
 
-      console.log('🌱 Plante trouvée:', plantType.display_name);
+        console.log(`🌱 [${harvestId}] Plante trouvée:`, plantType.display_name);
 
-      // UNIFIED VERIFICATION: Use the same logic as backend
-      console.log('💪 Multiplicateurs unifiés:', calculations.multipliers);
+        // UNIFIED VERIFICATION: Use the same logic as backend
+        console.log(`💪 [${harvestId}] Multiplicateurs unifiés:`, calculations.multipliers);
       
       const harvestCheck = calculations.canHarvestPlant(plot);
       
       if (!harvestCheck.canHarvest) {
-        if (harvestCheck.timeRemaining) {
-          const timeString = harvestCheck.timeRemaining > 60 
-            ? `${Math.floor(harvestCheck.timeRemaining / 60)}m ${harvestCheck.timeRemaining % 60}s`
-            : `${harvestCheck.timeRemaining}s`;
-          console.log(`⏰ Plante pas encore prête (unified check), temps restant: ${timeString}`);
-          throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
+          if (harvestCheck.timeRemaining) {
+            const timeString = harvestCheck.timeRemaining > 60 
+              ? `${Math.floor(harvestCheck.timeRemaining / 60)}m ${harvestCheck.timeRemaining % 60}s`
+              : `${harvestCheck.timeRemaining}s`;
+            console.log(`⏰ [${harvestId}] Plante pas encore prête, temps restant: ${timeString}`);
+            throw new Error(`La plante n'est pas encore prête (${timeString} restantes)`);
+          }
+          throw new Error(harvestCheck.reason || 'Impossible de récolter cette plante');
         }
-        throw new Error(harvestCheck.reason || 'Impossible de récolter cette plante');
-      }
 
-      console.log('✅ Plante prête pour la récolte');
+        console.log(`✅ [${harvestId}] Plante prête pour la récolte`);
 
-      // UNIFIED CALCULATIONS: Use the same service as backend (EXCLUDING gems - backend only)
-      const backendParams = calculations.createBackendParams(plot, plantType, garden);
-      // SOLUTION A: Frontend no longer calculates gems - backend handles all gem logic
-      const noGems = 0;
+        // UNIFIED CALCULATIONS: Use the same service as backend (EXCLUDING gems - backend only)
+        const backendParams = calculations.createBackendParams(plot, plantType, garden);
+        // SOLUTION: Frontend no longer calculates gems - backend handles all gem logic
+        const noGems = 0;
 
-      console.log(`💰 Récompenses calculées (unified - no frontend gems): ${backendParams.harvestReward} pièces, ${backendParams.expReward} EXP, gems handled by backend only`);
+        console.log(`💰 [${harvestId}] Récompenses calculées: ${backendParams.harvestReward} pièces, ${backendParams.expReward} EXP, gems calculated by backend`);
 
-      // UNIFIED BACKEND CALL: Use exact same parameters
-      console.log('🚀 Utilisation de la transaction atomique unified avec synchronisation parfaite');
+        // UNIFIED BACKEND CALL: Use exact same parameters
+        console.log(`🚀 [${harvestId}] Transaction atomique unified avec verrouillage`);
       
-      const { data: transactionResult, error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
-        p_user_id: user.id,
-        p_plot_number: plotNumber,
-        p_harvest_reward: backendParams.harvestReward,
-        p_exp_reward: backendParams.expReward,
-        p_gem_reward: noGems, // SOLUTION A: Backend calculates gems independently
-        p_growth_time_seconds: backendParams.actualGrowthTime,
-        p_multipliers: calculations.multipliers as any
-      });
+        const { data: transactionResult, error: transactionError } = await supabase.rpc('harvest_plant_transaction', {
+          p_user_id: user.id,
+          p_plot_number: plotNumber,
+          p_harvest_reward: backendParams.harvestReward,
+          p_exp_reward: backendParams.expReward,
+          p_gem_reward: noGems, // Backend calculates gems independently using boosted chance
+          p_growth_time_seconds: backendParams.actualGrowthTime,
+          p_multipliers: calculations.multipliers as any
+        });
 
-      if (transactionError) {
-        console.error('❌ Erreur transaction atomique:', transactionError);
-        throw new Error(`Erreur lors de la transaction: ${transactionError.message}`);
-      }
-
-      const result = transactionResult as any;
-      if (!result?.success) {
-        console.error('❌ Transaction échouée:', result?.error);
-        throw new Error(`Transaction échouée: ${result?.error || 'Erreur inconnue'}`);
-      }
-
-      console.log('✅ Transaction atomique réussie avec synchronisation');
-      
-      // Extract results for consistent level checking
-      const finalLevel = result.final_level;
-
-      // Déclencher les animations de récompense de manière asynchrone
-      setTimeout(() => {
-        triggerCoinAnimation(result.harvest_reward);
-        triggerXpAnimation(result.exp_reward);
-        if (result.gem_reward > 0) {
-          triggerGemAnimation(result.gem_reward);
+        if (transactionError) {
+          console.error(`❌ [${harvestId}] Erreur transaction:`, transactionError);
+          throw new Error(`Erreur lors de la transaction: ${transactionError.message}`);
         }
-      }, 0);
+
+        const result = transactionResult as any;
+        if (!result?.success) {
+          console.error(`❌ [${harvestId}] Transaction échouée:`, result?.error);
+          throw new Error(`Transaction échouée: ${result?.error || 'Erreur inconnue'}`);
+        }
+
+        console.log(`✅ [${harvestId}] Transaction atomique réussie - Backend gems: ${result.gem_reward}`);
+      
+        // Extract results for consistent level checking
+        const finalLevel = result.final_level;
+
+        // SOLUTION: Déclencher les animations seulement après confirmation backend
+        setTimeout(() => {
+          triggerCoinAnimation(result.harvest_reward);
+          triggerXpAnimation(result.exp_reward);
+          // Gems are only triggered if backend calculated them
+          if (result.gem_reward > 0) {
+            console.log(`💎 [${harvestId}] Backend calculated ${result.gem_reward} gems - triggering animation`);
+            triggerGemAnimation(result.gem_reward);
+          }
+        }, 0);
 
       // OPTIMISATION: Batching des logs pour réduire les requêtes
       const logPromises = [];
@@ -182,26 +190,31 @@ export const usePlantActions = () => {
         });
       }, 0);
 
-      // Messages de réussite  
-      if (finalLevel > (garden.level || 1)) {
-        console.log(`🔥 Nouveau niveau atteint: ${finalLevel}`);
-      }
+        // Messages de réussite  
+        if (finalLevel > (garden.level || 1)) {
+          console.log(`🔥 [${harvestId}] Nouveau niveau atteint: ${finalLevel}`);
+        }
 
-      console.log('✅ Récolte terminée avec succès');
-      
-      // Retourner les données exactes du backend pour synchronisation parfaite
-      return {
-        plotNumber,
-        newCoins: result.final_coins,
-        newGems: result.final_gems,
-        newExp: result.final_experience,
-        newLevel: result.final_level,
-        newHarvests: result.final_harvests,
-        harvestReward: result.harvest_reward,
-        expReward: result.exp_reward,
-        gemReward: result.gem_reward,
-        plantType
-      };
+        console.log(`✅ [${harvestId}] Récolte terminée avec succès`);
+        
+        // Retourner les données exactes du backend pour synchronisation parfaite
+        return {
+          plotNumber,
+          newCoins: result.final_coins,
+          newGems: result.final_gems,
+          newExp: result.final_experience,
+          newLevel: result.final_level,
+          newHarvests: result.final_harvests,
+          harvestReward: result.harvest_reward,
+          expReward: result.exp_reward,
+          gemReward: result.gem_reward, // Backend-calculated gems only
+          plantType,
+          harvestId
+        };
+      } finally {
+        // CRITIQUE: Toujours libérer le verrou
+        releaseHarvestLock();
+      }
     },
     onMutate: async (plotNumber: number) => {
       // Cancel any outgoing refetches
@@ -220,7 +233,7 @@ export const usePlantActions = () => {
         const plantType = old.plantTypes?.find((pt: any) => pt.id === plot.plant_type);
         if (!plantType) return old;
 
-        // UNIFIED OPTIMISTIC CALCULATIONS: Use the same service
+        // UNIFIED OPTIMISTIC CALCULATIONS: Use the same service (NO GEMS)
         const harvestReward = calculations.calculateHarvestReward(
           plantType.level_required,
           plot,
@@ -228,7 +241,7 @@ export const usePlantActions = () => {
           old.garden?.permanent_multiplier || 1
         );
         const expReward = calculations.calculateExpReward(plantType.level_required, plantType.rarity);
-        const gemReward = 0; // SOLUTION A: No gems in optimistic update - backend only
+        const gemReward = 0; // SOLUTION: No gems in optimistic update - backend calculates them
 
         return {
           ...old,
@@ -271,17 +284,15 @@ export const usePlantActions = () => {
         gameDataEmitter.emit('reward-claimed', { type: 'gems', amount: data.gemReward });
       }
 
-      // Selective invalidation - mark as stale but don't refetch immediately
-      // The optimistic update should be mostly accurate
-      setTimeout(() => {
-        queryClient.invalidateQueries({ 
-          queryKey: ['gameData', user?.id],
-          refetchType: 'none' // Just mark as stale, don't refetch
-        });
-      }, 100);
+      // SOLUTION: Force immediate cache invalidation pour synchronisation parfaite
+      queryClient.invalidateQueries({ 
+        queryKey: ['gameData', user?.id],
+        refetchType: 'active' // Force refetch pour éviter les désynchronisations
+      });
 
-      // Success feedback
-      console.log(`🌱 ${data.plantType?.display_name || 'Plante'} récoltée! +${data.harvestReward} pièces, +${data.expReward} XP${data.gemReward > 0 ? `, +${data.gemReward} gemmes` : ''}`);
+      // Success feedback avec backend gems
+      const gemText = data.gemReward > 0 ? `, +${data.gemReward} gemmes (backend)` : '';
+      console.log(`🌱 ${data.plantType?.display_name || 'Plante'} récoltée! +${data.harvestReward} pièces, +${data.expReward} XP${gemText}`);
     },
     onError: (error: any, variables, context) => {
       // Rollback en cas d'erreur
@@ -295,7 +306,13 @@ export const usePlantActions = () => {
   });
 
   return {
-    harvestPlant: (plotNumber: number) => harvestPlantMutation.mutate(plotNumber),
-    isHarvesting: harvestPlantMutation.isPending
+    harvestPlant: (plotNumber: number) => {
+      if (isLocked()) {
+        toast.warning('Récolte en cours, veuillez patienter...');
+        return;
+      }
+      harvestPlantMutation.mutate(plotNumber);
+    },
+    isHarvesting: harvestPlantMutation.isPending || isLocked()
   };
 };

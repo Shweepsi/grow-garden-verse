@@ -46,14 +46,17 @@ export const useGameMultipliers = () => {
     const gemBoost = getBoostMultiplier('gem_boost');
     const growthBoost = getBoostMultiplier('growth_speed');
     
+    // CORRECTION: gem_boost multiplie la CHANCE de drop, pas la quantité
+    const boostedGemChance = permanentMultipliers.gemChance * gemBoost;
+    
     if (import.meta.env.DEV) {
-      // Only log detailed multiplier information while developing.
       console.debug('[DEBUG] Game Multipliers:', {
         permanent: permanentMultipliers,
         activeBoosts: { coinBoost, gemBoost, growthBoost },
         combined: {
           harvest: permanentMultipliers.harvest * coinBoost,
-          growth: permanentMultipliers.growth * growthBoost
+          growth: permanentMultipliers.growth * growthBoost,
+          gemChance: boostedGemChance
         }
       });
     }
@@ -62,13 +65,13 @@ export const useGameMultipliers = () => {
       // Multiplicateurs combinés permanents + temporaires
       harvest: permanentMultipliers.harvest * coinBoost,
       growth: permanentMultipliers.growth * growthBoost,
-      exp: permanentMultipliers.exp, // Pas de boost temporaire XP pour l'instant
+      exp: permanentMultipliers.exp,
       plantCostReduction: permanentMultipliers.plantCostReduction,
-      gemChance: permanentMultipliers.gemChance,
+      gemChance: boostedGemChance, // Chance boostée, pas quantité
       
       // Boosts spécifiques pour l'application directe
       coins: coinBoost,
-      gems: gemBoost
+      gems: 1 // Plus utilisé pour multiplier la quantité
     };
   };
   
@@ -113,16 +116,17 @@ export const useGameMultipliers = () => {
     return Math.floor(amount * coinBoostMultiplier);
   };
 
-  // Fonction pour appliquer les boosts aux gains de gemmes
+  // DÉPRÉCIÉ: gem_boost ne multiplie plus la quantité mais la chance
   const applyGemsBoost = (amount: number): number => {
-    const gemBoostMultiplier = getBoostMultiplier('gem_boost');
-    return Math.floor(amount * gemBoostMultiplier);
+    // Ne plus utiliser - les gemmes sont calculées via la chance boostée
+    console.warn('⚠️ applyGemsBoost is deprecated - gems are calculated via boosted chance');
+    return amount;
   };
 
   const applyAllBoosts = (coins: number, gems: number) => {
     return {
       coins: applyCoinsBoost(coins),
-      gems: applyGemsBoost(gems)
+      gems: gems // Ne plus appliquer le boost aux gemmes directement
     };
   };
 
