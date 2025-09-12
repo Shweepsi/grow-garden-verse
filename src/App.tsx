@@ -13,8 +13,11 @@ import NotFound from "./pages/NotFound";
 import { ScrollToTop } from '@/components/layout/ScrollToTop';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
+import { useStatusBarInit } from '@/hooks/useStatusBarInit';
 
 const App = () => {
+  // Initialiser la StatusBar pour éviter les superpositions SDK 35+
+  useStatusBarInit();
   useEffect(() => {
     const lockOrientation = async () => {
       if (Capacitor.isNativePlatform()) {

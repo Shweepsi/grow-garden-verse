@@ -6,8 +6,12 @@
 /* Touch-friendly optimizations */
 @layer base {
   html {
-    /* Safe area support for mobile devices */
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* Safe area support for mobile devices - SDK 35+ Android */
+    /* Configuration spécifique pour éviter les superpositions avec l'UI système */
+    padding-top: max(env(safe-area-inset-top), 24px); /* Assurer un minimum pour la barre de statut */
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: max(env(safe-area-inset-bottom), 16px); /* Assurer un minimum pour la navigation */
+    padding-left: env(safe-area-inset-left);
     /* Disable tap highlight on WebKit */
     -webkit-tap-highlight-color: transparent;
     /* Improve touch scrolling on iOS */
