@@ -1,58 +1,43 @@
 import { useRef, useCallback } from 'react';
 
 /**
- * Hook pour empêcher les récoltes simultanées et éviter les duplications
- * Implémente un système de verrouillage global pour les mutations
+ * Hook pour empêcher les récoltes simultanées (mutex FIFO).
+ * - Une seule récolte à la fois
+ * - Les suivantes attendent leur tour et obtiennent le verrou quand il se libère
  */
 export const useHarvestMutationLock = () => {
   const isHarvestingRef = useRef(false);
-  const harvestQueueRef = useRef<Array<{ plotNumber: number; resolve: Function; reject: Function }>>([]);
-  const processingRef = useRef(false);
+  // File d'attente des resolveurs d'acquisition
+  const waitersRef = useRef<Array<() => void>>([]);
 
-  const processQueue = useCallback(async () => {
-    if (processingRef.current || harvestQueueRef.current.length === 0) {
+  const acquireHarvestLock = useCallback(async (_plotNumber: number): Promise<void> => {
+    // Si le verrou est libre, l'acquérir immédiatement
+    if (!isHarvestingRef.current) {
+      isHarvestingRef.current = true;
       return;
     }
 
-    processingRef.current = true;
-
-    while (harvestQueueRef.current.length > 0) {
-      const item = harvestQueueRef.current.shift();
-      if (!item) continue;
-
-      try {
-        // Attendre un petit délai entre les récoltes pour éviter les conditions de course
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Le traitement réel sera fait par le hook qui utilise ce verrou
-        item.resolve();
-      } catch (error) {
-        item.reject(error);
-      }
-    }
-
-    processingRef.current = false;
-  }, []);
-
-  const acquireHarvestLock = useCallback(async (plotNumber: number): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (isHarvestingRef.current) {
-        // Ajouter à la queue si une récolte est déjà en cours
-        harvestQueueRef.current.push({ plotNumber, resolve, reject });
-        processQueue();
-      } else {
-        // Acquérir le verrou immédiatement
+    // Sinon, s'inscrire dans la file d'attente et attendre son tour
+    return new Promise<void>((resolve) => {
+      const waiter = () => {
+        // Ce callback est appelé quand vient notre tour
         isHarvestingRef.current = true;
         resolve();
-      }
+      };
+      waitersRef.current.push(waiter);
     });
-  }, [processQueue]);
+  }, []);
 
   const releaseHarvestLock = useCallback(() => {
+    // Libérer le verrou courant
     isHarvestingRef.current = false;
-    // Traiter le prochain élément de la queue
-    processQueue();
-  }, [processQueue]);
+
+    // Donner immédiatement le verrou au prochain en attente s'il existe
+    const next = waitersRef.current.shift();
+    if (next) {
+      next();
+    }
+  }, []);
 
   const isLocked = useCallback(() => {
     return isHarvestingRef.current;
@@ -62,6 +47,6 @@ export const useHarvestMutationLock = () => {
     acquireHarvestLock,
     releaseHarvestLock,
     isLocked,
-    queueLength: harvestQueueRef.current.length
+    queueLength: waitersRef.current.length,
   };
 };

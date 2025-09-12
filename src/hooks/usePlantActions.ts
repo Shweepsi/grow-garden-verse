@@ -307,9 +307,9 @@ export const usePlantActions = () => {
 
   return {
     harvestPlant: (plotNumber: number) => {
+      // Même si un harvest est en cours, on met en file d'attente au lieu de bloquer
       if (isLocked()) {
-        toast.warning('Récolte en cours, veuillez patienter...');
-        return;
+        toast.info('Récolte ajoutée à la file d\'attente');
       }
       harvestPlantMutation.mutate(plotNumber);
     },
