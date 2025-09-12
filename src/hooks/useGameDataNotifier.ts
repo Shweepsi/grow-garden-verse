@@ -41,23 +41,24 @@ export const useGameDataNotifier = () => {
     gameDataEmitter.emit('reward-claimed', { type: rewardType, amount });
     gameDataEmitter.emit(`${rewardType}-claimed`, { amount });
 
-    // PHASE 1: Direct cache update for instant display
-    if (amount && rewardType !== 'boost') {
+    // SOLUTION: Only direct cache update for coins to prevent gem duplication
+    if (amount && rewardType === 'coins') {
       queryClient.setQueryData(['gameData'], (oldData: any) => {
         if (!oldData?.garden) return oldData;
         
         const updatedGarden = { ...oldData.garden };
-        if (rewardType === 'coins') {
-          updatedGarden.coins = (updatedGarden.coins || 0) + amount;
-        } else if (rewardType === 'gems') {
-          updatedGarden.gems = (updatedGarden.gems || 0) + amount;
-        }
+        updatedGarden.coins = (updatedGarden.coins || 0) + amount;
         
         return {
           ...oldData,
           garden: updatedGarden
         };
       });
+    }
+    
+    // SOLUTION: Gems handled only by backend sync - no direct cache updates
+    if (rewardType === 'gems') {
+      console.log(`💎 Gem reward handled by backend sync only: +${amount}`);
     }
 
     // PHASE 1: Single aggressive refresh with 0 stale time

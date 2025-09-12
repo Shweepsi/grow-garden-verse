@@ -23,14 +23,15 @@ export const usePlantActions = () => {
       // SYSTÈME DE VERROUILLAGE: Empêcher les récoltes simultanées
       await acquireHarvestLock(plotNumber);
       
+      // Create unique harvest ID for this operation
+      const harvestId = `harvest_${plotNumber}_${Date.now()}`;
+      console.log(`🌾 [${harvestId}] Début de la récolte pour la parcelle ${plotNumber}`);
+      
       try {
         // Validation stricte du numéro de parcelle
         if (!plotNumber || plotNumber < 1 || plotNumber > MAX_PLOTS) {
           throw new Error('Numéro de parcelle invalide');
         }
-
-        const harvestId = `harvest_${plotNumber}_${Date.now()}`;
-        console.log(`🌾 [${harvestId}] Début de la récolte pour la parcelle ${plotNumber}`);
 
         // OPTIMISATION: Obtenir les données depuis le cache d'abord
         const cachedData = queryClient.getQueryData(['gameData', user.id]) as any;
@@ -146,16 +147,25 @@ export const usePlantActions = () => {
         // Extract results for consistent level checking
         const finalLevel = result.final_level;
 
-        // SOLUTION: Déclencher les animations seulement après confirmation backend
-        setTimeout(() => {
-          triggerCoinAnimation(result.harvest_reward);
-          triggerXpAnimation(result.exp_reward);
-          // Gems are only triggered if backend calculated them
-          if (result.gem_reward > 0) {
-            console.log(`💎 [${harvestId}] Backend calculated ${result.gem_reward} gems - triggering animation`);
-            triggerGemAnimation(result.gem_reward);
-          }
-        }, 0);
+        // SOLUTION: Defer animations and events until after harvest lock
+        // This prevents duplicate events during rapid harvesting
+        console.log(`🎬 [${harvestId}] Scheduling animations with extended lock protection`);
+        
+        return {
+          plotNumber,
+          newCoins: result.final_coins,
+          newGems: result.final_gems,
+          newExp: result.final_experience,
+          newLevel: result.final_level,
+          newHarvests: result.final_harvests,
+          harvestReward: result.harvest_reward,
+          expReward: result.exp_reward,
+          gemReward: result.gem_reward, // Backend-calculated gems only
+          plantType,
+          harvestId,
+          // Pass animation data for deferred execution
+          shouldTriggerAnimations: true
+        };
 
       // OPTIMISATION: Batching des logs pour réduire les requêtes
       const logPromises = [];
@@ -197,7 +207,7 @@ export const usePlantActions = () => {
 
         console.log(`✅ [${harvestId}] Récolte terminée avec succès`);
         
-        // Retourner les données exactes du backend pour synchronisation parfaite
+        // Return the harvest data for processing in onSuccess
         return {
           plotNumber,
           newCoins: result.final_coins,
@@ -209,11 +219,16 @@ export const usePlantActions = () => {
           expReward: result.exp_reward,
           gemReward: result.gem_reward, // Backend-calculated gems only
           plantType,
-          harvestId
+          harvestId,
+          shouldTriggerAnimations: true
         };
       } finally {
-        // CRITIQUE: Toujours libérer le verrou
-        releaseHarvestLock();
+        // SOLUTION: Extended harvest lock - release after animations/events
+        // This prevents overlapping events and ensures proper sequencing
+        setTimeout(() => {
+          console.log(`🔓 ${harvestId} Releasing extended harvest lock`);
+          releaseHarvestLock();
+        }, 100);
       }
     },
     onMutate: async (plotNumber: number) => {
@@ -276,23 +291,47 @@ export const usePlantActions = () => {
       
       return { previousData };
     },
-    onSuccess: (data) => {
-      // Émettre les événements pour la mise à jour en temps réel
-      gameDataEmitter.emit('experience-gained', { type: 'experience', amount: data.expReward });
-      gameDataEmitter.emit('reward-claimed', { type: 'coins', amount: data.harvestReward });
-      if (data.gemReward > 0) {
-        gameDataEmitter.emit('reward-claimed', { type: 'gems', amount: data.gemReward });
-      }
-
-      // SOLUTION: Force immediate cache invalidation pour synchronisation parfaite
-      queryClient.invalidateQueries({ 
+    onSuccess: async (data) => {
+      console.log(`🎯 [${data.harvestId}] onSuccess - Processing rewards sequentially`);
+      
+      // SOLUTION: Strict sequencing to prevent duplication
+      // Step 1: Force cache invalidation FIRST
+      await queryClient.invalidateQueries({ 
         queryKey: ['gameData', user?.id],
-        refetchType: 'active' // Force refetch pour éviter les désynchronisations
+        refetchType: 'active'
       });
+      
+      // Step 2: Wait for fresh data before triggering animations/events
+      setTimeout(() => {
+        if (data.shouldTriggerAnimations) {
+          console.log(`🎬 [${data.harvestId}] Triggering animations after cache sync`);
+          triggerCoinAnimation(data.harvestReward);
+          triggerXpAnimation(data.expReward);
+          
+          // Gems animation only if backend calculated them
+          if (data.gemReward > 0) {
+            console.log(`💎 [${data.harvestId}] Backend gems confirmed: +${data.gemReward} - triggering animation`);
+            triggerGemAnimation(data.gemReward);
+          }
+        }
+        
+        // Step 3: Emit events AFTER animations are queued
+        setTimeout(() => {
+          console.log(`📡 [${data.harvestId}] Emitting events after animations`);
+          gameDataEmitter.emit('experience-gained', { type: 'experience', amount: data.expReward });
+          gameDataEmitter.emit('reward-claimed', { type: 'coins', amount: data.harvestReward });
+          
+          // Only emit gem event if gems were actually awarded
+          if (data.gemReward > 0) {
+            console.log(`💎 [${data.harvestId}] Emitting gem event: +${data.gemReward}`);
+            gameDataEmitter.emit('reward-claimed', { type: 'gems', amount: data.gemReward });
+          }
+        }, 50);
+      }, 100);
 
-      // Success feedback avec backend gems
+      // Success feedback
       const gemText = data.gemReward > 0 ? `, +${data.gemReward} gemmes (backend)` : '';
-      console.log(`🌱 ${data.plantType?.display_name || 'Plante'} récoltée! +${data.harvestReward} pièces, +${data.expReward} XP${gemText}`);
+      console.log(`🌱 [${data.harvestId}] ${data.plantType?.display_name || 'Plante'} récoltée! +${data.harvestReward} pièces, +${data.expReward} XP${gemText}`);
     },
     onError: (error: any, variables, context) => {
       // Rollback en cas d'erreur
