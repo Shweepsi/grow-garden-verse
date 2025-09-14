@@ -16,10 +16,9 @@ export const useHarvestMutationLock = () => {
   const acquireHarvestLock = useCallback(async (plotNumber: number): Promise<void> => {
     const now = Date.now();
     
-    // SOLUTION: Prevent rapid consecutive harvests that could cause duplication
+    // Note: previously blocked rapid clicks; now non-blocking but logged for diagnostics
     if (now - lastHarvestTime.current < 200) {
-      console.log(`🚫 Harvest blocked - too rapid (${now - lastHarvestTime.current}ms)`);
-      throw new Error('Récolte trop rapide, veuillez patienter');
+      console.log(`⚠️ Rapid harvest click (${now - lastHarvestTime.current}ms) - queued if needed`);
     }
     
     // Si le verrou est libre, l'acquérir immédiatement
