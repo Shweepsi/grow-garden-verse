@@ -54,8 +54,6 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({ animation }) => 
         return <Coins className="w-3 h-3" />;
       case 'experience': 
         return <Star className="w-3 h-3" />;
-      case 'gems': 
-        return <span className="text-xs">💎</span>;
       default: 
         return <Coins className="w-3 h-3" />;
     }

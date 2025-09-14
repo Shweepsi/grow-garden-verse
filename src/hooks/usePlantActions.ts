@@ -14,7 +14,7 @@ export const usePlantActions = () => {
   const queryClient = useQueryClient();
   const calculations = useUnifiedCalculations();
   const { acquireHarvestLock, releaseHarvestLock, isLocked } = useHarvestMutationLock();
-  const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
+  const { triggerCoinAnimation, triggerXpAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
@@ -307,12 +307,6 @@ export const usePlantActions = () => {
           console.log(`🎬 [${data.harvestId}] Triggering animations after cache sync`);
           triggerCoinAnimation(data.harvestReward);
           triggerXpAnimation(data.expReward);
-          
-          // Gems animation only if backend calculated them
-          if (data.gemReward > 0) {
-            console.log(`💎 [${data.harvestId}] Backend gems confirmed: +${data.gemReward} - triggering animation`);
-            triggerGemAnimation(data.gemReward);
-          }
         }
         
         // Step 3: Emit events AFTER animations are queued
@@ -320,18 +314,11 @@ export const usePlantActions = () => {
           console.log(`📡 [${data.harvestId}] Emitting events after animations`);
           gameDataEmitter.emit('experience-gained', { type: 'experience', amount: data.expReward });
           gameDataEmitter.emit('reward-claimed', { type: 'coins', amount: data.harvestReward });
-          
-          // Only emit gem event if gems were actually awarded
-          if (data.gemReward > 0) {
-            console.log(`💎 [${data.harvestId}] Emitting gem event: +${data.gemReward}`);
-            gameDataEmitter.emit('reward-claimed', { type: 'gems', amount: data.gemReward });
-          }
         }, 50);
       }, 100);
 
       // Success feedback
-      const gemText = data.gemReward > 0 ? `, +${data.gemReward} gemmes (backend)` : '';
-      console.log(`🌱 [${data.harvestId}] ${data.plantType?.display_name || 'Plante'} récoltée! +${data.harvestReward} pièces, +${data.expReward} XP${gemText}`);
+      console.log(`🌱 [${data.harvestId}] ${data.plantType?.display_name || 'Plante'} récoltée! +${data.harvestReward} pièces, +${data.expReward} XP`);
     },
     onError: (error: any, variables, context) => {
       // Rollback en cas d'erreur

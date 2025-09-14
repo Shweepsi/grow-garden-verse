@@ -52,8 +52,8 @@ export const useHarvestMutationLock = () => {
     // Donner immédiatement le verrou au prochain en attente s'il existe
     const next = waitersRef.current.shift();
     if (next) {
-      // Small delay to ensure proper sequencing
-      setTimeout(next, 50);
+      // Immediate execution to prevent UI lag
+      next();
     }
   }, []);
 

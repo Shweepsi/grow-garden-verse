@@ -206,10 +206,7 @@ useEffect(() => {
                   </span>
                 </div>
                 
-                {/* Zone d'animation pour les gemmes */}
-                <div className="animation-zone">
-                  {animations.filter(anim => anim.type === 'gems').map(anim => <FloatingNumber key={anim.id} animation={anim} />)}
-                </div>
+                {/* Zone d'animation pour les gemmes - supprimée */}
               </div>
               
               {/* Niveau */}
