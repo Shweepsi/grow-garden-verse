@@ -51,7 +51,7 @@ export const usePlantStates = (plots: GardenPlot[], plantTypes: PlantType[]) => 
         };
       }
 
-      const baseGrowthTime = plantType.base_growth_seconds || 60;
+      const baseGrowthTime = (plot.growth_time_seconds ?? plantType.base_growth_seconds ?? 60);
       const mockPlot = { growth_time_seconds: baseGrowthTime, planted_at: plot.planted_at } as any;
       const progress = calculations.getGrowthProgress(plot.planted_at, mockPlot);
       const isReady = calculations.isPlantReady(plot.planted_at, mockPlot);

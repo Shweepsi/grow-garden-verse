@@ -26,14 +26,15 @@ export const useUnifiedCalculations = () => {
 
   return {
     // Core calculation methods (delegated to UnifiedCalculationService)
+    // IMPORTANT: Use backend-aligned timing (no growth multiplier applied client-side)
     isPlantReady: (plantedAt: string, plot: any) => 
-      UnifiedCalculationService.isPlantReady(plantedAt, plot, growthMultiplier),
+      UnifiedCalculationService.isPlantReady(plantedAt, plot, 1),
     
     getTimeRemaining: (plantedAt: string, plot: any) => 
-      UnifiedCalculationService.getTimeRemaining(plantedAt, plot, growthMultiplier),
+      UnifiedCalculationService.getTimeRemaining(plantedAt, plot, 1),
     
     getGrowthProgress: (plantedAt: string, plot: any) => 
-      UnifiedCalculationService.getGrowthProgress(plantedAt, plot, growthMultiplier),
+      UnifiedCalculationService.getGrowthProgress(plantedAt, plot, 1),
     
     calculateHarvestReward: (plantLevel: number, plot: any, playerLevel: number = 1, permanentMultiplier: number = 1) =>
       UnifiedCalculationService.calculateHarvestReward(
@@ -51,7 +52,7 @@ export const useUnifiedCalculations = () => {
     // Gem rewards now handled entirely by backend with fixed 15% chance
     
     canHarvestPlant: (plot: any) =>
-      UnifiedCalculationService.canHarvestPlant(plot, growthMultiplier),
+      UnifiedCalculationService.canHarvestPlant(plot, 1),
     
     createBackendParams: (plot: any, plantType: any, garden: any) =>
       UnifiedCalculationService.createBackendParams(plot, plantType, garden, multipliers),
