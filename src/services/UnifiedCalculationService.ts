@@ -118,22 +118,9 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * CORE CALCULATION: Gem rewards (probabilistic system)
+   * DEPRECATED: Gem rewards now handled entirely by backend with fixed 15% chance
+   * Frontend no longer calculates gems to avoid complexity and duplications
    */
-  static calculateGemReward(gemChance: number, useRandomness: boolean = true): number {
-    if (!gemChance || gemChance <= 0) return 0;
-    
-    if (!useRandomness) {
-      // Even for backend, use probabilistic calculation for fairness
-      // Use a deterministic seed based on timestamp for backend consistency within same second
-      const seed = Math.floor(Date.now() / 1000) % 1000;
-      const pseudoRandom = (seed * 9301 + 49297) % 233280 / 233280;
-      return pseudoRandom < gemChance ? 1 : 0;
-    }
-    
-    // Random calculation for frontend predictions
-    return Math.random() < gemChance ? 1 : 0;
-  }
 
   /**
    * CORE CALCULATION: Plant direct cost
@@ -245,8 +232,7 @@ export class UnifiedCalculationService {
       harvest: 1,
       growth: 1,
       exp: 1,
-      plantCostReduction: 1,
-      gemChance: 0
+      plantCostReduction: 1
     };
 
     playerUpgrades.forEach(upgrade => {
@@ -266,9 +252,7 @@ export class UnifiedCalculationService {
         case 'plant_cost_reduction':
           multipliers.plantCostReduction *= levelUpgrade.effect_value;
           break;
-        case 'gem_chance':
-          multipliers.gemChance += levelUpgrade.effect_value;
-          break;
+        // gem_chance removed - gems now use fixed 15% probability
       }
     });
 
@@ -310,7 +294,7 @@ export class UnifiedCalculationService {
         plantType.rarity || 'common',
         multipliers.exp || 1
       ),
-      gemReward: this.calculateGemReward(multipliers.gemChance || 0, false), // Deterministic for backend
+      // Gems calculated entirely by backend with fixed 15% chance
       multipliers
     };
   }

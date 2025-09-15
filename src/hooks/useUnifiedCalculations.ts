@@ -15,7 +15,7 @@ export const useUnifiedCalculations = () => {
       return getCompleteMultipliers();
     } catch (error) {
       console.warn('⚠️ Error getting multipliers, using defaults:', error);
-      return { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0, coins: 1, gems: 1 };
+      return { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, coins: 1 };
     }
   }, [getCompleteMultipliers]);
 
@@ -48,8 +48,7 @@ export const useUnifiedCalculations = () => {
     calculateExpReward: (plantLevel: number, rarity: string) =>
       UnifiedCalculationService.calculateExpReward(plantLevel, rarity, multipliers.exp),
     
-    calculateGemReward: (useRandomness: boolean = true) =>
-      UnifiedCalculationService.calculateGemReward(multipliers.gemChance, useRandomness),
+    // Gem rewards now handled entirely by backend with fixed 15% chance
     
     canHarvestPlant: (plot: any) =>
       UnifiedCalculationService.canHarvestPlant(plot, growthMultiplier),

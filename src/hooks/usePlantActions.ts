@@ -111,10 +111,8 @@ export const usePlantActions = () => {
 
         console.log(`✅ [${harvestId}] Plante prête pour la récolte`);
 
-        // UNIFIED CALCULATIONS: Use the same service as backend (EXCLUDING gems - backend only)
+        // UNIFIED CALCULATIONS: Use the same service as backend (gems now simplified)
         const backendParams = calculations.createBackendParams(plot, plantType, garden);
-        // SOLUTION: Frontend no longer calculates gems - backend handles all gem logic
-        const noGems = 0;
 
         console.log(`💰 [${harvestId}] Récompenses calculées: ${backendParams.harvestReward} pièces, ${backendParams.expReward} EXP, gems calculated by backend`);
 
@@ -126,9 +124,9 @@ export const usePlantActions = () => {
           p_plot_number: plotNumber,
           p_harvest_reward: backendParams.harvestReward,
           p_exp_reward: backendParams.expReward,
-          p_gem_reward: noGems, // Backend calculates gems independently using boosted chance
+          p_gem_reward: 0, // Backend calculates gems using fixed 15% chance
           p_growth_time_seconds: backendParams.actualGrowthTime,
-          p_multipliers: calculations.multipliers as any
+          p_multipliers: {} // Simplified - backend uses fixed 15% gem chance
         });
 
         if (transactionError) {
@@ -248,7 +246,7 @@ export const usePlantActions = () => {
         const plantType = old.plantTypes?.find((pt: any) => pt.id === plot.plant_type);
         if (!plantType) return old;
 
-        // UNIFIED OPTIMISTIC CALCULATIONS: Use the same service (NO GEMS)
+        // UNIFIED OPTIMISTIC CALCULATIONS: Use the same service (NO GEMS in optimistic update)
         const harvestReward = calculations.calculateHarvestReward(
           plantType.level_required,
           plot,
@@ -256,7 +254,7 @@ export const usePlantActions = () => {
           old.garden?.permanent_multiplier || 1
         );
         const expReward = calculations.calculateExpReward(plantType.level_required, plantType.rarity);
-        const gemReward = 0; // SOLUTION: No gems in optimistic update - backend calculates them
+        const gemReward = 0; // Backend calculates gems with fixed 15% chance
 
         return {
           ...old,
