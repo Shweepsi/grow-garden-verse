@@ -221,12 +221,9 @@ export const usePlantActions = () => {
           shouldTriggerAnimations: true
         };
       } finally {
-        // SOLUTION: Extended harvest lock - release after animations/events
-        // This prevents overlapping events and ensures proper sequencing
-        setTimeout(() => {
-          console.log(`🔓 ${harvestId} Releasing extended harvest lock`);
-          releaseHarvestLock();
-        }, 100);
+        // Libération immédiate du verrou - les animations sont gérées dans onSuccess
+        console.log(`🔓 ${harvestId} Releasing harvest lock`);
+        releaseHarvestLock();
       }
     },
     onMutate: async (plotNumber: number) => {

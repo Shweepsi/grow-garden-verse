@@ -11,8 +11,8 @@ export const useHarvestMutationLock = () => {
   const acquireHarvestLock = useCallback(async (plotNumber: number): Promise<void> => {
     const now = Date.now();
     
-    // Debounce simple : ignorer les clics trop rapides
-    if (now - lastHarvestTime.current < 300) {
+    // Debounce réduit à 100ms pour éviter les double-clics accidentels
+    if (now - lastHarvestTime.current < 100) {
       console.log(`⚠️ Rapid harvest click ignored (${now - lastHarvestTime.current}ms)`);
       throw new Error('Too fast - ignored');
     }
