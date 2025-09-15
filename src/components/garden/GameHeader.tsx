@@ -132,7 +132,6 @@ useEffect(() => {
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
       case 'coin_boost': return '🪙';
-      case 'gem_boost': return '💎';
       case 'growth_speed':
       case 'growth_boost':
         return '⚡';
@@ -143,7 +142,6 @@ useEffect(() => {
   const getBoostLabel = (effectType: string, effectValue: number) => {
     switch (effectType) {
       case 'coin_boost': return `Pièces ×${effectValue}`;
-      case 'gem_boost': return `Gemmes ×${effectValue}`;
       case 'growth_speed':
       case 'growth_boost':
         return `Croissance -${Math.round((1 - (1/effectValue)) * 100)}%`;

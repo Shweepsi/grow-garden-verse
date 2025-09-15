@@ -124,7 +124,7 @@ export const useUnifiedRewards = () => {
       type: rewardType as AdReward['type'],
       amount: rewardAmount,
       description: `${rewardType} boost x${rewardAmount}min`,
-      emoji: rewardType === 'coin_boost' ? '🚀' : rewardType === 'gem_boost' ? '💎' : '⚡'
+      emoji: rewardType === 'coin_boost' ? '🚀' : '⚡'
     };
 
     console.log('📦 Reward object created:', reward);

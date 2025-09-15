@@ -18,7 +18,7 @@ export class AdRewardValidator {
     }
     
     // Pour les boosts, on considère que c'est accordé (pas de validation visuelle simple)
-    if (['coin_boost', 'gem_boost', 'growth_speed', 'growth_boost'].includes(selectedReward.type)) {
+    if (['coin_boost', 'growth_speed', 'growth_boost'].includes(selectedReward.type)) {
       return true;
     }
 

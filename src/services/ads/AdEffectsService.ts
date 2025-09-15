@@ -26,8 +26,7 @@ export class AdEffectsService {
       case 'coin_boost':
         effect = this.createCoinRainEffect(effectId, targetElement);
         break;
-      case 'gem_boost':
-        effect = this.createGemSparkleEffect(effectId, targetElement);
+      // gem_boost removed - gems now use fixed 15% chance
         break;
       case 'growth_speed':
       case 'growth_boost':
