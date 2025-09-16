@@ -40,10 +40,13 @@ export class UnifiedCalculationService {
 
   /**
    * CORE CALCULATION: Time remaining until harvest
-   * Note: No cache for real-time updates
    */
   static getTimeRemaining(plantedAt: string, plot: GardenPlot, boostMultiplier: number = 1): number {
     if (!plantedAt || !plot.growth_time_seconds) return 0;
+    
+    const cacheKey = `time_${plantedAt}_${plot.growth_time_seconds}_${boostMultiplier}`;
+    const cached = this.getCachedValue(cacheKey);
+    if (cached !== null) return cached;
     
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
@@ -52,6 +55,7 @@ export class UnifiedCalculationService {
     const elapsed = now - plantedTime;
     
     const remaining = Math.max(0, Math.ceil((requiredTime - elapsed) / 1000));
+    this.setCachedValue(cacheKey, remaining);
     
     return remaining;
   }
@@ -118,9 +122,19 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * DEPRECATED: Gem rewards now handled entirely by backend with fixed 15% chance
-   * Frontend no longer calculates gems to avoid complexity and duplications
+   * CORE CALCULATION: Gem rewards (deterministic for backend consistency)
    */
+  static calculateGemReward(gemChance: number, useRandomness: boolean = true): number {
+    if (!gemChance || gemChance <= 0) return 0;
+    
+    if (!useRandomness) {
+      // Deterministic calculation for backend consistency
+      return gemChance >= 0.5 ? 1 : 0;
+    }
+    
+    // Random calculation for frontend predictions
+    return Math.random() < gemChance ? 1 : 0;
+  }
 
   /**
    * CORE CALCULATION: Plant direct cost
@@ -232,7 +246,8 @@ export class UnifiedCalculationService {
       harvest: 1,
       growth: 1,
       exp: 1,
-      plantCostReduction: 1
+      plantCostReduction: 1,
+      gemChance: 0
     };
 
     playerUpgrades.forEach(upgrade => {
@@ -252,7 +267,9 @@ export class UnifiedCalculationService {
         case 'plant_cost_reduction':
           multipliers.plantCostReduction *= levelUpgrade.effect_value;
           break;
-        // gem_chance removed - gems now use fixed 15% probability
+        case 'gem_chance':
+          multipliers.gemChance += levelUpgrade.effect_value;
+          break;
       }
     });
 
@@ -294,7 +311,7 @@ export class UnifiedCalculationService {
         plantType.rarity || 'common',
         multipliers.exp || 1
       ),
-      // Gems calculated entirely by backend with fixed 15% chance
+      gemReward: this.calculateGemReward(multipliers.gemChance || 0, false), // Deterministic for backend
       multipliers
     };
   }

@@ -66,7 +66,12 @@ export class AdBoostService {
           label: `Pièces ×${effectValue}`,
           description: `Multiplie les gains de pièces par ${effectValue} pendant 1 heure`
         };
-      // gem_boost removed - gems now use fixed 15% chance
+      case 'gem_boost':
+        return {
+          icon: '💎',
+          label: `Gemmes ×${effectValue}`,
+          description: `Multiplie les gains de gemmes par ${effectValue} pendant 1 heure`
+        };
       case 'growth_speed':
       case 'growth_boost':
         return {

@@ -12,9 +12,10 @@ interface SimpleAdState {
   retryCount: number;
   lastRetryAt: number | null;
   errorCount: number;
-  consecutiveFailures: number;
-  lastRefreshAt: number | null;
-  needsRefresh: boolean;
+  unknownErrorCount: number;
+  lastUnknownErrorAt: number | null;
+  autoFallbackEnabled: boolean;
+  fallbackTriggered: boolean;
 }
 
 interface AdResult {
@@ -34,8 +35,8 @@ export class AdMobSimpleService {
   private static readonly TEST_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917'; // Google test ID
   private static readonly MAX_RETRY_COUNT = 3;
   private static readonly RETRY_DELAYS = [2000, 5000, 10000]; // 2s, 5s, 10s
-  private static readonly MAX_CONSECUTIVE_FAILURES = 2; // Force refresh after N failures
-  private static readonly REFRESH_COOLDOWN = 10 * 1000; // 10 seconds between refreshes
+  private static readonly MAX_UNKNOWN_ERRORS = 3; // Threshold for auto-fallback
+  private static readonly UNKNOWN_ERROR_WINDOW = 10 * 60 * 1000; // 10 minutes
   
   private static state: SimpleAdState = {
     isInitialized: false,
@@ -47,9 +48,10 @@ export class AdMobSimpleService {
     retryCount: 0,
     lastRetryAt: null,
     errorCount: 0,
-    consecutiveFailures: 0,
-    lastRefreshAt: null,
-    needsRefresh: false
+    unknownErrorCount: 0,
+    lastUnknownErrorAt: null,
+    autoFallbackEnabled: true,
+    fallbackTriggered: false
   };
 
   static async initialize(testMode: boolean = false): Promise<boolean> {
@@ -88,12 +90,6 @@ export class AdMobSimpleService {
 
   static async loadAd(retryCount: number = 0): Promise<boolean> {
     try {
-      // Vérifier si un refresh est nécessaire
-      if (this.state.needsRefresh && this.canRefresh()) {
-        console.log('[AdMobSimple] 🔄 Rafraîchissement AdMob nécessaire...');
-        await this.forceRefresh();
-      }
-
       if (!await this.initialize(this.state.isTestMode)) {
         return false;
       }
@@ -119,7 +115,6 @@ export class AdMobSimpleService {
       this.state.isAdLoaded = true;
       this.state.isAdLoading = false;
       this.state.retryCount = 0;
-      this.state.consecutiveFailures = 0; // Reset sur succès
       
       AdMonitoringService.recordAdSuccess();
       console.log('[AdMobSimple] ✅ Publicité chargée');
@@ -127,19 +122,12 @@ export class AdMobSimpleService {
     } catch (error) {
       console.error('[AdMobSimple] ❌ Erreur chargement:', error);
       this.state.isAdLoading = false;
-      this.state.consecutiveFailures++;
       
       const { message, code } = this.parseError(error as Error);
       this.state.lastError = message;
       this.state.lastErrorCode = code;
       
       AdMonitoringService.recordAdFailure(code, message);
-
-      // Décider si un refresh est nécessaire
-      if (this.shouldTriggerRefresh(error as Error)) {
-        this.state.needsRefresh = true;
-        console.log(`[AdMobSimple] 🔄 Refresh programmé après ${this.state.consecutiveFailures} échecs`);
-      }
 
       // Retry logic pour erreurs récupérables
       if (this.shouldRetry(error as Error, retryCount)) {
@@ -282,7 +270,8 @@ export class AdMobSimpleService {
         timestamp: new Date().toISOString()
       });
       
-      message = '❓ Erreur inconnue AdMob - Un rafraîchissement sera tenté';
+      this.handleUnknownError();
+      message = '❓ Erreur inconnue AdMob - Vérifiez la console AdMob';
     }
 
     // Track error counts
@@ -291,66 +280,23 @@ export class AdMobSimpleService {
     return { message, code };
   }
 
-  /**
-   * Force un rafraîchissement complet du SDK AdMob
-   */
-  static async forceRefresh(): Promise<boolean> {
-    try {
-      console.log('[AdMobSimple] 🔄 Rafraîchissement forcé du SDK AdMob...');
+  private static handleUnknownError(): void {
+    const now = Date.now();
+    this.state.unknownErrorCount++;
+    this.state.lastUnknownErrorAt = now;
+
+    // Check if we should trigger auto-fallback to test mode
+    if (this.state.autoFallbackEnabled && 
+        !this.state.fallbackTriggered && 
+        !this.state.isTestMode &&
+        this.state.unknownErrorCount >= this.MAX_UNKNOWN_ERRORS) {
       
-      // Nettoyer l'état actuel
+      console.warn(`[AdMobSimple] 🚨 ${this.state.unknownErrorCount} erreurs UNKNOWN détectées - Activation du mode test automatique`);
+      this.state.fallbackTriggered = true;
+      this.state.isTestMode = true;
+      this.state.isInitialized = false; // Force reinit
       this.cleanup();
-      this.state.isInitialized = false;
-      this.state.needsRefresh = false;
-      this.state.lastRefreshAt = Date.now();
-      
-      // Attendre un délai pour éviter les conflits
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Réinitialiser le SDK
-      const success = await this.initialize(this.state.isTestMode);
-      
-      if (success) {
-        console.log('[AdMobSimple] ✅ Rafraîchissement réussi');
-        this.state.consecutiveFailures = 0;
-      } else {
-        console.error('[AdMobSimple] ❌ Échec du rafraîchissement');
-      }
-      
-      return success;
-    } catch (error) {
-      console.error('[AdMobSimple] ❌ Erreur lors du rafraîchissement:', error);
-      return false;
     }
-  }
-
-  /**
-   * Vérifie si un refresh peut être déclenché (cooldown)
-   */
-  private static canRefresh(): boolean {
-    if (!this.state.lastRefreshAt) return true;
-    return Date.now() - this.state.lastRefreshAt > this.REFRESH_COOLDOWN;
-  }
-
-  /**
-   * Détermine si un refresh doit être déclenché en fonction de l'erreur
-   */
-  private static shouldTriggerRefresh(error: Error): boolean {
-    const errorStr = error.message.toLowerCase();
-    
-    // Refresh sur erreurs critiques
-    if (errorStr.includes('internal_error') || 
-        errorStr.includes('invalid_request') ||
-        errorStr.includes('unknown')) {
-      return true;
-    }
-    
-    // Refresh après N échecs consécutifs
-    if (this.state.consecutiveFailures >= this.MAX_CONSECUTIVE_FAILURES) {
-      return true;
-    }
-    
-    return false;
   }
 
   private static getErrorMessage(error: Error): string {
@@ -377,11 +323,12 @@ export class AdMobSimpleService {
       },
       errorTracking: {
         totalErrors: this.state.errorCount,
-        consecutiveFailures: this.state.consecutiveFailures,
-        needsRefresh: this.state.needsRefresh,
-        lastRefreshAt: this.state.lastRefreshAt,
-        maxConsecutiveFailures: this.MAX_CONSECUTIVE_FAILURES,
-        refreshCooldown: this.REFRESH_COOLDOWN
+        unknownErrors: this.state.unknownErrorCount,
+        lastUnknownErrorAt: this.state.lastUnknownErrorAt,
+        autoFallbackEnabled: this.state.autoFallbackEnabled,
+        fallbackTriggered: this.state.fallbackTriggered,
+        maxUnknownErrorsThreshold: this.MAX_UNKNOWN_ERRORS,
+        unknownErrorWindow: this.UNKNOWN_ERROR_WINDOW
       },
       monitoring: AdMonitoringService.exportDiagnostics()
     };
@@ -389,10 +336,15 @@ export class AdMobSimpleService {
 
   static resetErrorTracking(): void {
     this.state.errorCount = 0;
-    this.state.consecutiveFailures = 0;
-    this.state.lastRefreshAt = null;
-    this.state.needsRefresh = false;
+    this.state.unknownErrorCount = 0;
+    this.state.lastUnknownErrorAt = null;
+    this.state.fallbackTriggered = false;
     console.log('[AdMobSimple] 🔄 Compteurs d\'erreur réinitialisés');
+  }
+
+  static setAutoFallback(enabled: boolean): void {
+    this.state.autoFallbackEnabled = enabled;
+    console.log(`[AdMobSimple] 🔧 Auto-fallback ${enabled ? 'activé' : 'désactivé'}`);
   }
 
   static setTestMode(enabled: boolean): void {
@@ -406,21 +358,5 @@ export class AdMobSimpleService {
 
   static isTestMode(): boolean {
     return this.state.isTestMode;
-  }
-
-  /**
-   * Force un rafraîchissement manuel du SDK (utile pour les diagnostics)
-   */
-  static async manualRefresh(): Promise<boolean> {
-    console.log('[AdMobSimple] 🔧 Rafraîchissement manuel demandé');
-    this.state.needsRefresh = true;
-    return await this.forceRefresh();
-  }
-
-  /**
-   * Vérifie si un refresh est recommandé
-   */
-  static shouldRecommendRefresh(): boolean {
-    return this.state.consecutiveFailures >= 1 || this.state.needsRefresh;
   }
 }

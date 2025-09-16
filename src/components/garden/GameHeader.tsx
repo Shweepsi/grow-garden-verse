@@ -50,23 +50,14 @@ useEffect(() => {
     }
   };
 
-  const handleExperienceGained = () => {
-    // Force component re-render for level updates
-    if (mounted.current) {
-      console.log('🎉 Header notified of experience gain - will update level');
-    }
-  };
-
   gameDataEmitter.on('reward-claimed', handleRewardClaimed);
   gameDataEmitter.on('coins-claimed', handleRewardClaimed);
   gameDataEmitter.on('gems-claimed', handleRewardClaimed);
-  gameDataEmitter.on('experience-gained', handleExperienceGained);
 
   return () => {
     gameDataEmitter.off('reward-claimed', handleRewardClaimed);
     gameDataEmitter.off('coins-claimed', handleRewardClaimed);
     gameDataEmitter.off('gems-claimed', handleRewardClaimed);
-    gameDataEmitter.off('experience-gained', handleExperienceGained);
   };
 }, []);
 
@@ -132,6 +123,7 @@ useEffect(() => {
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
       case 'coin_boost': return '🪙';
+      case 'gem_boost': return '💎';
       case 'growth_speed':
       case 'growth_boost':
         return '⚡';
@@ -142,6 +134,7 @@ useEffect(() => {
   const getBoostLabel = (effectType: string, effectValue: number) => {
     switch (effectType) {
       case 'coin_boost': return `Pièces ×${effectValue}`;
+      case 'gem_boost': return `Gemmes ×${effectValue}`;
       case 'growth_speed':
       case 'growth_boost':
         return `Croissance -${Math.round((1 - (1/effectValue)) * 100)}%`;
@@ -204,7 +197,10 @@ useEffect(() => {
                   </span>
                 </div>
                 
-                {/* Zone d'animation pour les gemmes - supprimée */}
+                {/* Zone d'animation pour les gemmes */}
+                <div className="animation-zone">
+                  {animations.filter(anim => anim.type === 'gems').map(anim => <FloatingNumber key={anim.id} animation={anim} />)}
+                </div>
               </div>
               
               {/* Niveau */}

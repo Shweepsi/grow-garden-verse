@@ -266,10 +266,10 @@ export function AdEnhancedDiagnostics() {
                 🔄 Reset métriques
               </Button>
               <Button
-                onClick={() => AdMobSimpleService.forceRefresh()}
+                onClick={() => AdMobSimpleService.setAutoFallback(!diagnostics.errorTracking.autoFallbackEnabled)}
                 variant="outline"
               >
-                🔄 Forcer refresh
+                {diagnostics.errorTracking.autoFallbackEnabled ? "🔒 Désactiver" : "🔓 Activer"} auto-fallback
               </Button>
             </div>
 

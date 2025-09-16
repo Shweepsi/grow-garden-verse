@@ -6,7 +6,9 @@ export interface GameMultipliers {
   growth: number;
   exp: number;
   plantCostReduction: number;
+  gemChance: number;
   coins: number;
+  gems: number;
 }
 
 /**
@@ -29,7 +31,9 @@ export const useGameMultipliers = () => {
       growth: permanentMultipliers.growth,
       exp: permanentMultipliers.exp,
       plantCostReduction: permanentMultipliers.plantCostReduction,
-      coins: 1 // Pas de boost temporaire pour le robot
+      gemChance: permanentMultipliers.gemChance,
+      coins: 1, // Pas de boost temporaire pour le robot
+      gems: 1   // Pas de boost temporaire pour le robot
     };
   };
 
@@ -39,12 +43,14 @@ export const useGameMultipliers = () => {
     
     // Récupérer les boosts temporaires
     const coinBoost = getBoostMultiplier('coin_boost');
+    const gemBoost = getBoostMultiplier('gem_boost');
     const growthBoost = getBoostMultiplier('growth_speed');
     
     if (import.meta.env.DEV) {
+      // Only log detailed multiplier information while developing.
       console.debug('[DEBUG] Game Multipliers:', {
         permanent: permanentMultipliers,
-        activeBoosts: { coinBoost, growthBoost },
+        activeBoosts: { coinBoost, gemBoost, growthBoost },
         combined: {
           harvest: permanentMultipliers.harvest * coinBoost,
           growth: permanentMultipliers.growth * growthBoost
@@ -56,11 +62,13 @@ export const useGameMultipliers = () => {
       // Multiplicateurs combinés permanents + temporaires
       harvest: permanentMultipliers.harvest * coinBoost,
       growth: permanentMultipliers.growth * growthBoost,
-      exp: permanentMultipliers.exp,
+      exp: permanentMultipliers.exp, // Pas de boost temporaire XP pour l'instant
       plantCostReduction: permanentMultipliers.plantCostReduction,
+      gemChance: permanentMultipliers.gemChance,
       
       // Boosts spécifiques pour l'application directe
-      coins: coinBoost
+      coins: coinBoost,
+      gems: gemBoost
     };
   };
   
@@ -91,6 +99,9 @@ export const useGameMultipliers = () => {
       case 'coin_boost':
         return multipliers.coins;
 
+      case 'gem_boost':
+        return multipliers.gems;
+
       default:
         return 1;
     }
@@ -102,9 +113,16 @@ export const useGameMultipliers = () => {
     return Math.floor(amount * coinBoostMultiplier);
   };
 
-  const applyAllBoosts = (coins: number) => {
+  // Fonction pour appliquer les boosts aux gains de gemmes
+  const applyGemsBoost = (amount: number): number => {
+    const gemBoostMultiplier = getBoostMultiplier('gem_boost');
+    return Math.floor(amount * gemBoostMultiplier);
+  };
+
+  const applyAllBoosts = (coins: number, gems: number) => {
     return {
-      coins: applyCoinsBoost(coins)
+      coins: applyCoinsBoost(coins),
+      gems: applyGemsBoost(gems)
     };
   };
 
@@ -117,6 +135,7 @@ export const useGameMultipliers = () => {
     getCombinedBoostMultiplier,
     // Fonctions individuelles pour la compatibilité
     getBoostMultiplier,
-    applyCoinsBoost
+    applyCoinsBoost,
+    applyGemsBoost
   };
 };

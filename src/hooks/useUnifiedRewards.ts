@@ -124,7 +124,7 @@ export const useUnifiedRewards = () => {
       type: rewardType as AdReward['type'],
       amount: rewardAmount,
       description: `${rewardType} boost x${rewardAmount}min`,
-      emoji: rewardType === 'coin_boost' ? '🚀' : '⚡'
+      emoji: rewardType === 'coin_boost' ? '🚀' : rewardType === 'gem_boost' ? '💎' : '⚡'
     };
 
     console.log('📦 Reward object created:', reward);
@@ -239,11 +239,6 @@ export const useUnifiedRewards = () => {
           
           // Messages d'erreur explicites et actionables
           const errorInfo = AdRetryService.getActionableErrorMessage(adError as Error);
-          
-          // Vérifier si un refresh est recommandé
-          if (AdMobSimpleService.shouldRecommendRefresh()) {
-            console.log('[UnifiedRewards] 🔄 Refresh recommandé après échec');
-          }
           
           localStorage.setItem('lastRewardStatus', `Échec: ${errorInfo.title}`);
           toast({

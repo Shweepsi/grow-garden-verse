@@ -35,7 +35,7 @@ export class AdRetryService {
   };
 
   /**
-   * Exécute une fonction avec retry intelligent et refresh automatique
+   * Exécute une fonction avec retry intelligent
    */
   static async executeWithRetry<T>(
     operation: () => Promise<T>,
@@ -75,8 +75,7 @@ export class AdRetryService {
           continue;
         }
         
-        // Pas de retry possible - l'erreur sera propagée
-        // Le refresh sera géré au niveau de AdMobSimpleService
+        // Pas de retry possible
         this.state.totalRetries += attempt;
         throw err;
       }
@@ -99,8 +98,8 @@ export class AdRetryService {
     if (errorStr.includes('no_fill') || errorStr.includes('no ad')) {
       return {
         title: 'Aucune publicité disponible',
-        message: 'Aucune publicité n\'est disponible actuellement. Ceci est normal pour les nouvelles applications.',
-        action: 'Réessayez dans quelques minutes ou activez le mode test',
+        message: 'Aucune publicité n\'est disponible actuellement. Ceci est normal pour les nouvelles applications et peut s\'améliorer avec le temps.',
+        action: 'Réessayez dans quelques minutes',
         severity: 'low'
       };
     }
@@ -135,26 +134,17 @@ export class AdRetryService {
     if (errorStr.includes('invalid_request')) {
       return {
         title: 'Configuration incorrecte',
-        message: 'La configuration publicitaire semble incorrecte. Un rafraîchissement va être tenté.',
-        action: 'Si le problème persiste, contactez le support',
+        message: 'La configuration publicitaire semble incorrecte.',
+        action: 'Contactez le support technique',
         severity: 'high'
-      };
-    }
-
-    if (errorStr.includes('internal_error')) {
-      return {
-        title: 'Erreur interne AdMob',
-        message: 'Une erreur interne s\'est produite. Le système va rafraîchir la connexion.',
-        action: 'Réessayez dans quelques instants',
-        severity: 'medium'
       };
     }
     
     // Erreur inconnue
     return {
       title: 'Erreur technique',
-      message: 'Une erreur technique inattendue s\'est produite. Un rafraîchissement va être tenté.',
-      action: 'Si le problème persiste, essayez le mode test',
+      message: 'Une erreur technique inattendue s\'est produite.',
+      action: 'Réessayez ou contactez le support si le problème persiste',
       severity: 'medium'
     };
   }

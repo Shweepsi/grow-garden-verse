@@ -5,7 +5,7 @@ import { PlayerGarden } from '@/types/game';
 
 interface OptimisticUpdate {
   id: string;
-  type: 'coins'; // SOLUTION: Only coins for optimistic updates, gems handled by backend sync
+  type: 'coins' | 'gems';
   amount: number;
   timestamp: number;
 }
@@ -14,7 +14,7 @@ export const useOptimisticGameData = () => {
   const { data: gameData, isLoading } = useGameData();
   const [optimisticUpdates, setOptimisticUpdates] = useState<OptimisticUpdate[]>([]);
 
-  // Apply optimistic updates to game data (ONLY COINS - gems handled by backend sync)
+  // Apply optimistic updates to game data
   const optimisticGameData = {
     ...gameData,
     garden: gameData?.garden ? {
@@ -22,20 +22,16 @@ export const useOptimisticGameData = () => {
       coins: (gameData.garden.coins || 0) + optimisticUpdates
         .filter(update => update.type === 'coins')
         .reduce((sum, update) => sum + update.amount, 0),
-      // SOLUTION: Gems excluded from optimistic updates to prevent duplication
+      gems: (gameData.garden.gems || 0) + optimisticUpdates
+        .filter(update => update.type === 'gems')
+        .reduce((sum, update) => sum + update.amount, 0),
       // Add indicator for pending updates
       _hasOptimisticUpdates: optimisticUpdates.length > 0
     } as PlayerGarden & { _hasOptimisticUpdates?: boolean } : null
   };
 
-  // Add optimistic update (ONLY COINS - gems handled by backend sync)
-  const addOptimisticUpdate = useCallback((type: 'coins', amount: number) => {
-    // SOLUTION: Only accept coins to prevent gem duplication
-    if (type !== 'coins') {
-      console.log(`🚫 Optimistic update rejected for ${type} - handled by backend sync`);
-      return;
-    }
-
+  // Add optimistic update
+  const addOptimisticUpdate = useCallback((type: 'coins' | 'gems', amount: number) => {
     const update: OptimisticUpdate = {
       id: `${type}-${Date.now()}-${Math.random()}`,
       type,
@@ -45,40 +41,38 @@ export const useOptimisticGameData = () => {
 
     setOptimisticUpdates(prev => [...prev, update]);
 
-    // Faster timeout for coins only
+    // Phase 4: Reduced timeout for faster convergence
     setTimeout(() => {
       setOptimisticUpdates(prev => prev.filter(u => u.id !== update.id));
-    }, 3000);
+    }, 5000);
   }, []);
 
-  // SOLUTION: Simplified convergence detection for coins only
+  // Phase 4: Intelligent convergence detection with tolerance
   useEffect(() => {
     if (gameData?.garden && optimisticUpdates.length > 0) {
-      // Clear updates when real data converges
+      // Clear updates when real data converges (with ±1 tolerance for minor differences)
+      const currentCoins = gameData.garden.coins || 0;
+      const currentGems = gameData.garden.gems || 0;
+      
       setOptimisticUpdates(prev => prev.filter(update => {
         const timeSinceUpdate = Date.now() - update.timestamp;
         
-        // Clear old updates after 2 seconds for faster convergence
+        // Always clear old updates after 2 seconds for faster convergence
         if (timeSinceUpdate > 2000) return false;
         
         // Keep recent updates that might still be converging
         return timeSinceUpdate < 1000;
       }));
     }
-  }, [gameData?.garden?.coins, optimisticUpdates.length]);
+  }, [gameData?.garden?.coins, gameData?.garden?.gems, optimisticUpdates.length]);
 
-  // SOLUTION: Listen only for coins in optimistic updates
+  // PHASE 1: Listen for reward claimed events with payload to add optimistic updates
   useEffect(() => {
     const handleRewardClaimed = (payload?: { type: string; amount: number }) => {
-      if (payload && payload.amount && payload.type === 'coins') {
-        // Only add optimistic update for coins
-        console.log(`🚀 Adding optimistic update for coins only: +${payload.amount}`);
-        addOptimisticUpdate('coins', payload.amount);
-      }
-      
-      // SOLUTION: Don't handle gems here - they're managed by backend sync only
-      if (payload && payload.type === 'gems') {
-        console.log(`💎 Gems handled by backend sync: +${payload.amount}`);
+      if (payload && payload.amount && (payload.type === 'coins' || payload.type === 'gems')) {
+        // Add immediate optimistic update with exact amount
+        console.log(`🚀 PHASE 1: Adding optimistic update for ${payload.type}: +${payload.amount}`);
+        addOptimisticUpdate(payload.type as 'coins' | 'gems', payload.amount);
       }
       
       // Clear old optimistic updates when reward is claimed

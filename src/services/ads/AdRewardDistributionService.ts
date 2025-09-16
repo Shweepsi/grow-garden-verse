@@ -18,7 +18,8 @@ export class AdRewardDistributionService {
         case 'coin_boost':
           return await this.distributeCoinBoost(userId, reward.amount, reward.duration || 60);
         
-        // gem_boost removed - gems now use fixed 15% chance
+        case 'gem_boost':
+          return await this.distributeGemBoost(userId, reward.amount, reward.duration || 30);
         
         case 'growth_speed':
           const effectiveDuration = reward.duration || 60;
@@ -169,7 +170,60 @@ export class AdRewardDistributionService {
     return { success: true };
   }
 
-  // distributeGemBoost method removed - gems now use fixed 15% chance per harvest
+  private static async distributeGemBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
+    // Vérifier s'il y a déjà un boost actif du même type
+    const { data: existingBoosts, error: fetchError } = await supabase
+      .from('active_effects')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('effect_type', 'gem_boost')
+      .eq('source', 'ad_reward')
+      .gt('expires_at', new Date().toISOString())
+      .order('expires_at', { ascending: false });
+
+    if (fetchError) {
+      return { success: false, error: 'Erreur lors de la vérification des boosts existants' };
+    }
+
+    if (existingBoosts && existingBoosts.length > 0) {
+      // Accumuler le temps : ajouter la durée au boost existant le plus long
+      const latestBoost = existingBoosts[0];
+      const currentExpiresAt = new Date(latestBoost.expires_at);
+      const newExpiresAt = new Date(currentExpiresAt.getTime() + durationMinutes * 60 * 1000);
+
+      const { error: updateError } = await supabase
+        .from('active_effects')
+        .update({ expires_at: newExpiresAt.toISOString() })
+        .eq('id', latestBoost.id);
+
+      if (updateError) {
+        return { success: false, error: 'Erreur lors de l\'extension du boost gemmes' };
+      }
+
+      console.log(`AdMob: Extended gem boost by ${durationMinutes}min for user ${userId}. New expiry: ${newExpiresAt.toISOString()}`);
+    } else {
+      // Créer un nouveau boost
+      const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+
+      const { error } = await supabase
+        .from('active_effects')
+        .insert({
+          user_id: userId,
+          effect_type: 'gem_boost',
+          effect_value: multiplier,
+          expires_at: expiresAt.toISOString(),
+          source: 'ad_reward'
+        });
+
+      if (error) {
+        return { success: false, error: 'Erreur lors de l\'activation du boost gemmes' };
+      }
+
+      console.log(`AdMob: Applied gem boost (x${multiplier} for ${durationMinutes}min) to user ${userId}`);
+    }
+
+    return { success: true };
+  }
 
   // Boost de croissance : le paramètre "multiplier" est un multiplicateur (>1) qui accélère la croissance.
   private static async distributeGrowthBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {

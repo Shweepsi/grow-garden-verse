@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 export interface FloatingAnimation {
   id: string;
   amount: number;
-  type: 'coins' | 'experience';
+  type: 'coins' | 'experience' | 'gems';
   timestamp: number;
   row: number; // 0-2
   col: number; // 0-2
@@ -15,6 +15,7 @@ interface AnimationContextType {
   animations: FloatingAnimation[];
   triggerCoinAnimation: (amount: number) => void;
   triggerXpAnimation: (amount: number) => void;
+  triggerGemAnimation: (amount: number) => void;
   removeAnimation: (id: string) => void;
 }
 
@@ -69,7 +70,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Ajout d'un offset basé sur le type pour éviter les superpositions
     const typeOffset = {
       'coins': { x: 0, y: 0 },
-      'experience': { x: 5, y: 5 }
+      'experience': { x: 5, y: 5 },
+      'gems': { x: -5, y: -5 }
     };
 
     return {
@@ -96,6 +98,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const triggerCoinAnimation = useCallback(makeTrigger('coins'), []);
   const triggerXpAnimation = useCallback(makeTrigger('experience'), []);
+  const triggerGemAnimation = useCallback(makeTrigger('gems'), []);
 
   const removeAnimation = useCallback((id: string) => {
     setAnimations(current => current.filter(anim => anim.id !== id));
@@ -106,6 +109,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       animations,
       triggerCoinAnimation,
       triggerXpAnimation,
+      triggerGemAnimation,
       removeAnimation
     }}>
       {children}

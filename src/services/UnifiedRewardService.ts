@@ -13,8 +13,8 @@ export class UnifiedRewardService {
    * Trie les récompenses par ordre de priorité
    */
   private static sortRewards(rewards: AdReward[]): AdReward[] {
-    // Ordre de priorité : seulement les boosts maintenant (gem_boost removed)
-    const order = ['coin_boost', 'growth_speed', 'growth_boost'];
+    // Ordre de priorité : seulement les boosts maintenant
+    const order = ['coin_boost', 'gem_boost', 'growth_speed', 'growth_boost'];
     
     return rewards.sort((a, b) => {
       const aIndex = order.indexOf(a.type);

@@ -4,7 +4,6 @@ import { PlayerGarden } from '@/types/game';
 import { Trophy, Star, Coins, TrendingUp, Clock, Target } from 'lucide-react';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
-// GemChanceIndicator removed - fixed 15% gem chance per harvest
 interface PlayerStatsProps {
   garden: PlayerGarden | null;
   totalPlants: number;
@@ -90,21 +89,9 @@ export const PlayerStats = ({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="h-6 w-6 mx-auto mb-2 text-2xl">💎</div>
-            <p className="text-2xl font-bold text-purple-600">{garden.gems}</p>
-            <p className="text-xs text-gray-600">Gemmes (15% par récolte)</p>
-          </CardContent>
-        </Card>
+        
 
-        <Card>
-          <CardContent className="p-4 text-center">
-            <TrendingUp className="h-6 w-6 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600">{activePlants}</p>
-            <p className="text-xs text-gray-600">Plantes actives</p>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Informations du compte */}

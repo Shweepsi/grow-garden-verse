@@ -58,20 +58,11 @@ export const PlantSelector = ({
     }
     if (seconds < 3600) {
       const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+      return `${minutes}min`;
     }
     const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    if (hours > 0 && minutes > 0 && remainingSeconds > 0) {
-      return `${hours}h ${minutes}m ${remainingSeconds}s`;
-    } else if (hours > 0 && minutes > 0) {
-      return `${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours}h`;
-    }
-    return `${minutes}m ${remainingSeconds}s`;
+    const minutes = Math.floor(seconds % 3600 / 60);
+    return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
   };
   const handlePlantClick = (plantTypeId: string, cost: number) => {
     // Fermer immédiatement pour une meilleure réactivité
@@ -181,9 +172,14 @@ export const PlantSelector = ({
                               <div className="flex items-center justify-center gap-1 text-blue-700">
                                 <Clock className="h-2.5 w-2.5" />
                                 <div className="text-xs font-medium">
-                                  {hasGrowthBonus ? <span className="text-blue-600 font-bold text-xs">
-                                      {formatGrowthTime(adjustedGrowthTime)}
-                                    </span> : <span className="text-xs">{formatGrowthTime(plantType.base_growth_seconds)}</span>}
+                                  {hasGrowthBonus ? <div className="flex items-center gap-1">
+                                      <span className="line-through text-gray-400 text-xs">
+                                        {formatGrowthTime(plantType.base_growth_seconds)}
+                                      </span>
+                                      <span className="text-blue-600 font-bold text-xs">
+                                        {formatGrowthTime(adjustedGrowthTime)}
+                                      </span>
+                                    </div> : <span className="text-xs">{formatGrowthTime(plantType.base_growth_seconds)}</span>}
                                 </div>
                               </div>
                             </div>

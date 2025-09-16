@@ -15,7 +15,7 @@ export const useUnifiedCalculations = () => {
       return getCompleteMultipliers();
     } catch (error) {
       console.warn('⚠️ Error getting multipliers, using defaults:', error);
-      return { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, coins: 1 };
+      return { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0, coins: 1, gems: 1 };
     }
   }, [getCompleteMultipliers]);
 
@@ -26,15 +26,14 @@ export const useUnifiedCalculations = () => {
 
   return {
     // Core calculation methods (delegated to UnifiedCalculationService)
-    // IMPORTANT: Use backend-aligned timing (no growth multiplier applied client-side)
     isPlantReady: (plantedAt: string, plot: any) => 
-      UnifiedCalculationService.isPlantReady(plantedAt, plot, 1),
+      UnifiedCalculationService.isPlantReady(plantedAt, plot, growthMultiplier),
     
     getTimeRemaining: (plantedAt: string, plot: any) => 
-      UnifiedCalculationService.getTimeRemaining(plantedAt, plot, 1),
+      UnifiedCalculationService.getTimeRemaining(plantedAt, plot, growthMultiplier),
     
     getGrowthProgress: (plantedAt: string, plot: any) => 
-      UnifiedCalculationService.getGrowthProgress(plantedAt, plot, 1),
+      UnifiedCalculationService.getGrowthProgress(plantedAt, plot, growthMultiplier),
     
     calculateHarvestReward: (plantLevel: number, plot: any, playerLevel: number = 1, permanentMultiplier: number = 1) =>
       UnifiedCalculationService.calculateHarvestReward(
@@ -49,10 +48,11 @@ export const useUnifiedCalculations = () => {
     calculateExpReward: (plantLevel: number, rarity: string) =>
       UnifiedCalculationService.calculateExpReward(plantLevel, rarity, multipliers.exp),
     
-    // Gem rewards now handled entirely by backend with fixed 15% chance
+    calculateGemReward: (useRandomness: boolean = true) =>
+      UnifiedCalculationService.calculateGemReward(multipliers.gemChance, useRandomness),
     
     canHarvestPlant: (plot: any) =>
-      UnifiedCalculationService.canHarvestPlant(plot, 1),
+      UnifiedCalculationService.canHarvestPlant(plot, growthMultiplier),
     
     createBackendParams: (plot: any, plantType: any, garden: any) =>
       UnifiedCalculationService.createBackendParams(plot, plantType, garden, multipliers),
