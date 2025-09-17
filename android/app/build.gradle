@@ -56,8 +56,8 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
 
-    // Updated Google Play Services for AdMob
-    implementation 'com.google.android.gms:play-services-ads:23.2.0'
+    // Updated Google Play Services for AdMob (compatible with API 35)
+    implementation 'com.google.android.gms:play-services-ads:23.5.0'
 
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
