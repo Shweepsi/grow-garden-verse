@@ -64,8 +64,7 @@ export const useFloatingNumberPool = () => {
     
     // Appliquer les styles basés sur l'animation
     const isNegative = animation.amount < 0;
-    const color = animation.type === 'coins' ? (isNegative ? '#dc2626' : '#16a34a') :
-                  animation.type === 'experience' ? '#3b82f6' : '#a855f7';
+    const color = animation.type === 'coins' ? (isNegative ? '#dc2626' : '#16a34a') : '#a855f7';
     
     element.style.color = color;
     // Position basée sur la grille (comme dans le CSS original)
@@ -76,8 +75,7 @@ export const useFloatingNumberPool = () => {
     element.style.transform = 'translateY(0)';
     
     // Contenu avec icône
-    const icon = animation.type === 'coins' ? '🪙' :
-                 animation.type === 'experience' ? '⭐' : '💎';
+    const icon = animation.type === 'coins' ? '🪙' : '💎';
     
     const formattedAmount = Math.abs(animation.amount) >= 1000 
       ? `${(Math.abs(animation.amount) / 1000).toFixed(1)}K`

@@ -213,9 +213,9 @@ useEffect(() => {
                     Niv. {xpStats.currentLevel}
                   </span>
                 </div>
-                {/* Zone d'animation pour l'XP */}
+                {/* Zone d'animation pour l'XP - Disabled */}
                 <div className="animation-zone">
-                  {animations.filter(anim => anim.type === 'experience').map(anim => <FloatingNumber key={anim.id} animation={anim} />)}
+                  {/* XP animations are disabled */}
                 </div>
               </div>
 
