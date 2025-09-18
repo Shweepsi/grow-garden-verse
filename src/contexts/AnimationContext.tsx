@@ -14,7 +14,6 @@ export interface FloatingAnimation {
 interface AnimationContextType {
   animations: FloatingAnimation[];
   triggerCoinAnimation: (amount: number) => void;
-  triggerXpAnimation: (amount: number) => void;
   triggerGemAnimation: (amount: number) => void;
   removeAnimation: (id: string) => void;
 }
@@ -90,14 +89,13 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const makeTrigger = (type: FloatingAnimation['type']) =>
     (amount: number) => {
       if (type === 'experience') {
-        // XP animations are disabled. We keep the API surface so calls remain harmless.
+        // XP animations supprimées
         return;
       }
       setAnimations(prev => [...prev, createAnimation(type, amount, prev)]);
     };
 
   const triggerCoinAnimation = useCallback(makeTrigger('coins'), []);
-  const triggerXpAnimation = useCallback(makeTrigger('experience'), []);
   const triggerGemAnimation = useCallback(makeTrigger('gems'), []);
 
   const removeAnimation = useCallback((id: string) => {
@@ -108,7 +106,6 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <AnimationContext.Provider value={{
       animations,
       triggerCoinAnimation,
-      triggerXpAnimation,
       triggerGemAnimation,
       removeAnimation
     }}>

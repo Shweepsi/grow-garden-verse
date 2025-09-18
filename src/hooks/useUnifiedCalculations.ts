@@ -62,8 +62,8 @@ export const useUnifiedCalculations = () => {
     getRobotPassiveIncome: (robotLevel: number, permanentMultiplier: number = 1) =>
       UnifiedCalculationService.getRobotPassiveIncome(robotLevel, multipliers.harvest, permanentMultiplier),
     
-    // Utility
-    clearCache: UnifiedCalculationService.clearCache,
+    
+    // Utility - cache removed
     
     // Expose current multipliers for reference
     multipliers,
