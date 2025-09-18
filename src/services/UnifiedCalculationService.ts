@@ -6,9 +6,10 @@ import { ValidationCacheService } from './ValidationCacheService';
  * Eliminates divergences between frontend and backend by using consistent logic
  */
 export class UnifiedCalculationService {
-  // Cache for optimized performance
+  // Cache for optimized performance (DISABLED pour debugging)
   private static readonly calculationCache = new Map<string, any>();
   private static readonly CACHE_TTL = 5000; // 5 seconds
+  private static readonly CACHE_DISABLED = true; // Cache désactivé
 
   /**
    * CORE CALCULATION: Plant readiness check
@@ -277,11 +278,12 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * Clear all caches
+   * Clear all caches (DISABLED - cache désactivé pour debugging)
    */
   static clearCache(): void {
-    this.calculationCache.clear();
-    ValidationCacheService.clearAll();
+    // Cache désactivé pour debugging
+    // this.calculationCache.clear();
+    // ValidationCacheService.clearAll();
   }
 
   /**
