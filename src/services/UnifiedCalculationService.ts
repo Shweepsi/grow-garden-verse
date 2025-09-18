@@ -1,10 +1,15 @@
 import { PlantType, GardenPlot, PlayerGarden } from '@/types/game';
+import { ValidationCacheService } from './ValidationCacheService';
 
 /**
  * Unified calculation service - Single source of truth for all game calculations
  * Eliminates divergences between frontend and backend by using consistent logic
  */
 export class UnifiedCalculationService {
+  // Cache for optimized performance (DISABLED pour debugging)
+  private static readonly calculationCache = new Map<string, any>();
+  private static readonly CACHE_TTL = 5000; // 5 seconds
+  private static readonly CACHE_DISABLED = true; // Cache désactivé
 
   /**
    * CORE CALCULATION: Plant readiness check
@@ -35,10 +40,14 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * CORE CALCULATION: Time remaining until plant is ready
+   * CORE CALCULATION: Time remaining until harvest
    */
   static getTimeRemaining(plantedAt: string, plot: GardenPlot, boostMultiplier: number = 1): number {
     if (!plantedAt || !plot.growth_time_seconds) return 0;
+    
+    const cacheKey = `time_${plantedAt}_${plot.growth_time_seconds}_${boostMultiplier}`;
+    const cached = this.getCachedValue(cacheKey);
+    if (cached !== null) return cached;
     
     const plantedTime = new Date(plantedAt).getTime();
     const now = Date.now();
@@ -46,7 +55,10 @@ export class UnifiedCalculationService {
     const requiredTime = adjustedGrowthTime * 1000;
     const elapsed = now - plantedTime;
     
-    return Math.max(0, requiredTime - elapsed);
+    const remaining = Math.max(0, Math.ceil((requiredTime - elapsed) / 1000));
+    this.setCachedValue(cacheKey, remaining);
+    
+    return remaining;
   }
 
   /**
@@ -61,12 +73,12 @@ export class UnifiedCalculationService {
     const requiredTime = adjustedGrowthTime * 1000;
     const elapsed = now - plantedTime;
     
-    return Math.min(100, (elapsed / requiredTime) * 100);
+    return Math.min(100, Math.max(0, (elapsed / requiredTime) * 100));
   }
 
   /**
-   * CORE CALCULATION: Harvest reward calculation
-   * This ensures consistency between frontend predictions and backend calculations
+   * CORE CALCULATION: Harvest rewards
+   * Uses plot.growth_time_seconds as source of truth
    */
   static calculateHarvestReward(
     plantLevel: number,
@@ -76,91 +88,92 @@ export class UnifiedCalculationService {
     plantCostReduction: number = 1,
     permanentMultiplier: number = 1
   ): number {
-    // Base reward logic
-    const levelFactor = Math.max(1, plantLevel);
-    const playerLevelBonus = Math.max(1, playerLevel * 0.1);
+    // Validation
+    if (!plantLevel || plantLevel < 1) plantLevel = 1;
+    if (!plot.growth_time_seconds || plot.growth_time_seconds < 1) return 0;
+    if (!playerLevel || playerLevel < 1) playerLevel = 1;
+    if (!harvestMultiplier || harvestMultiplier < 0.1) harvestMultiplier = 1;
     
-    // Calculate base reward
-    let baseReward = Math.floor(levelFactor * 10 * playerLevelBonus);
+    // Use unified cost calculation
+    const baseCost = this.getPlantDirectCost(plantLevel) * plantCostReduction;
     
-    // Apply all multipliers consistently
-    const totalMultiplier = harvestMultiplier * permanentMultiplier;
+    // Unified reward formula
+    const baseProfit = baseCost * 1.7; // 70% profit
+    const timeBonus = Math.max(1, Math.floor(plot.growth_time_seconds / 600)) * 0.1; // 10% per 10min
+    const levelBonus = 1 + (playerLevel * 0.02); // 2% per player level
     
-    const finalReward = Math.floor(baseReward * totalMultiplier);
+    const finalReward = baseProfit * (1 + timeBonus) * levelBonus;
+    const result = Math.floor(finalReward * harvestMultiplier * permanentMultiplier);
     
-    return Math.max(1, finalReward);
+    return Math.min(result, 2000000000); // Overflow protection
   }
 
   /**
-   * CORE CALCULATION: Experience reward calculation
+   * CORE CALCULATION: Experience rewards
    */
   static calculateExpReward(plantLevel: number, rarity: string, expMultiplier: number = 1): number {
-    const rarityMultipliers = {
-      'common': 1,
-      'uncommon': 1.5,
-      'rare': 2,
-      'epic': 3,
-      'legendary': 5
-    };
+    if (!plantLevel || plantLevel < 1) plantLevel = 1;
+    if (!expMultiplier || expMultiplier < 0.1) expMultiplier = 1;
     
-    const baseExp = Math.max(1, plantLevel * 2);
-    const rarityMultiplier = rarityMultipliers[rarity as keyof typeof rarityMultipliers] || 1;
+    // Base exp: 15 + 5 per level
+    const baseExp = 15 + (plantLevel * 5);
     
-    return Math.floor(baseExp * rarityMultiplier * expMultiplier);
+    // Future: rarity bonus could be added here
+    return Math.floor(baseExp * expMultiplier);
   }
 
   /**
-   * CORE CALCULATION: Gem reward calculation (with deterministic option for backend)
+   * CORE CALCULATION: Gem rewards (deterministic for backend consistency)
    */
   static calculateGemReward(gemChance: number, useRandomness: boolean = true): number {
+    if (!gemChance || gemChance <= 0) return 0;
+    
     if (!useRandomness) {
       // Deterministic calculation for backend consistency
-      return gemChance >= 0.15 ? 1 : 0; // 15% base chance
+      return gemChance >= 0.5 ? 1 : 0;
     }
     
-    const chance = Math.max(0, Math.min(1, gemChance));
-    return Math.random() < chance ? 1 : 0;
+    // Random calculation for frontend predictions
+    return Math.random() < gemChance ? 1 : 0;
   }
 
   /**
    * CORE CALCULATION: Plant direct cost
    */
   static getPlantDirectCost(plantLevel: number): number {
-    const baseCost = Math.max(1, plantLevel) * 10;
-    return Math.floor(baseCost);
+    if (!plantLevel || plantLevel < 1) return 100;
+    return Math.floor(100 * Math.pow(1.42, plantLevel - 1));
   }
 
   /**
    * CORE CALCULATION: Robot passive income
    */
   static getRobotPassiveIncome(robotLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
-    if (robotLevel <= 0) return 0;
+    const plantLevel = Math.max(1, Math.min(robotLevel, 10));
+    const baseIncome = 50;
+    const levelMultiplier = Math.pow(plantLevel, 1.6);
     
-    // Base income per level
-    const baseIncome = robotLevel * 5;
-    const totalMultiplier = harvestMultiplier * permanentMultiplier;
-    
-    return Math.floor(baseIncome * totalMultiplier);
+    const result = Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
+    return Math.min(result, 2000000000);
   }
 
   /**
-   * UTILITY: Enhanced plant harvest check with detailed information
+   * Validation helper: Check if plant can be harvested
    */
   static canHarvestPlant(plot: GardenPlot, boostMultiplier: number = 1): { canHarvest: boolean; reason?: string; timeRemaining?: number } {
-    if (!plot) {
-      return { canHarvest: false, reason: 'No plot data' };
+    if (!plot.plant_type) {
+      return { canHarvest: false, reason: 'No plant to harvest' };
     }
     
-    if (!plot.plant_type || !plot.planted_at) {
-      return { canHarvest: false, reason: 'No plant on this plot' };
+    if (!plot.planted_at) {
+      return { canHarvest: false, reason: 'Plant not properly planted' };
     }
     
     if (!plot.growth_time_seconds) {
-      return { canHarvest: false, reason: 'Invalid growth time' };
+      return { canHarvest: false, reason: 'Growth time not set' };
     }
     
     const isReady = this.isPlantReady(plot.planted_at, plot, boostMultiplier);
-    
     if (!isReady) {
       const timeRemaining = this.getTimeRemaining(plot.planted_at, plot, boostMultiplier);
       return { 
@@ -174,32 +187,62 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * UTILITY: Get robot level from player upgrades
+   * Cache management
    */
-  static getRobotLevel(playerUpgrades: any[]): number {
-    if (!Array.isArray(playerUpgrades)) return 0;
+  private static getCachedValue(key: string): any {
+    const cached = this.calculationCache.get(key);
+    if (!cached) return null;
     
-    const robotUpgrades = playerUpgrades.filter(upgrade => 
-      upgrade.active && upgrade.upgrade_name?.includes('robot')
-    );
+    if (Date.now() - cached.timestamp > this.CACHE_TTL) {
+      this.calculationCache.delete(key);
+      return null;
+    }
     
-    return robotUpgrades.length;
+    return cached.value;
+  }
+
+  private static setCachedValue(key: string, value: any): void {
+    this.calculationCache.set(key, {
+      value,
+      timestamp: Date.now()
+    });
+    
+    // Cleanup old entries
+    if (this.calculationCache.size > 100) {
+      const oldestKey = Array.from(this.calculationCache.keys())[0];
+      this.calculationCache.delete(oldestKey);
+    }
   }
 
   /**
-   * UTILITY: Calculate active multipliers from player upgrades
+   * Calculate robot level from player upgrades
    */
-  static calculateActiveMultipliers(playerUpgrades: any[]): {
-    harvest: number;
-    growth: number;
-    exp: number;
-    plantCostReduction: number;
-    gemChance: number;
-  } {
-    if (!Array.isArray(playerUpgrades)) {
-      return { harvest: 1, growth: 1, exp: 1, plantCostReduction: 1, gemChance: 0 };
+  static getRobotLevel(playerUpgrades: any[]): number {
+    let maxLevel = 1; // Base level: autoharvest = level 1
+    
+    // Check if auto harvest is unlocked first
+    const hasAutoHarvest = playerUpgrades.some(upgrade => 
+      upgrade.level_upgrades?.effect_type === 'auto_harvest'
+    );
+    
+    if (!hasAutoHarvest) {
+      return 0; // No robot if auto harvest not unlocked
     }
+    
+    playerUpgrades.forEach(upgrade => {
+      const levelUpgrade = upgrade.level_upgrades;
+      if (levelUpgrade?.effect_type === 'robot_level') {
+        maxLevel = Math.max(maxLevel, Math.floor(levelUpgrade.effect_value));
+      }
+    });
+    
+    return maxLevel;
+  }
 
+  /**
+   * Calculate active multipliers from player upgrades
+   */
+  static calculateActiveMultipliers(playerUpgrades: any[]) {
     const multipliers = {
       harvest: 1,
       growth: 1,
@@ -209,28 +252,38 @@ export class UnifiedCalculationService {
     };
 
     playerUpgrades.forEach(upgrade => {
-      if (!upgrade.active || !upgrade.effect_type || !upgrade.effect_value) return;
+      const levelUpgrade = upgrade.level_upgrades;
+      if (!levelUpgrade) return;
 
-      switch (upgrade.effect_type) {
+      switch (levelUpgrade.effect_type) {
         case 'harvest_multiplier':
-          multipliers.harvest *= upgrade.effect_value;
+          multipliers.harvest *= levelUpgrade.effect_value;
           break;
         case 'growth_speed':
-          multipliers.growth *= upgrade.effect_value;
+          multipliers.growth *= levelUpgrade.effect_value;
           break;
         case 'exp_multiplier':
-          multipliers.exp *= upgrade.effect_value;
+          multipliers.exp *= levelUpgrade.effect_value;
           break;
         case 'plant_cost_reduction':
-          multipliers.plantCostReduction *= upgrade.effect_value;
+          multipliers.plantCostReduction *= levelUpgrade.effect_value;
           break;
         case 'gem_chance':
-          multipliers.gemChance += upgrade.effect_value;
+          multipliers.gemChance += levelUpgrade.effect_value;
           break;
       }
     });
 
     return multipliers;
+  }
+
+  /**
+   * Clear all caches (DISABLED - cache désactivé pour debugging)
+   */
+  static clearCache(): void {
+    // Cache désactivé pour debugging
+    // this.calculationCache.clear();
+    // ValidationCacheService.clearAll();
   }
 
   /**

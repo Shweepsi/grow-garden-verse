@@ -12,7 +12,7 @@ export const usePlantActions = () => {
   const queryClient = useQueryClient();
   const calculations = useUnifiedCalculations();
   const { applyGemsBoost } = useGameMultipliers();
-  const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
+  const { triggerCoinAnimation, triggerXpAnimation, triggerGemAnimation } = useAnimations();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
@@ -141,6 +141,7 @@ export const usePlantActions = () => {
       // Déclencher les animations de récompense de manière asynchrone
       setTimeout(() => {
         triggerCoinAnimation(result.harvest_reward);
+        triggerXpAnimation(result.exp_reward);
         if (result.gem_reward > 0) {
           triggerGemAnimation(result.gem_reward);
         }

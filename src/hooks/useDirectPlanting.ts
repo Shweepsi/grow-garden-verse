@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGameData } from '@/hooks/useGameData';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
-
+import { ValidationCacheService } from '@/services/ValidationCacheService';
 import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
 import { useState, useEffect } from 'react';
@@ -19,7 +19,18 @@ export const useDirectPlanting = () => {
   const { triggerCoinAnimation } = useAnimations();
   const { getCompleteMultipliers } = useGameMultipliers();
 
-  // Direct planting without cache
+  // Cache plant types when gameData is available
+  useEffect(() => {
+    if (gameData?.plantTypes) {
+      ValidationCacheService.cachePlantTypes(gameData.plantTypes);
+    }
+    if (gameData?.garden && gameData?.plots) {
+      ValidationCacheService.cachePlayerData({
+        garden: gameData.garden,
+        plots: gameData.plots
+      });
+    }
+  }, [gameData]);
 
   const plantDirectMutation = useMutation({
     mutationFn: async ({ plotNumber, plantTypeId, expectedCost }: {
@@ -38,10 +49,13 @@ export const useDirectPlanting = () => {
 
       console.log(`🌱 Optimized direct planting on plot ${plotNumber}`);
 
-      // Direct validation without cache
-      let garden = gameData?.garden;
-      let plot = gameData?.plots?.find((p: any) => p.plot_number === plotNumber);
-      let plantType = gameData?.plantTypes?.find((pt: any) => pt.id === plantTypeId);
+      // Smart validation using cache
+      const cachedPlayerData = ValidationCacheService.getCachedPlayerData();
+      const cachedPlantType = ValidationCacheService.getCachedPlantType(plantTypeId);
+
+      let garden = cachedPlayerData?.garden;
+      let plot = cachedPlayerData?.plots?.find((p: any) => p.plot_number === plotNumber);
+      let plantType = cachedPlantType;
 
       // Only fetch from DB if cache miss or critical validation
       if (!garden || !plot || !plantType) {
@@ -127,6 +141,9 @@ export const useDirectPlanting = () => {
       }
 
       console.log('✅ Atomic planting successful:', typedResult);
+      
+      // Clear player data cache to force refresh
+      ValidationCacheService.clearPlayerData();
       
       // Trigger coin animation
       triggerCoinAnimation(-actualCost);

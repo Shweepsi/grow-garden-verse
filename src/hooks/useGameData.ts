@@ -12,6 +12,17 @@ export const useGameData = () => {
   // OPTIMISATION: Réduire les invalidations automatiques pour éviter les conflits avec les mises à jour optimistes
   // Les real-time subscriptions sont désactivées car nous gérons manuellement les mises à jour via optimistic updates
 
+  // Periodic cache cleanup to prevent memory leaks (DISABLED)
+  useEffect(() => {
+    // Cache cleanup désactivé pour debugging
+    // const cleanupInterval = setInterval(() => {
+    //   UnifiedCalculationService.clearCache();
+    // }, 300000); // Clean up every 5 minutes
+
+    // return () => {
+    //   clearInterval(cleanupInterval);
+    // };
+  }, []);
 
   return useQuery({
     queryKey: ['gameData', user?.id],
