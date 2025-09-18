@@ -150,8 +150,8 @@ export const UpgradesPage = () => {
 
   return (
     <div className="min-h-full">
-      {/* Content with compact padding */}
-      <div className="px-3 pb-4 space-y-3">
+      {/* Content with proper bottom padding for navigation */}
+      <div className="px-3 pb-8 space-y-3">
         {/* Progression par catégorie */}
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {Object.entries(categoryProgress).map(([effectType, progress]) => (
