@@ -28,29 +28,26 @@ export const PrivacyPolicyPage = () => {
     setIsDeleting(true);
     
     try {
-      // Supprimer toutes les données utilisateur via la fonction de base de données
-      const { error: dataError } = await supabase.rpc('delete_user_data', {
-        target_user_id: user.id
+      // Demander la suppression du compte via la fonction RPC
+      const { data, error } = await supabase.rpc('request_account_deletion', {
+        user_email: user.email
       });
       
-      if (dataError) {
-        console.error('Erreur lors de la suppression des données:', dataError);
-        toast.error('Erreur lors de la suppression des données');
-        return;
-      }
-      
-      // Supprimer le compte utilisateur de Supabase Auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
-      
-      if (authError) {
-        console.error('Erreur lors de la suppression du compte:', authError);
+      if (error) {
+        console.error('Erreur lors de la suppression:', error);
         toast.error('Erreur lors de la suppression du compte');
         return;
       }
       
-      toast.success('Compte supprimé avec succès');
-      await signOut();
-      navigate('/');
+      const result = data as { success: boolean; message?: string };
+      
+      if (result?.success) {
+        toast.success('Demande de suppression envoyée. Votre compte sera supprimé sous peu.');
+        await signOut();
+        navigate('/');
+      } else {
+        toast.error(result?.message || 'Erreur lors de la suppression');
+      }
     } catch (error) {
       console.error('Erreur inattendue:', error);
       toast.error('Une erreur inattendue s\'est produite');

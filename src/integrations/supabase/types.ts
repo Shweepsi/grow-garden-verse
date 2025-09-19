@@ -592,6 +592,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      delete_user_data: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       get_active_effects: {
         Args: { p_user_id: string }
         Returns: {
@@ -661,6 +665,10 @@ export type Database = {
           p_plot_number: number
           p_user_id: string
         }
+        Returns: Json
+      }
+      request_account_deletion: {
+        Args: { user_email: string }
         Returns: Json
       }
       validate_robot_plant_level: {
