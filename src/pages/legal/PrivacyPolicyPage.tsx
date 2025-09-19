@@ -1,13 +1,63 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 
 export const PrivacyPolicyPage = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useAndroidBackButton(true, () => {
     navigate('/profile');
   });
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    const confirmed = window.confirm(
+      'Êtes-vous sûr de vouloir supprimer définitivement votre compte ? Cette action est irréversible et supprimera toutes vos données.'
+    );
+    
+    if (!confirmed) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      // Supprimer toutes les données utilisateur via la fonction de base de données
+      const { error: dataError } = await supabase.rpc('delete_user_data', {
+        target_user_id: user.id
+      });
+      
+      if (dataError) {
+        console.error('Erreur lors de la suppression des données:', dataError);
+        toast.error('Erreur lors de la suppression des données');
+        return;
+      }
+      
+      // Supprimer le compte utilisateur de Supabase Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+      
+      if (authError) {
+        console.error('Erreur lors de la suppression du compte:', authError);
+        toast.error('Erreur lors de la suppression du compte');
+        return;
+      }
+      
+      toast.success('Compte supprimé avec succès');
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Erreur inattendue:', error);
+      toast.error('Une erreur inattendue s\'est produite');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -63,6 +113,36 @@ export const PrivacyPolicyPage = () => {
           <section className="mb-6">
             <h2 className="text-lg font-semibold mb-3">6. Contact</h2>
             <p>Pour toute question concernant cette politique : contact@idlegrow.com</p>
+          </section>
+
+          <section className="mb-6 border-t pt-6">
+            <h2 className="text-lg font-semibold mb-3 text-red-600">7. Suppression de compte</h2>
+            <p className="mb-4">
+              Vous avez le droit de supprimer définitivement votre compte et toutes vos données associées. 
+              Cette action est irréversible et supprimera :
+            </p>
+            <ul className="list-disc pl-6 mb-4">
+              <li>Votre profil utilisateur</li>
+              <li>Votre progression de jeu</li>
+              <li>Vos statistiques et classements</li>
+              <li>Toutes vos données personnelles</li>
+            </ul>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-red-800 text-sm font-medium">
+                ⚠️ Attention : Cette action est définitive et ne peut pas être annulée.
+              </p>
+            </div>
+            {user && (
+              <Button 
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeleting ? 'Suppression en cours...' : 'Supprimer mon compte'}
+              </Button>
+            )}
           </section>
         </div>
       </div>
