@@ -7,7 +7,7 @@ import { useGameData } from '@/hooks/useGameData';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { toast } from 'sonner';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 export const usePassiveIncomeRobot = () => {
   const { user } = useAuth();
@@ -124,9 +124,44 @@ export const usePassiveIncomeRobot = () => {
     }
   }, [gameData?.garden, playerUpgrades]);
 
+  // First activation logic: Reset robot state when unlocked for the first time
+  useEffect(() => {
+    const activateRobotForFirstTime = async () => {
+      if (!user?.id || !gameData?.garden || !hasPassiveRobot) return;
+      
+      // If robot is unlocked but robot_last_collected is null, this is the first activation
+      if (gameData.garden.robot_last_collected === null) {
+        console.log('🤖 First robot activation detected - resetting robot state');
+        
+        const now = new Date().toISOString();
+        
+        try {
+          await supabase
+            .from('player_gardens')
+            .update({
+              robot_last_collected: now,
+              robot_accumulated_coins: 0
+            })
+            .eq('user_id', user.id);
+          
+          // Refresh the data to reflect the changes
+          queryClient.invalidateQueries({ queryKey: ['gameData'] });
+          queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
+          
+          console.log('🤖 Robot state reset successfully on first activation');
+        } catch (error) {
+          console.error('Error resetting robot state on first activation:', error);
+        }
+      }
+    };
+
+    activateRobotForFirstTime();
+  }, [user?.id, gameData?.garden, hasPassiveRobot, queryClient]);
+
   // Calcul de l'accumulation totale disponible (simplifié pour éviter le double calcul)
-  const calculateCurrentAccumulation = () => {
-    if (!robotState || !robotPlantType) return 0;
+  const calculateCurrentAccumulation = useCallback(() => {
+    // Return 0 if robot is not unlocked or has never been activated (robot_last_collected is null)
+    if (!hasPassiveRobot || !robotState || !robotPlantType || !robotState.lastCollected) return 0;
     
     const coinsPerMinute = getCoinsPerMinute();
     const now = new Date();
@@ -150,7 +185,7 @@ export const usePassiveIncomeRobot = () => {
     const maxAccumulation = coinsPerMinute * maxMinutes;
     
     return Math.min(totalAccumulation, maxAccumulation);
-  };
+  }, [hasPassiveRobot, robotState, robotPlantType, getCoinsPerMinute]);
 
   // Calculer les récompenses hors-ligne basées sur l'accumulation
   const calculateOfflineRewards = async () => {
