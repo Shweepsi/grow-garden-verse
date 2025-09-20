@@ -160,12 +160,6 @@ export const PlantSelector = ({
                               </h4>
                             </div>
                             
-                            {/* Niveau requis */}
-                            <div className="flex justify-center">
-                              <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300 font-bold px-1 py-0.5">
-                                Niv.{plantType.level_required}
-                              </Badge>
-                            </div>
                             
                             {/* Temps de croissance */}
                             <div className="bg-blue-50 rounded p-1.5 border border-blue-200">
