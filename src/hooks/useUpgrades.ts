@@ -6,13 +6,13 @@ import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { useAnimations } from '@/contexts/AnimationContext';
-import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
+
 
 export const useUpgrades = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
-  const { collectAccumulatedCoinsAsync, currentAccumulation } = usePassiveIncomeRobot();
+  
 
   const { data: availableUpgrades = [], isLoading: upgradesLoading } = useQuery({
     queryKey: ['levelUpgrades'],
@@ -141,11 +141,12 @@ export const useUpgrades = () => {
         triggerGemAnimation(-variables.costGems);
       }
       
-      // Auto-collecte du robot si c'est une amélioration robot et qu'il y a des pièces accumulées
-      if (upgradePurchased && (upgradePurchased.effect_type === 'auto_harvest' || upgradePurchased.effect_type === 'robot_level') && currentAccumulation > 0) {
-        console.log(`🤖 Amélioration robot achetée, collecte automatique de ${currentAccumulation} pièces`);
+      // Déclencher une collecte du robot si c'est une amélioration robot
+      if (upgradePurchased && (upgradePurchased.effect_type === 'auto_harvest' || upgradePurchased.effect_type === 'robot_level')) {
+        console.log(`🤖 Amélioration robot achetée, déclenchement de la collecte automatique`);
+        // Invalider les queries pour déclencher un recalcul et une collecte automatique
         setTimeout(() => {
-          collectAccumulatedCoinsAsync().catch(console.error);
+          queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
         }, 1000); // Délai pour laisser les données se synchroniser
       }
       
