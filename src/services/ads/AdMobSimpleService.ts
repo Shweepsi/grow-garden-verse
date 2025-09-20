@@ -68,10 +68,13 @@ export class AdMobSimpleService {
 
       this.state.isTestMode = testMode;
       
-      await AdMob.initialize({
+      const initConfig = {
         testingDevices: testMode ? ['DEVICE_ID_EMULATOR'] : [],
         initializeForTesting: testMode
-      });
+      };
+      
+      console.log(`[AdMobSimple] 🔧 Configuration d'initialisation:`, initConfig);
+      await AdMob.initialize(initConfig);
 
       this.state.isInitialized = true;
       this.state.lastError = null;
@@ -107,6 +110,13 @@ export class AdMobSimpleService {
         adId: adUnitId,
         isTesting: this.state.isTestMode
       };
+      
+      console.log(`[AdMobSimple] 📡 Configuration de chargement:`, {
+        adUnitId,
+        isTestMode: this.state.isTestMode,
+        platform: Capacitor.getPlatform(),
+        isNative: await Capacitor.isNativePlatform()
+      });
 
       console.log(`[AdMobSimple] 🔄 Chargement pub (${this.state.isTestMode ? 'TEST' : 'PROD'}): ${adUnitId}`);
       AdMonitoringService.startAdLoad();
@@ -259,6 +269,15 @@ export class AdMobSimpleService {
     } else if (errorStr.includes('app_not_approved')) {
       code = 'APP_NOT_APPROVED';
       message = '📱 Application en attente d\'approbation AdMob';
+    } else if (errorStr.includes('ad_not_ready') || errorStr.includes('not_loaded')) {
+      code = 'AD_NOT_READY';
+      message = '⏳ Publicité pas encore prête - Veuillez patienter';
+    } else if (errorStr.includes('quota') || errorStr.includes('limit')) {
+      code = 'QUOTA_EXCEEDED';
+      message = '📊 Limite quotidienne AdMob atteinte';
+    } else if (errorStr.includes('configuration') || errorStr.includes('setup')) {
+      code = 'CONFIG_ERROR';
+      message = '⚙️ Erreur de configuration AdMob - Vérifiez la console';
     } else {
       // Enhanced UNKNOWN error handling
       console.warn('[AdMobSimple] ⚠️ UNKNOWN ERROR detected:', {
