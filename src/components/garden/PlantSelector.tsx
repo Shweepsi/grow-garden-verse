@@ -172,14 +172,9 @@ export const PlantSelector = ({
                               <div className="flex items-center justify-center gap-1 text-blue-700">
                                 <Clock className="h-2.5 w-2.5" />
                                 <div className="text-xs font-medium">
-                                  {hasGrowthBonus ? <div className="flex items-center gap-1">
-                                      <span className="line-through text-gray-400 text-xs">
-                                        {formatGrowthTime(plantType.base_growth_seconds)}
-                                      </span>
-                                      <span className="text-blue-600 font-bold text-xs">
-                                        {formatGrowthTime(adjustedGrowthTime)}
-                                      </span>
-                                    </div> : <span className="text-xs">{formatGrowthTime(plantType.base_growth_seconds)}</span>}
+                                  <span className="text-xs font-bold">
+                                    {formatGrowthTime(adjustedGrowthTime)}
+                                  </span>
                                 </div>
                               </div>
                             </div>
