@@ -6,11 +6,13 @@ import { toast } from 'sonner';
 import { LevelUpgrade, PlayerUpgrade } from '@/types/upgrades';
 import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { useAnimations } from '@/contexts/AnimationContext';
+import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 
 export const useUpgrades = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
+  const { collectAccumulatedCoinsAsync, currentAccumulation } = usePassiveIncomeRobot();
 
   const { data: availableUpgrades = [], isLoading: upgradesLoading } = useQuery({
     queryKey: ['levelUpgrades'],
@@ -124,7 +126,10 @@ export const useUpgrades = () => {
           });
       }
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
+      // Récupérer l'upgrade acheté pour vérifier son type
+      const upgradePurchased = availableUpgrades.find(u => u.id === variables.upgradeId);
+      
       queryClient.invalidateQueries({ queryKey: ['playerUpgrades'] });
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
       
@@ -134,6 +139,14 @@ export const useUpgrades = () => {
       }
       if (variables.costGems > 0) {
         triggerGemAnimation(-variables.costGems);
+      }
+      
+      // Auto-collecte du robot si c'est une amélioration robot et qu'il y a des pièces accumulées
+      if (upgradePurchased && (upgradePurchased.effect_type === 'auto_harvest' || upgradePurchased.effect_type === 'robot_level') && currentAccumulation > 0) {
+        console.log(`🤖 Amélioration robot achetée, collecte automatique de ${currentAccumulation} pièces`);
+        setTimeout(() => {
+          collectAccumulatedCoinsAsync().catch(console.error);
+        }, 1000); // Délai pour laisser les données se synchroniser
       }
       
       toast.success('Amélioration achetée !', {
