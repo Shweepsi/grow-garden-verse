@@ -123,18 +123,21 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * CORE CALCULATION: Gem rewards (deterministic for backend consistency)
+   * CORE CALCULATION: Gem rewards (with proper chance calculation)
    */
   static calculateGemReward(gemChance: number, useRandomness: boolean = true): number {
-    if (!gemChance || gemChance <= 0) return 0;
+    // Cap gem chance at 100%
+    const cappedChance = Math.min(1.0, Math.max(0, gemChance));
+    
+    if (cappedChance <= 0) return 0;
     
     if (!useRandomness) {
       // Deterministic calculation for backend consistency
-      return gemChance >= 0.5 ? 1 : 0;
+      return cappedChance >= 0.5 ? 1 : 0;
     }
     
     // Random calculation for frontend predictions
-    return Math.random() < gemChance ? 1 : 0;
+    return Math.random() < cappedChance ? 1 : 0;
   }
 
   /**
@@ -313,7 +316,10 @@ export class UnifiedCalculationService {
         plantType.rarity || 'common',
         multipliers.exp || 1
       ),
-      gemReward: this.calculateGemReward(multipliers.gemChance || 0, false), // Deterministic for backend
+      gemReward: this.calculateGemReward(
+        (multipliers.gemChance || 0) * (multipliers.gems || 1), // Apply gem boost to chance
+        false
+      ), // Deterministic for backend
       multipliers
     };
   }

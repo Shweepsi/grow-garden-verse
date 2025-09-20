@@ -64,7 +64,8 @@ export const useGameMultipliers = () => {
       growth: permanentMultipliers.growth * growthBoost,
       exp: permanentMultipliers.exp, // Pas de boost temporaire XP pour l'instant
       plantCostReduction: permanentMultipliers.plantCostReduction,
-      gemChance: permanentMultipliers.gemChance,
+      // Gem chance: Apply gem boost multiplier to base chance, capped at 100%
+      gemChance: Math.min(1.0, permanentMultipliers.gemChance * gemBoost),
       
       // Boosts spécifiques pour l'application directe
       coins: coinBoost,
