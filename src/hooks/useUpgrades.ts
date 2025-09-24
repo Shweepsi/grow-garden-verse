@@ -141,13 +141,48 @@ export const useUpgrades = () => {
         triggerGemAnimation(-variables.costGems);
       }
       
-      // Déclencher une collecte du robot si c'est une amélioration robot
+      // Forcer la collecte du robot si c'est une amélioration robot
       if (upgradePurchased && (upgradePurchased.effect_type === 'auto_harvest' || upgradePurchased.effect_type === 'robot_level')) {
-        console.log(`🤖 Amélioration robot achetée, déclenchement de la collecte automatique`);
-        // Invalider les queries pour déclencher un recalcul et une collecte automatique
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
-        }, 1000); // Délai pour laisser les données se synchroniser
+        console.log(`🤖 Amélioration robot achetée, collecte automatique forcée`);
+        
+        // Forcer la collecte immédiate des pièces accumulées avant l'amélioration
+        setTimeout(async () => {
+          try {
+            if (!user?.id) return;
+            
+            // Récupérer l'état actuel du robot pour forcer la collecte
+            const { data: garden } = await supabase
+              .from('player_gardens')
+              .select('robot_accumulated_coins, robot_last_collected, coins')
+              .eq('user_id', user.id)
+              .single();
+            
+            if (garden && garden.robot_accumulated_coins > 0) {
+              const now = new Date().toISOString();
+              
+              // Collecter les pièces accumulées et réinitialiser
+              await supabase
+                .from('player_gardens')
+                .update({
+                  coins: (garden.coins || 0) + garden.robot_accumulated_coins,
+                  robot_accumulated_coins: 0,
+                  robot_last_collected: now,
+                  last_played: now
+                })
+                .eq('user_id', user.id);
+              
+              console.log(`🤖 Collecte forcée: ${garden.robot_accumulated_coins} pièces`);
+            }
+            
+            // Invalider les queries pour rafraîchir les données
+            queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
+            queryClient.invalidateQueries({ queryKey: ['gameData'] });
+          } catch (error) {
+            console.error('Erreur lors de la collecte forcée:', error);
+            // En cas d'erreur, juste invalider les queries
+            queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
+          }
+        }, 500); // Délai réduit pour une collecte plus rapide
       }
       
       toast.success('Amélioration achetée !', {
