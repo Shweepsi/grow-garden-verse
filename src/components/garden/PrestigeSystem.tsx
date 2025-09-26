@@ -19,18 +19,18 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
   const getPrestigeMultiplier = (level: number) => {
     switch (level) {
       case 0:
-        return 2;
+        return 2.5; // Improved multipliers
       case 1:
-        return 5;
+        return 6;
       case 2:
-        return 10;
+        return 15;
       default:
-        return 10;
+        return 15;
     }
   };
 
   const prestigeLevel = garden.prestige_level || 0;
-  const prestigeCostsCoins = [200_000, 500_000, 1_000_000];
+  const prestigeCostsCoins = [150_000, 375_000, 750_000]; // Reduced by 25%
   const prestigeCostsGems = [10, 25, 50];
   const costCoins = prestigeCostsCoins[prestigeLevel] || Infinity;
   const costGems = prestigeCostsGems[prestigeLevel] || Infinity;
@@ -52,9 +52,12 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
         return;
       }
 
+      // Add gem bonus for prestige
+      const gemBonus = [5, 10, 20][prestigeLevel] || 0;
+      
       const { error } = await supabase.from('player_gardens').update({
         coins: PRESTIGE_RESET_COINS,
-        gems: (garden.gems || 0) - costGems,
+        gems: (garden.gems || 0) - costGems + gemBonus, // Add gem bonus
         experience: PRESTIGE_RESET_XP,
         level: PRESTIGE_RESET_LEVEL,
         prestige_level: prestigeLevel + 1,
@@ -73,13 +76,14 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
         console.error('Erreur lors de la désactivation des améliorations:', upgradesError);
       }
 
+      // Auto-unlock second plot after prestige (QoL improvement)
       await supabase.from('garden_plots').update({
         plant_type: null,
         planted_at: null,
         growth_time_seconds: null,
         plant_metadata: null,
         unlocked: false
-      }).eq('user_id', garden.user_id).neq('plot_number', 1);
+      }).eq('user_id', garden.user_id).gt('plot_number', 2);
 
       await supabase.from('garden_plots').update({
         plant_type: null,
@@ -87,10 +91,10 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
         growth_time_seconds: null,
         plant_metadata: null,
         unlocked: true
-      }).eq('user_id', garden.user_id).eq('plot_number', 1);
+      }).eq('user_id', garden.user_id).in('plot_number', [1, 2]);
 
       toast.success(`🎉 Prestige accompli ! Multiplicateur permanent : X${nextMultiplier}`, {
-        description: `Vous repartez de zéro avec un bonus permanent de X${nextMultiplier} sur tous les gains !`
+        description: `Vous repartez avec un bonus permanent de X${nextMultiplier} + ${gemBonus} gemmes bonus + 2ème parcelle débloquée !`
       });
       onPrestige();
     } catch (error: any) {

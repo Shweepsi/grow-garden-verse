@@ -98,7 +98,7 @@ export class UnifiedCalculationService {
     const baseCost = this.getPlantDirectCost(plantLevel) * plantCostReduction;
     
     // Unified reward formula
-    const baseProfit = baseCost * 1.7; // 70% profit
+    const baseProfit = baseCost * 1.85; // Increased profit margin for better progression
     const timeBonus = Math.max(1, Math.floor(plot.growth_time_seconds / 600)) * 0.1; // 10% per 10min
     const levelBonus = 1 + (playerLevel * 0.02); // 2% per player level
     
@@ -123,21 +123,22 @@ export class UnifiedCalculationService {
   }
 
   /**
-   * CORE CALCULATION: Gem rewards (with proper chance calculation)
+   * CORE CALCULATION: Gem rewards (with improved base chance)
    */
   static calculateGemReward(gemChance: number, useRandomness: boolean = true): number {
-    // Cap gem chance at 100%
-    const cappedChance = Math.min(1.0, Math.max(0, gemChance));
+    // Add 5% base gem chance for better progression
+    const baseChance = 0.05;
+    const totalChance = Math.min(1.0, Math.max(0, baseChance + gemChance));
     
-    if (cappedChance <= 0) return 0;
+    if (totalChance <= 0) return 0;
     
     if (!useRandomness) {
       // Deterministic calculation for backend consistency
-      return cappedChance >= 0.5 ? 1 : 0;
+      return totalChance >= 0.5 ? 1 : 0;
     }
     
     // Random calculation for frontend predictions
-    return Math.random() < cappedChance ? 1 : 0;
+    return Math.random() < totalChance ? 1 : 0;
   }
 
   /**
@@ -145,7 +146,7 @@ export class UnifiedCalculationService {
    */
   static getPlantDirectCost(plantLevel: number): number {
     if (!plantLevel || plantLevel < 1) return 100;
-    return Math.floor(100 * Math.pow(1.42, plantLevel - 1));
+    return Math.floor(100 * Math.pow(1.35, plantLevel - 1)); // Reduced exponential growth for better balance
   }
 
   /**
@@ -153,8 +154,8 @@ export class UnifiedCalculationService {
    */
   static getRobotPassiveIncome(robotLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
     const plantLevel = Math.max(1, Math.min(robotLevel, 10));
-    const baseIncome = 50;
-    const levelMultiplier = Math.pow(plantLevel, 1.6);
+    const baseIncome = 75; // Increased base coefficient
+    const levelMultiplier = Math.pow(plantLevel, 1.3); // Reduced exponent for better balance
     
     const result = Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
     return Math.min(result, 2000000000);

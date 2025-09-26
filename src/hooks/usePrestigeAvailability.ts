@@ -9,7 +9,7 @@ export const usePrestigeAvailability = () => {
 
   const garden = gameData.garden;
   const prestigeLevel = garden.prestige_level || 0;
-  const prestigeCostsCoins = [200_000, 500_000, 1_000_000];
+  const prestigeCostsCoins = [150_000, 375_000, 750_000]; // Reduced by 25%
   const prestigeCostsGems = [10, 25, 50];
   const costCoins = prestigeCostsCoins[prestigeLevel] || Infinity;
   const costGems = prestigeCostsGems[prestigeLevel] || Infinity;

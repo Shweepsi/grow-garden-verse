@@ -9,7 +9,7 @@ export const MINIMUM_COINS_RESERVE = 100;
 
 // Configuration des niveaux
 export const INITIAL_LEVEL = 1;
-export const XP_PER_LEVEL_MULTIPLIER = 100; // level^2 * 100
+export const XP_PER_LEVEL_MULTIPLIER = 75; // Reduced for smoother progression
 
 // Configuration du robot
 export const ROBOT_UPDATE_INTERVAL = 1000; // 1 seconde
