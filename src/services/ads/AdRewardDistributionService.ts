@@ -5,29 +5,48 @@ import { gameDataEmitter } from "@/hooks/useGameDataNotifier";
 export class AdRewardDistributionService {
   static async distributeReward(userId: string, reward: AdReward): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log(`AdMob: Distributing reward - Type: ${reward.type}, Amount: ${reward.amount}, Duration: ${reward.duration}, User: ${userId}`);
-      console.log('AdMob: Full reward object:', reward);
+      // Get player data for scaling calculations
+      const { data: playerData } = await supabase
+        .from('player_gardens')
+        .select('level, prestige_level')
+        .eq('user_id', userId)
+        .single();
+
+      const playerLevel = playerData?.level || 1;
+      const prestigeLevel = playerData?.prestige_level || 0;
       
-      switch (reward.type) {
+      // Apply scaling to rewards based on player progression
+      const scaledReward = this.scaleRewardByProgression(reward, playerLevel, prestigeLevel);
+      
+      console.log(`AdMob: Distributing scaled reward - Type: ${scaledReward.type}, Original: ${reward.amount}, Scaled: ${scaledReward.amount}, Duration: ${scaledReward.duration}, User: ${userId}`);
+      console.log('AdMob: Player progression - Level:', playerLevel, 'Prestige:', prestigeLevel);
+      
+      switch (scaledReward.type) {
         case 'coins':
-          return await this.distributeCoinReward(userId, reward.amount);
+          return await this.distributeCoinReward(userId, scaledReward.amount);
         
         case 'gems':
-          return await this.distributeGemReward(userId, reward.amount);
+          return await this.distributeGemReward(userId, scaledReward.amount);
         
         case 'coin_boost':
-          return await this.distributeCoinBoost(userId, reward.amount, reward.duration || 60);
+          return await this.distributeCoinBoost(userId, scaledReward.amount, scaledReward.duration || 60);
         
         case 'gem_boost':
-          return await this.distributeGemBoost(userId, reward.amount, reward.duration || 30);
+          return await this.distributeGemBoost(userId, scaledReward.amount, scaledReward.duration || 30);
         
         case 'growth_speed':
-          const effectiveDuration = reward.duration || 60;
-          console.log(`AdMob: Growth speed reward - original duration: ${reward.duration}, effective duration: ${effectiveDuration}`);
-          return await this.distributeGrowthBoost(userId, reward.amount, effectiveDuration);
+          const effectiveDuration = scaledReward.duration || 60;
+          console.log(`AdMob: Growth speed reward - original duration: ${scaledReward.duration}, effective duration: ${effectiveDuration}`);
+          return await this.distributeGrowthBoost(userId, scaledReward.amount, effectiveDuration);
+        
+        case 'exp_boost':
+          return await this.distributeExpBoost(userId, scaledReward.amount, scaledReward.duration || 30);
+          
+        case 'harvest_boost':
+          return await this.distributeHarvestBoost(userId, scaledReward.amount, scaledReward.duration || 60);
         
         default:
-          return { success: false, error: `Type de récompense non supporté: ${reward.type}` };
+          return { success: false, error: `Type de récompense non supporté: ${scaledReward.type}` };
       }
     } catch (error) {
       console.error('Error distributing reward:', error);
@@ -279,5 +298,92 @@ export class AdRewardDistributionService {
     }
 
     return { success: true };
+  }
+
+  private static async distributeExpBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
+    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+
+    const { error } = await supabase
+      .from('active_effects')
+      .insert({
+        user_id: userId,
+        effect_type: 'exp_multiplier',
+        effect_value: multiplier,
+        expires_at: expiresAt.toISOString(),
+        source: 'ad_reward'
+      });
+
+    if (error) {
+      return { success: false, error: "Erreur lors de l'activation du boost d'expérience" };
+    }
+
+    console.log(`AdMob: Applied exp boost (x${multiplier} for ${durationMinutes}min) to user ${userId}`);
+    gameDataEmitter.emit('reward-claimed');
+    gameDataEmitter.emit('boost-claimed');
+    
+    return { success: true };
+  }
+
+  private static async distributeHarvestBoost(userId: string, multiplier: number, durationMinutes: number): Promise<{ success: boolean; error?: string }> {
+    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+
+    const { error } = await supabase
+      .from('active_effects')
+      .insert({
+        user_id: userId,
+        effect_type: 'harvest_multiplier',
+        effect_value: multiplier,
+        expires_at: expiresAt.toISOString(),
+        source: 'ad_reward'
+      });
+
+    if (error) {
+      return { success: false, error: "Erreur lors de l'activation du boost de récolte" };
+    }
+
+    console.log(`AdMob: Applied harvest boost (x${multiplier} for ${durationMinutes}min) to user ${userId}`);
+    gameDataEmitter.emit('reward-claimed');
+    gameDataEmitter.emit('boost-claimed');
+    
+    return { success: true };
+  }
+
+  /**
+   * Scale ad rewards based on player progression
+   * Higher level and prestige players get better rewards
+   */
+  private static scaleRewardByProgression(reward: AdReward, playerLevel: number, prestigeLevel: number): AdReward {
+    const levelMultiplier = 1 + (playerLevel - 1) * 0.05; // 5% per level
+    const prestigeMultiplier = 1 + prestigeLevel * 0.3; // 30% per prestige
+    const totalMultiplier = levelMultiplier * prestigeMultiplier;
+
+    // Cap the multiplier to prevent excessive scaling
+    const cappedMultiplier = Math.min(totalMultiplier, 5.0);
+
+    let scaledAmount = reward.amount;
+    let scaledDuration = reward.duration;
+
+    switch (reward.type) {
+      case 'coins':
+      case 'gems':
+        // Direct rewards scale with amount
+        scaledAmount = Math.floor(reward.amount * cappedMultiplier);
+        break;
+      
+      case 'coin_boost':
+      case 'gem_boost':
+      case 'growth_speed':
+      case 'exp_boost':
+      case 'harvest_boost':
+        // Boost rewards scale with duration
+        scaledDuration = Math.floor((reward.duration || 60) * Math.min(cappedMultiplier, 2.5));
+        break;
+    }
+
+    return {
+      ...reward,
+      amount: scaledAmount,
+      duration: scaledDuration
+    };
   }
 }
