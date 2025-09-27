@@ -18,7 +18,7 @@ export interface Achievement {
 }
 
 /**
- * Hook to manage achievement system
+ * Hook to manage achievement system with persistent storage
  */
 export const useAchievements = () => {
   const { user } = useAuth();
@@ -92,12 +92,54 @@ export const useAchievements = () => {
     }
   ];
 
-  // Check achievement progress
+  // Load achievements from database
+  useEffect(() => {
+    if (!user) return;
+    
+    const loadAchievements = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get saved achievements from database
+        const { data: savedAchievements } = await supabase
+          .from('player_achievements')
+          .select('*')
+          .eq('user_id', user.id);
+
+        // Merge with base achievements
+        const mergedAchievements: Achievement[] = baseAchievements.map(baseAchievement => {
+          const saved = savedAchievements?.find(s => s.achievement_name === baseAchievement.name);
+          
+          return {
+            id: saved?.id || `temp-${baseAchievement.name}`,
+            name: baseAchievement.name,
+            description: baseAchievement.description,
+            category: baseAchievement.category,
+            target: baseAchievement.target,
+            reward_coins: baseAchievement.reward_coins,
+            reward_gems: baseAchievement.reward_gems,
+            emoji: baseAchievement.emoji,
+            progress: saved?.progress || 0,
+            completed: saved?.completed || false,
+            unlocked_at: saved?.completed_at || undefined
+          };
+        });
+
+        setAchievements(mergedAchievements);
+      } catch (error) {
+        console.error('Error loading achievements:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAchievements();
+  }, [user]);
+
+  // Check achievement progress with database persistence
   const checkAchievementProgress = async (garden: any) => {
     if (!user || !garden) return;
 
-    const updates: any[] = [];
-    
     for (const baseAchievement of baseAchievements) {
       let currentProgress = 0;
       
@@ -116,28 +158,64 @@ export const useAchievements = () => {
           break;
       }
 
-      // Check if achievement should be completed
-      if (currentProgress >= baseAchievement.target) {
-        // Check if already completed
-        const existingAchievement = achievements.find(a => a.name === baseAchievement.name);
-        if (!existingAchievement?.completed) {
-          updates.push({
-            achievement: baseAchievement,
-            progress: currentProgress
-          });
-        }
-      }
-    }
+      // Check existing achievement from database to prevent duplicates
+      const { data: existingAchievement } = await supabase
+        .from('player_achievements')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('achievement_name', baseAchievement.name)
+        .single();
 
-    // Process completed achievements
-    for (const update of updates) {
-      await completeAchievement(update.achievement, update.progress);
+      // If achievement should be completed and isn't already completed
+      if (currentProgress >= baseAchievement.target && !existingAchievement?.completed) {
+        await completeAchievement(baseAchievement, currentProgress);
+      } else if (existingAchievement && !existingAchievement.completed) {
+        // Update progress without completing
+        await supabase
+          .from('player_achievements')
+          .update({ progress: currentProgress })
+          .eq('user_id', user.id)
+          .eq('achievement_name', baseAchievement.name);
+      } else if (!existingAchievement) {
+        // Create new achievement record
+        await supabase
+          .from('player_achievements')
+          .insert({
+            user_id: user.id,
+            achievement_name: baseAchievement.name,
+            achievement_category: baseAchievement.category,
+            progress: currentProgress,
+            target: baseAchievement.target,
+            completed: currentProgress >= baseAchievement.target
+          });
+      }
     }
   };
 
   const completeAchievement = async (achievement: Omit<Achievement, 'id' | 'progress' | 'completed' | 'unlocked_at'>, progress: number) => {
     try {
-      // Get current values first
+      // Use upsert to prevent duplicates
+      const { error: achievementError } = await supabase
+        .from('player_achievements')
+        .upsert({
+          user_id: user!.id,
+          achievement_name: achievement.name,
+          achievement_category: achievement.category,
+          progress: progress,
+          target: achievement.target,
+          completed: true,
+          completed_at: new Date().toISOString()
+        }, { 
+          onConflict: 'user_id,achievement_name',
+          ignoreDuplicates: false 
+        });
+
+      if (achievementError) {
+        console.error('Error saving achievement:', achievementError);
+        return;
+      }
+
+      // Get current values and award rewards
       const { data: garden } = await supabase
         .from('player_gardens')
         .select('coins, gems')
@@ -145,7 +223,6 @@ export const useAchievements = () => {
         .single();
         
       if (garden) {
-        // Award rewards
         await supabase
           .from('player_gardens')
           .update({
@@ -157,6 +234,13 @@ export const useAchievements = () => {
         toast.success(`🏆 Achievement débloqué : ${achievement.emoji} ${achievement.name}`, {
           description: `+${achievement.reward_coins} pièces, +${achievement.reward_gems} gemmes`
         });
+
+        // Update local state
+        setAchievements(prev => prev.map(a => 
+          a.name === achievement.name 
+            ? { ...a, completed: true, progress: progress, unlocked_at: new Date().toISOString() }
+            : a
+        ));
       }
 
     } catch (error) {

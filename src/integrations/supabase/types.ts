@@ -382,6 +382,45 @@ export type Database = {
         }
         Relationships: []
       }
+      player_achievements: {
+        Row: {
+          achievement_category: string
+          achievement_name: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          progress: number
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_category: string
+          achievement_name: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          target: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_category?: string
+          achievement_name?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       player_gardens: {
         Row: {
           active_plot: number
