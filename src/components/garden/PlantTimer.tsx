@@ -1,5 +1,5 @@
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { Clock } from 'lucide-react';
 import { useGardenClock } from '@/contexts/GardenClockContext';
@@ -14,6 +14,7 @@ interface PlantTimerProps {
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className = "" }: PlantTimerProps) => {
   const calculations = useUnifiedCalculations();
   const now = useGardenClock();
+  const [fastTick, setFastTick] = useState(0);
 
   const { timeRemaining, isReady } = useMemo(() => {
     if (!plantedAt) return { timeRemaining: 0, isReady: false };
@@ -36,7 +37,17 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
       timeRemaining: calculations.getTimeRemaining(plantedAt, mockPlot),
       isReady: calculations.isPlantReady(plantedAt, mockPlot)
     };
-  }, [now, plantedAt, growthTimeSeconds, plotNumber, calculations]);
+  }, [now, fastTick, plantedAt, growthTimeSeconds, plotNumber, calculations]);
+
+  // Timer rapide pour la dernière minute
+  useEffect(() => {
+    if (timeRemaining > 0 && timeRemaining <= 60) {
+      const interval = setInterval(() => {
+        setFastTick(prev => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timeRemaining]);
 
   if (!plantedAt || isReady) return null;
 
