@@ -236,9 +236,10 @@ export const usePassiveIncomeRobot = () => {
       const totalAccumulated = calculateCurrentAccumulation();
       if (totalAccumulated <= 0) return null;
 
+      // Récupérer les données les plus récentes avant la transaction
       const { data: garden } = await supabase
         .from('player_gardens')
-        .select('coins, experience, level')
+        .select('coins, experience, level, robot_level')
         .eq('user_id', user.id)
         .single();
 
@@ -283,7 +284,7 @@ export const usePassiveIncomeRobot = () => {
           description: `Collecte robot passif: ${robotPlantType?.display_name} (+${expReward} EXP)`
         });
 
-      console.log(`🤖 Collecte réussie: ${totalAccumulated} coins + ${expReward} EXP`);
+      console.log(`🤖 Collecte réussie: ${totalAccumulated} coins + ${expReward} EXP (robot niveau ${currentRobotLevel})`);
 
       return { totalAccumulated, expReward, plantName: robotPlantType?.display_name };
     },
@@ -292,8 +293,10 @@ export const usePassiveIncomeRobot = () => {
         // Conserver l’animation de pièces mais supprimer le toast visuel
         triggerCoinAnimation(result.totalAccumulated);
       }
+      // Invalidation des caches pour synchronisation
       queryClient.invalidateQueries({ queryKey: ['gameData'] });
       queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
+      queryClient.invalidateQueries({ queryKey: ['playerUpgrades'] });
     },
     onError: (error: any) => {
       showRobotError(error.message || 'Erreur lors de la collecte');
@@ -367,6 +370,13 @@ export const usePassiveIncomeRobot = () => {
     }
   };
 
+  // Calculer si le maximum d'accumulation est atteint
+  const maxAccumulationReached = (() => {
+    const coinsPerMin = getCoinsPerMinute();
+    const maxAcc = coinsPerMin * 24 * 60;
+    return calculateCurrentAccumulation() >= maxAcc;
+  })();
+
   return {
     hasPassiveRobot,
     robotState,
@@ -374,6 +384,7 @@ export const usePassiveIncomeRobot = () => {
     coinsPerMinute: getCoinsPerMinute(),
     currentAccumulation: calculateCurrentAccumulation(),
     robotLevel,
+    maxAccumulationReached,
     collectAccumulatedCoins: () => collectAccumulatedCoinsMutation.mutate(),
     collectAccumulatedCoinsAsync: () => collectAccumulatedCoinsMutation.mutateAsync(),
     claimOfflineRewards: () => claimOfflineRewardsMutation.mutate(),

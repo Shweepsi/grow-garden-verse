@@ -27,20 +27,27 @@ export const PassiveIncomeRobot = ({
     collectAccumulatedCoinsAsync,
     isCollecting,
     robotLevel,
-    robotPlantType
+    robotPlantType,
+    maxAccumulationReached
   } = usePassiveIncomeRobot();
   const [realTimeAccumulation, setRealTimeAccumulation] = useState(0);
 
-  // Mettre à jour l'accumulation en temps réel
+  // Mettre à jour l'accumulation en temps réel avec limite
   useEffect(() => {
+    const maxAcc = coinsPerMinute * 24 * 60; // 24h max
     setRealTimeAccumulation(currentAccumulation);
-    if (coinsPerMinute > 0) {
+    
+    if (coinsPerMinute > 0 && currentAccumulation < maxAcc) {
       const interval = setInterval(() => {
-        setRealTimeAccumulation(prev => prev + Math.round(coinsPerMinute / 60));
+        setRealTimeAccumulation(prev => {
+          const newValue = prev + Math.round(coinsPerMinute / 60);
+          return Math.min(newValue, maxAcc);
+        });
       }, 1000);
       return () => clearInterval(interval);
     }
   }, [currentAccumulation, coinsPerMinute]);
+
   const handleCollectCoins = async () => {
     try {
       const result = await collectAccumulatedCoinsAsync();
@@ -113,9 +120,10 @@ export const PassiveIncomeRobot = ({
                       Collecter
                     </Button>
                   </div>
-                  {realTimeAccumulation > 0 && <div className="mt-2 bg-green-50 rounded p-2">
+                    {realTimeAccumulation > 0 && <div className="mt-2 bg-green-50 rounded p-2">
                       <p className="text-xs text-green-600">
                         Maximum: {(coinsPerMinute * 24 * 60).toLocaleString()} 🪙 (24h)
+                        {maxAccumulationReached && <span className="text-orange-600 font-medium"> - PLEIN!</span>}
                       </p>
                     </div>}
                 </div>
