@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 export const DeepLinkListener = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export const DeepLinkListener = () => {
             }
           }
         } catch (e) {
-          console.error('Deep link parse error', e);
+          logger.error('Deep link parse error', e);
         }
       });
       return () => listener?.remove?.();

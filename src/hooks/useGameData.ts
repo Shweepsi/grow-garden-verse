@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useGemSources } from '@/hooks/useGemSources';
+import { logger } from '@/utils/logger';
 
 export const useGameData = () => {
   const { user } = useAuth();
@@ -33,7 +34,7 @@ export const useGameData = () => {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      console.log('🔄 Fetching fresh game data for user:', user.id);
+      logger.debug('Fetching fresh game data for user', user.id);
 
       const [gardenResult, plotsResult, plantTypesResult] = await Promise.all([
         supabase.from('player_gardens').select('*').eq('user_id', user.id).single(),
@@ -48,7 +49,7 @@ export const useGameData = () => {
       };
 
       // LOG détaillé de l'état des parcelles pour debug
-      console.log('📊 Game data fetched - Plots status:', 
+      logger.debug('Game data fetched - Plots status', 
         result.plots.map(p => ({
           plot: p.plot_number,
           unlocked: p.unlocked,

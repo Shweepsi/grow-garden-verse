@@ -10,6 +10,7 @@ import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { useAdModalState } from '@/hooks/useAdModalState';
 import { useToast } from '@/hooks/use-toast';
 import { AdReward } from '@/types/ads';
+import { logger } from '@/utils/logger';
 
 interface UnifiedRewardModalProps {
   open: boolean;
@@ -65,7 +66,7 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
   const handleClaimReward = async () => {
     if (!selectedReward) return;
 
-    console.log('🔧 handleClaimReward called with:', { 
+    logger.debug('handleClaimReward called', { 
       selectedReward, 
       isPremium, 
       dailyCount: rewardState?.dailyCount || 0, 
@@ -75,26 +76,26 @@ export function UnifiedRewardModal({ open, onOpenChange }: UnifiedRewardModalPro
     try {
       // Logique unifiée : même limite pour tous, seule différence = pub ou pas
       if ((rewardState?.dailyCount || 0) >= (rewardState?.maxDaily || 5)) {
-        console.log('❌ Daily limit reached');
+        logger.debug('Daily limit reached');
         toast({ title: "Limite atteinte", description: `Limite quotidienne atteinte (${rewardState?.dailyCount || 0}/${rewardState?.maxDaily || 5})`, variant: "destructive" });
         return;
       }
       
-      console.log('🚀 Calling claimReward...');
+      logger.debug('Calling claimReward...');
       const result = await claimReward(selectedReward.type, selectedReward.amount);
-      console.log('✅ claimReward result:', result);
+      logger.debug('claimReward result', result);
       
       if (result.success) {
-        console.log('🎉 Reward claimed successfully, closing modal');
+        logger.debug('Reward claimed successfully');
         onOpenChange(false);
         setSelectedReward(null);
         // Message différencié automatiquement dans claimReward
       } else {
-        console.log('❌ claimReward failed:', result.error);
+        logger.warn('claimReward failed', result.error);
         toast({ title: "Erreur", description: result.error || "Erreur lors de la réclamation", variant: "destructive" });
       }
     } catch (error) {
-      console.error('💥 Error in handleClaimReward:', error);
+      logger.error('Error in handleClaimReward', error);
       toast({ title: "Erreur", description: "Erreur lors de la réclamation", variant: "destructive" });
     }
   };

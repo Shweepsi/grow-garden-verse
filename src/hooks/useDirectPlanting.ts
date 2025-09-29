@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { MAX_PLOTS } from '@/constants';
 import { useState, useEffect } from 'react';
 import { useAnimations } from '@/contexts/AnimationContext';
+import { logger } from '@/utils/logger';
 
 export const useDirectPlanting = () => {
   const { user } = useAuth();
@@ -47,7 +48,7 @@ export const useDirectPlanting = () => {
         throw new Error('Numéro de parcelle invalide');
       }
 
-      console.log(`🌱 Optimized direct planting on plot ${plotNumber}`);
+      logger.debug(`Optimized direct planting on plot ${plotNumber}`);
 
       // Smart validation using cache
       const cachedPlayerData = ValidationCacheService.getCachedPlayerData();
@@ -59,7 +60,7 @@ export const useDirectPlanting = () => {
 
       // Only fetch from DB if cache miss or critical validation
       if (!garden || !plot || !plantType) {
-        console.log('🔍 Cache miss, fetching from DB');
+        logger.debug('Cache miss, fetching from DB');
         const [plotResult, gardenResult, plantTypeResult] = await Promise.all([
           !plot ? supabase
             .from('garden_plots')
@@ -111,7 +112,7 @@ export const useDirectPlanting = () => {
 
       const baseGrowthSeconds = plantType.base_growth_seconds || 60;
 
-      console.log(`⚡ Using atomic DB function for plot ${plotNumber}`);
+      logger.debug(`Using atomic DB function for plot ${plotNumber}`);
       
       // Use the new atomic function
       const { data: result, error } = await supabase.rpc('plant_direct_atomic', {
@@ -123,7 +124,7 @@ export const useDirectPlanting = () => {
       });
 
       if (error) {
-        console.error('❌ Atomic function error:', error);
+        logger.error('Atomic function error', error);
         throw new Error(`Planting failed: ${error.message}`);
       }
 
@@ -140,7 +141,7 @@ export const useDirectPlanting = () => {
         throw new Error(typedResult.error || 'Planting failed');
       }
 
-      console.log('✅ Atomic planting successful:', typedResult);
+      logger.debug('Atomic planting successful', typedResult);
       
       // Clear player data cache to force refresh
       ValidationCacheService.clearPlayerData();
@@ -158,7 +159,7 @@ export const useDirectPlanting = () => {
       };
     },
     onMutate: async ({ plotNumber, plantTypeId, expectedCost }) => {
-      console.log('🚀 Optimistic update enabled');
+      logger.debug('Optimistic update enabled');
       
       // Cancel outgoing refetches so they don't override optimistic update
       await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
@@ -199,7 +200,7 @@ export const useDirectPlanting = () => {
     },
     onSuccess: (data) => {
       // Confirmation serveur - forcer un refresh complet
-      console.log('✅ Plantation confirmée par le serveur');
+      logger.debug('Plantation confirmed by server');
       
       // Invalider et refetch pour synchroniser avec la DB
       queryClient.invalidateQueries({ queryKey: ['gameData', user?.id] });
@@ -213,7 +214,7 @@ export const useDirectPlanting = () => {
         queryClient.setQueryData(['gameData', user?.id], context.previousData);
       }
       
-      console.error('💥 Erreur lors de la plantation directe:', error);
+      logger.error('Error during direct planting', error);
       toast.error(error.message || 'Erreur lors de la plantation');
       
       // Réinitialiser l'état de plantation en cas d'erreur

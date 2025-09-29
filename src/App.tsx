@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import { ScrollToTop } from '@/components/layout/ScrollToTop';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
+import { logger } from '@/utils/logger';
 
 const App = () => {
   useEffect(() => {
@@ -21,7 +22,7 @@ const App = () => {
         try {
           await ScreenOrientation.lock({ orientation: 'portrait' });
         } catch (error) {
-          console.error('Failed to lock screen orientation:', error);
+          logger.warn('Failed to lock screen orientation', error);
         }
       }
     };

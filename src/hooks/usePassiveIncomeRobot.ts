@@ -8,6 +8,7 @@ import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { UnifiedCalculationService } from '@/services/UnifiedCalculationService';
 import { toast } from 'sonner';
 import { useEffect, useRef, useCallback } from 'react';
+import { logger } from '@/utils/logger';
 
 export const usePassiveIncomeRobot = () => {
   const { user } = useAuth();
@@ -30,7 +31,7 @@ export const usePassiveIncomeRobot = () => {
       toast.error(message);
     } else {
       // Log minimal pour monitoring sans alerter l'utilisateur final.
-      console.warn(`[Robot] ${message}`);
+      logger.debug(`[Robot] ${message}`);
     }
   };
   
@@ -119,7 +120,7 @@ export const usePassiveIncomeRobot = () => {
     
     // Vérifier si le robot_level dans la DB correspond au niveau calculé
     if (gameData.garden.robot_level !== currentRobotLevel) {
-      console.log(`🤖 Synchronisation robot level: ${gameData.garden.robot_level} -> ${currentRobotLevel}`);
+      logger.debug(`Robot level sync: ${gameData.garden.robot_level} -> ${currentRobotLevel}`);
       // La synchronisation sera automatique grâce au trigger
     }
   }, [gameData?.garden, playerUpgrades]);
@@ -131,7 +132,7 @@ export const usePassiveIncomeRobot = () => {
       
       // If robot is unlocked but robot_last_collected is null, this is the first activation
       if (gameData.garden.robot_last_collected === null) {
-        console.log('🤖 First robot activation detected - resetting robot state');
+        logger.debug('First robot activation detected - resetting robot state');
         
         const now = new Date().toISOString();
         
@@ -148,9 +149,9 @@ export const usePassiveIncomeRobot = () => {
           queryClient.invalidateQueries({ queryKey: ['gameData'] });
           queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
           
-          console.log('🤖 Robot state reset successfully on first activation');
+          logger.debug('Robot state reset successfully on first activation');
         } catch (error) {
-          console.error('Error resetting robot state on first activation:', error);
+          logger.error('Error resetting robot state on first activation', error);
         }
       }
     };
@@ -174,7 +175,7 @@ export const usePassiveIncomeRobot = () => {
     
     // Garde-fou : si l'écart est anormalement grand, utiliser seulement l'accumulation stockée
     if (safeMinutesElapsed > maxMinutes || minutesElapsed < 0) {
-      console.warn(`🤖 Écart temporel anormal détecté: ${minutesElapsed}min, utilisation de l'accumulation stockée uniquement`);
+      logger.warn(`Abnormal time gap detected: ${minutesElapsed}min, using stored accumulation only`);
       return robotState.accumulatedCoins;
     }
     
@@ -218,7 +219,7 @@ export const usePassiveIncomeRobot = () => {
 
     if (offlineCoins <= 0) return null;
 
-    console.log(`🤖 Récompenses hors-ligne: ${safeMinutesOffline}min × ${coinsPerMinute} = ${offlineCoins} coins`);
+    logger.debug(`Offline rewards: ${safeMinutesOffline}min × ${coinsPerMinute} = ${offlineCoins} coins`);
 
     return {
       offlineCoins,
@@ -284,7 +285,7 @@ export const usePassiveIncomeRobot = () => {
           description: `Collecte robot passif: ${robotPlantType?.display_name} (+${expReward} EXP)`
         });
 
-      console.log(`🤖 Collecte réussie: ${totalAccumulated} coins + ${expReward} EXP (robot niveau ${currentRobotLevel})`);
+      logger.debug(`Robot collection successful: ${totalAccumulated} coins + ${expReward} EXP (level ${currentRobotLevel})`);
 
       return { totalAccumulated, expReward, plantName: robotPlantType?.display_name };
     },
@@ -352,7 +353,7 @@ export const usePassiveIncomeRobot = () => {
     if (!user?.id || !hasPassiveRobot) return;
     
     const now = new Date().toISOString();
-    console.log(`🤖 Synchronisation timestamp robot lors de la collecte: ${now}`);
+    logger.debug(`Robot timestamp sync during collection: ${now}`);
     
     try {
       await supabase
@@ -366,7 +367,7 @@ export const usePassiveIncomeRobot = () => {
       
       queryClient.invalidateQueries({ queryKey: ['passiveRobotState'] });
     } catch (error) {
-      console.error('Erreur synchronisation robot timestamp:', error);
+      logger.error('Error syncing robot timestamp', error);
     }
   };
 

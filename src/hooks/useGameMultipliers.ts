@@ -1,5 +1,6 @@
 import { useUpgrades } from './useUpgrades';
 import { useActiveBoosts } from './useActiveBoosts';
+import { logger } from '@/utils/logger';
 
 export interface GameMultipliers {
   harvest: number;
@@ -48,7 +49,7 @@ export const useGameMultipliers = () => {
     
     if (import.meta.env.DEV) {
       // Only log detailed multiplier information while developing.
-      console.debug('[DEBUG] Game Multipliers:', {
+      logger.debug('Game Multipliers', {
         permanent: permanentMultipliers,
         activeBoosts: { coinBoost, gemBoost, growthBoost },
         combined: {

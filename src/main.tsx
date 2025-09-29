@@ -16,6 +16,8 @@ import.meta.env.PROD && (() => {
   console.log = noop;
   console.debug = noop;
   console.info = noop;
+  console.warn = noop;
+  console.error = noop;
 })();
 
 const queryClient = new QueryClient();
