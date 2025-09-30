@@ -60,7 +60,9 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
     <div className={`flex items-center gap-1 text-xs transition-colors duration-300 ${urgencyClass} ${className}`}>
       <Clock className="h-3 w-3" />
       <span className="font-medium">{timeRemaining > 0 
-        ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
+        ? timeRemaining > 60 
+          ? `${Math.floor(timeRemaining / 60)}m`
+          : `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
         : 'Prêt !'}</span>
     </div>
   );
