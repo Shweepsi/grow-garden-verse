@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Sparkles, Zap, AlertTriangle } from 'lucide-react';
+import { Coins, Sparkles, Zap } from 'lucide-react';
 import { useGameData } from '@/hooks/useGameData';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
@@ -60,9 +60,6 @@ export const PassiveIncomeRobot = ({
     }
   };
 
-  // Vérification de cohérence
-  const isRobotConsistent = gameData?.garden?.robot_level === robotLevel;
-  const expectedPlantLevel = robotLevel;
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 max-h-[90vh] max-h-[90dvh]">
         <DialogHeader>
@@ -80,10 +77,6 @@ export const PassiveIncomeRobot = ({
               <Badge variant="outline" className="bg-green-100 text-green-700">
                 Niveau {robotLevel}/10
               </Badge>
-              {!isRobotConsistent && <Badge variant="destructive" className="text-xs">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Incohérence
-                </Badge>}
             </div>
           </div>
         </DialogHeader>
@@ -129,21 +122,6 @@ export const PassiveIncomeRobot = ({
                 </div>
               </div>}
 
-            {/* Informations sur le système automatique */}
-            
-
-            {/* Debug info si incohérence */}
-            {!isRobotConsistent && <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <h3 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Incohérence détectée
-                </h3>
-                <div className="text-sm text-orange-700 space-y-1">
-                  <p>Robot DB: niveau {gameData?.garden?.robot_level}</p>
-                  <p>Robot calculé: niveau {robotLevel}</p>
-                  <p className="text-xs">Une synchronisation automatique sera effectuée</p>
-                </div>
-              </div>}
           </div>
         </ScrollArea>
 
