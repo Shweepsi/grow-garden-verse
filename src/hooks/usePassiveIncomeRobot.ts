@@ -105,11 +105,16 @@ export const usePassiveIncomeRobot = () => {
   const getCoinsPerMinute = () => {
     if (!hasPassiveRobot || !robotPlantType) return 0;
     
-    // Utiliser uniquement les multiplicateurs permanents pour le robot
-    const multipliers = getPermanentMultipliersOnly();
+    // Utiliser UNIQUEMENT les multiplicateurs permanents (pas les boosts publicitaires)
+    const permanentMultipliers = getPermanentMultipliersOnly();
     const permanentMultiplier = gameData?.garden?.permanent_multiplier || 1;
     
-    return calculations.getRobotPassiveIncome(robotLevel, permanentMultiplier);
+    // Appeler directement le service avec les multiplicateurs permanents
+    return UnifiedCalculationService.getRobotPassiveIncome(
+      robotLevel, 
+      permanentMultipliers.harvest,  // Multiplicateur de récolte permanent uniquement
+      permanentMultiplier
+    );
   };
 
   // Synchroniser le robot avec son niveau quand il change
