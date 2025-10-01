@@ -21,10 +21,20 @@ export const useStripePayment = () => {
 
       if (error) {
         console.error('❌ Erreur lors de la création du paiement:', error);
-        throw error;
+        throw new Error(error.message || 'Erreur de création du paiement');
       }
 
-      if (!data?.url) {
+      if (!data) {
+        throw new Error('Aucune donnée reçue du serveur');
+      }
+
+      // Check if data contains an error (backend error response)
+      if (data.error) {
+        console.error('❌ Erreur serveur:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (!data.url) {
         throw new Error('URL de paiement non reçue');
       }
 
