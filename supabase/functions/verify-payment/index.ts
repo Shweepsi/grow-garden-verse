@@ -26,18 +26,38 @@ serve(async (req) => {
     console.log("ℹ️ [Verify] Session ID:", sessionId);
 
     // Verify environment variables
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      console.error("❌ [Verify] Missing Supabase credentials");
+      throw new Error("Configuration du serveur incomplète");
+    }
+
+    // SECURITY: Authenticate the requesting user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("❌ [Verify] No authorization header");
+      throw new Error("Autorisation requise");
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("❌ [Verify] Auth error:", authError?.message);
+      throw new Error("Utilisateur non authentifié");
+    }
+
+    console.log("✅ [Verify] User authenticated:", user.id);
+
+    // Verify Stripe secret key
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecretKey) {
       console.error("❌ [Verify] Missing Stripe secret key");
       throw new Error("Stripe n'est pas configuré");
-    }
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("❌ [Verify] Missing Supabase credentials");
-      throw new Error("Configuration du serveur incomplète");
     }
 
     // Initialize Stripe
@@ -54,12 +74,25 @@ serve(async (req) => {
       console.log("✅ [Verify] Stripe session retrieved:", {
         id: session.id,
         status: session.payment_status,
-        amount: session.amount_total
+        amount: session.amount_total,
+        metadata: session.metadata
       });
     } catch (stripeError: any) {
       console.error("❌ [Verify] Stripe session retrieval error:", stripeError.message);
       throw new Error("Session de paiement non trouvée");
     }
+
+    // SECURITY: Verify that the session belongs to the authenticated user
+    const sessionUserId = session.metadata?.user_id;
+    if (!sessionUserId || sessionUserId !== user.id) {
+      console.error("❌ [Verify] User ID mismatch:", { 
+        sessionUserId, 
+        requestUserId: user.id 
+      });
+      throw new Error("Cette session de paiement ne vous appartient pas");
+    }
+    
+    console.log("✅ [Verify] User ownership verified");
     
     if (session.payment_status !== "paid") {
       console.warn("⚠️ [Verify] Payment not completed:", session.payment_status);

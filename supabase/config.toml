@@ -63,3 +63,9 @@ enabled = false
 
 [functions.validate-ad-reward]
 verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = true
+
+[functions.verify-payment]
+verify_jwt = true
