@@ -9,6 +9,7 @@ import { UnifiedCalculationService } from '@/services/UnifiedCalculationService'
 import { toast } from 'sonner';
 import { useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/utils/logger';
+import { ROBOT_MAX_ACCUMULATION_HOURS } from '@/constants';
 
 export const usePassiveIncomeRobot = () => {
   const { user } = useAuth();
@@ -174,8 +175,8 @@ export const usePassiveIncomeRobot = () => {
     const lastCollected = new Date(robotState.lastCollected);
     const minutesElapsed = Math.floor((now.getTime() - lastCollected.getTime()) / (1000 * 60));
     
-    // Vérification de sécurité : pas plus de 24h d'écart temporel
-    const maxMinutes = 24 * 60;
+    // Vérification de sécurité : limite configurable d'accumulation
+    const maxMinutes = ROBOT_MAX_ACCUMULATION_HOURS * 60;
     const safeMinutesElapsed = Math.min(minutesElapsed, maxMinutes);
     
     // Garde-fou : si l'écart est anormalement grand, utiliser seulement l'accumulation stockée
@@ -217,7 +218,7 @@ export const usePassiveIncomeRobot = () => {
 
     const coinsPerMinute = getCoinsPerMinute();
     const minutesOffline = Math.floor(timeOffline / (1000 * 60));
-    const maxMinutes = 24 * 60; // Maximum 24h d'accumulation
+    const maxMinutes = ROBOT_MAX_ACCUMULATION_HOURS * 60;
     const safeMinutesOffline = Math.min(minutesOffline, maxMinutes);
     
     const offlineCoins = safeMinutesOffline * coinsPerMinute;
@@ -326,7 +327,7 @@ export const usePassiveIncomeRobot = () => {
       const now = new Date().toISOString();
 
       // Ajouter les récompenses hors-ligne à l'accumulation (avec limite de sécurité)
-      const maxAccumulation = getCoinsPerMinute() * 24 * 60;
+      const maxAccumulation = getCoinsPerMinute() * ROBOT_MAX_ACCUMULATION_HOURS * 60;
       const newAccumulation = Math.min(
         (garden.robot_accumulated_coins || 0) + rewards.offlineCoins,
         maxAccumulation
@@ -379,7 +380,7 @@ export const usePassiveIncomeRobot = () => {
   // Calculer si le maximum d'accumulation est atteint
   const maxAccumulationReached = (() => {
     const coinsPerMin = getCoinsPerMinute();
-    const maxAcc = coinsPerMin * 24 * 60;
+    const maxAcc = coinsPerMin * ROBOT_MAX_ACCUMULATION_HOURS * 60;
     return calculateCurrentAccumulation() >= maxAcc;
   })();
 

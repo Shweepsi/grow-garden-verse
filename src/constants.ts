@@ -31,3 +31,6 @@ export const NUMBER_FORMAT_THRESHOLDS = {
 export const PRESTIGE_RESET_COINS = 100;
 export const PRESTIGE_RESET_LEVEL = 1;
 export const PRESTIGE_RESET_XP = 0;
+
+// Configuration du robot passif
+export const ROBOT_MAX_ACCUMULATION_HOURS = 6; // Temps maximum d'accumulation du robot
