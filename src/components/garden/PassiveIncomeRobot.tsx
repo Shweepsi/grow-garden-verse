@@ -7,6 +7,7 @@ import { Coins, Sparkles, Zap } from 'lucide-react';
 import { useGameData } from '@/hooks/useGameData';
 import { usePassiveIncomeRobot } from '@/hooks/usePassiveIncomeRobot';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
+import { ROBOT_MAX_ACCUMULATION_HOURS } from '@/constants';
 interface PassiveIncomeRobotProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,7 +35,7 @@ export const PassiveIncomeRobot = ({
 
   // Mettre à jour l'accumulation en temps réel avec limite
   useEffect(() => {
-    const maxAcc = coinsPerMinute * 24 * 60; // 24h max
+    const maxAcc = coinsPerMinute * ROBOT_MAX_ACCUMULATION_HOURS * 60;
     setRealTimeAccumulation(currentAccumulation);
     
     if (coinsPerMinute > 0 && currentAccumulation < maxAcc) {
@@ -115,7 +116,7 @@ export const PassiveIncomeRobot = ({
                   </div>
                     {realTimeAccumulation > 0 && <div className="mt-2 bg-green-50 rounded p-2">
                       <p className="text-xs text-green-600">
-                        Maximum: {(coinsPerMinute * 24 * 60).toLocaleString()} 🪙 (24h)
+                        Maximum: {(coinsPerMinute * ROBOT_MAX_ACCUMULATION_HOURS * 60).toLocaleString()} 🪙 ({ROBOT_MAX_ACCUMULATION_HOURS}h)
                         {maxAccumulationReached && <span className="text-orange-600 font-medium"> - PLEIN!</span>}
                       </p>
                     </div>}
