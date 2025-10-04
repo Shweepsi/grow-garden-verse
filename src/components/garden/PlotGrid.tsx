@@ -39,7 +39,8 @@ export const PlotGrid = ({
     claimOfflineRewards,
     calculateOfflineRewards,
     coinsPerMinute,
-    currentAccumulation
+    currentAccumulation,
+    maxAccumulationReached
   } = usePassiveIncomeRobot();
 
   // Mémoriser les données des plantes pour éviter les recalculs
@@ -104,9 +105,8 @@ export const PlotGrid = ({
         ? robotPlantType 
         : plantTypeMap.get(plot.plant_type || '');
       
-      // Vérifier si le robot a atteint la limite de capacité (24h)
-      const robotAtCapacity = isAutoHarvestPlot && coinsPerMinute > 0 && 
-        currentAccumulation >= (coinsPerMinute * 24 * 60);
+      // Utiliser maxAccumulationReached du hook (qui vérifie si >= ROBOT_MAX_ACCUMULATION_HOURS)
+      const robotAtCapacity = isAutoHarvestPlot && maxAccumulationReached;
       
       const plantState = getPlantState(plot.plot_number);
       
@@ -118,7 +118,7 @@ export const PlotGrid = ({
         robotAtCapacity
       };
     });
-  }, [plots, hasPassiveRobot, robotPlantType, plantTypeMap, coinsPerMinute, currentAccumulation, getPlantState]);
+  }, [plots, hasPassiveRobot, robotPlantType, plantTypeMap, maxAccumulationReached, getPlantState]);
 
   return (
     <>
