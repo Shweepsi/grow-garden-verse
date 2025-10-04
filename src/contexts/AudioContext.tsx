@@ -15,7 +15,7 @@ interface AudioContextType {
 export type SoundType = 
   | 'plant'
   | 'harvest'
-  | 'coins'
+  | 'coin'
   | 'gems'
   | 'purchase'
   | 'upgrade'
@@ -54,7 +54,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     const sounds: Record<SoundType, string> = {
       plant: '/sounds/plant.mp3',
       harvest: '/sounds/harvest.mp3',
-      coins: '/sounds/coins.mp3',
+      coin: '/sounds/coin.mp3',
       gems: '/sounds/gems.mp3',
       purchase: '/sounds/purchase.mp3',
       upgrade: '/sounds/upgrade.mp3',

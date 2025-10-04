@@ -21,7 +21,7 @@ export const SoundSettings = () => {
 
   const testSounds: { type: SoundType; label: string }[] = [
     { type: 'harvest', label: 'Récolte' },
-    { type: 'coins', label: 'Pièces' },
+    { type: 'coin', label: 'Pièces' },
     { type: 'purchase', label: 'Achat' },
     { type: 'achievement', label: 'Succès' },
   ];

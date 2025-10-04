@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
+import { useAudio } from '@/contexts/AudioContext';
 import { MAX_PLOTS } from '@/constants';
 
 export const usePlantActions = () => {
@@ -13,6 +14,7 @@ export const usePlantActions = () => {
   const calculations = useUnifiedCalculations();
   const { applyGemsBoost } = useGameMultipliers();
   const { triggerCoinAnimation, triggerGemAnimation } = useAnimations();
+  const { playSound } = useAudio();
 
   const harvestPlantMutation = useMutation({
     mutationFn: async (plotNumber: number) => {
@@ -138,11 +140,14 @@ export const usePlantActions = () => {
       // Extract results for consistent level checking
       const finalLevel = result.final_level;
 
-      // Déclencher les animations de récompense de manière asynchrone
+      // Déclencher les animations et sons de récompense de manière asynchrone
       setTimeout(() => {
         triggerCoinAnimation(result.harvest_reward);
+        playSound('harvest');
+        playSound('coin');
         if (result.gem_reward > 0) {
           triggerGemAnimation(result.gem_reward);
+          playSound('gems');
         }
       }, 0);
 
