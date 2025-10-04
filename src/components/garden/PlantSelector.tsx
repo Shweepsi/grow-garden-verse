@@ -128,12 +128,6 @@ export const PlantSelector = ({
           <div className="space-y-4">
             {/* Plantes disponibles */}
             {availablePlants.length > 0 && <div>
-                <h3 className="text-base font-bold mb-3 text-green-800 flex items-center gap-2">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                  </div>
-                  Plantes disponibles
-                  <span className="text-sm font-normal text-green-600">({availablePlants.length})</span>
-                </h3>
                 
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {availablePlants.map(plantType => {
