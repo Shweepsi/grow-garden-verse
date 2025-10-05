@@ -1,10 +1,11 @@
 import { useUpgrades } from '@/hooks/useUpgrades';
 import { useGameData } from '@/hooks/useGameData';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
+import { useGameMultipliers } from '@/hooks/useGameMultipliers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Gem, Lock, CheckCircle, Loader2 } from 'lucide-react';
+import { Coins, Gem, Lock, CheckCircle, Loader2, TrendingUp, Zap, Star } from 'lucide-react';
 import { LevelUpgrade } from '@/types/upgrades';
 import { MINIMUM_COINS_RESERVE } from '@/constants';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +25,9 @@ export const UpgradesPage = () => {
     isPurchasing,
     playerUpgrades
   } = useUpgrades();
+  const { getCompleteMultipliers } = useGameMultipliers();
+  const multipliers = getCompleteMultipliers();
+  
   const playerLevel = gameData?.garden?.level || 1;
   const coins = gameData?.garden?.coins || 0;
   const gems = gameData?.garden?.gems || 0;
@@ -152,13 +156,43 @@ export const UpgradesPage = () => {
     <div className="min-h-full">
       {/* Content with proper bottom padding for navigation */}
       <div className="px-3 pb-8 space-y-3">
-        {/* Progression par catégorie */}
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {Object.entries(categoryProgress).map(([effectType, progress]) => (
-            <div key={effectType} className="text-center">
-              {/* Add progression display here if needed */}
-            </div>
-          ))}
+        {/* Bonus actifs */}
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="glassmorphism bg-gradient-to-br from-green-50/80 to-emerald-50/80">
+            <CardContent className="p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                <span className="text-xs font-medium text-green-700">Récolte</span>
+              </div>
+              <div className="text-lg font-bold text-green-800">
+                +{Math.round((multipliers.harvest - 1) * 100)}%
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="glassmorphism bg-gradient-to-br from-blue-50/80 to-cyan-50/80">
+            <CardContent className="p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Zap className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-medium text-blue-700">Vitesse</span>
+              </div>
+              <div className="text-lg font-bold text-blue-800">
+                +{Math.round((multipliers.growth - 1) * 100)}%
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="glassmorphism bg-gradient-to-br from-purple-50/80 to-pink-50/80">
+            <CardContent className="p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Star className="h-4 w-4 text-purple-600" />
+                <span className="text-xs font-medium text-purple-700">XP</span>
+              </div>
+              <div className="text-lg font-bold text-purple-800">
+                +{Math.round((multipliers.exp - 1) * 100)}%
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Cartes évolutives par catégorie - plus compactes */}
