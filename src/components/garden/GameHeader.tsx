@@ -243,6 +243,37 @@ useEffect(() => {
                 </div>
               </div>
             </div>
+
+            {/* Boosts actifs */}
+            {boosts && boosts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {boosts.slice(0, 3).map((boost) => (
+                  <TooltipProvider key={boost.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge 
+                          variant="secondary" 
+                          className="text-xs px-2 py-0.5 bg-gradient-to-r from-amber-100 to-orange-100 border-amber-300 text-amber-800 font-medium"
+                        >
+                          <span className="mr-1">{getBoostIcon(boost.effect_type)}</span>
+                          {getBoostLabel(boost.effect_type, boost.effect_value)}
+                          <Clock className="ml-1 h-3 w-3" />
+                          <span className="ml-0.5">{formatTimeRemaining(getTimeRemaining(boost.expires_at))}</span>
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Expire dans {formatTimeRemaining(getTimeRemaining(boost.expires_at))}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+                {boosts.length > 3 && (
+                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                    +{boosts.length - 3}
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
