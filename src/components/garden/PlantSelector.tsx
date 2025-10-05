@@ -78,12 +78,8 @@ export const PlantSelector = ({
   useAndroidBackButton(isOpen, onClose);
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[90vh] h-[90dvh] overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 p-0">
-        {/* Header fixe */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200 p-4">
-        </div>
-
         {/* Contenu scrollable */}
-        <ScrollArea className="flex-1 px-4 pb-4">
+        <ScrollArea className="flex-1 px-4 pb-4 pt-4">
           <div className="space-y-4">
             {/* Plantes disponibles */}
             {availablePlants.length > 0 && <div>
