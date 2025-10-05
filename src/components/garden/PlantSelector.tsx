@@ -77,7 +77,7 @@ export const PlantSelector = ({
   // Bouton retour
   useAndroidBackButton(isOpen, onClose);
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[90vh] h-[90dvh] overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 p-0">
+      <DialogContent className="max-w-5xl h-[90vh] h-[90dvh] overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 p-0 [&>button]:hidden">
         {/* Contenu scrollable */}
         <ScrollArea className="flex-1 px-4 pb-4 pt-4">
           <div className="space-y-4">
