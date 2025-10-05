@@ -157,7 +157,7 @@ export const UpgradesPage = () => {
       {/* Content with proper bottom padding for navigation */}
       <div className="px-3 pb-8 space-y-3">
         {/* Bonus actifs */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <Card className="glassmorphism bg-gradient-to-br from-green-50/80 to-emerald-50/80">
             <CardContent className="p-3 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
@@ -190,6 +190,18 @@ export const UpgradesPage = () => {
               </div>
               <div className="text-lg font-bold text-purple-800">
                 +{Math.round((multipliers.exp - 1) * 100)}%
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="glassmorphism bg-gradient-to-br from-violet-50/80 to-fuchsia-50/80">
+            <CardContent className="p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Gem className="h-4 w-4 text-violet-600" />
+                <span className="text-xs font-medium text-violet-700">Gemmes</span>
+              </div>
+              <div className="text-lg font-bold text-violet-800">
+                +{Math.round((multipliers.gems - 1) * 100)}%
               </div>
             </CardContent>
           </Card>
