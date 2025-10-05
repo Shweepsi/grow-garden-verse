@@ -201,7 +201,7 @@ export const UpgradesPage = () => {
                 <span className="text-xs font-medium text-violet-700">Gemmes</span>
               </div>
               <div className="text-lg font-bold text-violet-800">
-                +{Math.round((multipliers.gems - 1) * 100)}%
+                {Math.round(multipliers.gemChance * 100)}%
               </div>
             </CardContent>
           </Card>
