@@ -244,33 +244,26 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Boosts actifs */}
+            {/* Boosts actifs - Icônes uniquement */}
             {boosts && boosts.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {boosts.slice(0, 3).map((boost) => (
+              <div className="flex items-center gap-1">
+                {boosts.map((boost) => (
                   <TooltipProvider key={boost.id}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="premium-card rounded-lg px-2 py-0.5 flex items-center space-x-1">
-                          <span className="text-xs">{getBoostIcon(boost.effect_type)}</span>
-                          <span className="text-xs font-medium text-amber-700">
-                            {getBoostLabel(boost.effect_type, boost.effect_value)}
-                          </span>
-                          <Clock className="h-2.5 w-2.5 text-amber-600" />
-                          <span className="text-xs text-amber-600">{formatTimeRemaining(getTimeRemaining(boost.expires_at))}</span>
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-300 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+                          <span className="text-sm">{getBoostIcon(boost.effect_type)}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="text-xs">Expire dans {formatTimeRemaining(getTimeRemaining(boost.expires_at))}</p>
+                        <div className="text-xs space-y-0.5">
+                          <p className="font-semibold">{getBoostLabel(boost.effect_type, boost.effect_value)}</p>
+                          <p className="text-muted-foreground">Expire dans {formatTimeRemaining(getTimeRemaining(boost.expires_at))}</p>
+                        </div>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 ))}
-                {boosts.length > 3 && (
-                  <div className="premium-card rounded-lg px-2 py-0.5">
-                    <span className="text-xs font-medium text-amber-700">+{boosts.length - 3}</span>
-                  </div>
-                )}
               </div>
             )}
           </div>
