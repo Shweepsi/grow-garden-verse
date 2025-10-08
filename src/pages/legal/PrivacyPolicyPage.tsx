@@ -98,17 +98,22 @@ export const PrivacyPolicyPage = () => {
           </section>
 
           <section className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">4. Vos droits</h2>
+            <h2 className="text-lg font-semibold mb-3">4. Publicités</h2>
+            <p>Cette application utilise AdMob pour afficher des publicités. Google peut collecter certaines données à des fins publicitaires selon sa propre politique de confidentialité.</p>
+          </section>
+
+          <section className="mb-6">
+            <h2 className="text-lg font-semibold mb-3">5. Vos droits</h2>
             <p>Vous pouvez demander la suppression de vos données en nous contactant à l'adresse indiquée ci-dessous.</p>
           </section>
 
           <section className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">5. Contact</h2>
+            <h2 className="text-lg font-semibold mb-3">6. Contact</h2>
             <p>Pour toute question concernant cette politique : contact@idlegrow.com</p>
           </section>
 
           <section className="mb-6 border-t pt-6">
-            <h2 className="text-lg font-semibold mb-3 text-red-600">6. Suppression de compte</h2>
+            <h2 className="text-lg font-semibold mb-3 text-red-600">7. Suppression de compte</h2>
             <p className="mb-4">
               Vous avez le droit de supprimer définitivement votre compte et toutes vos données associées. 
               Cette action est irréversible et supprimera :

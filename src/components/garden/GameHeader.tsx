@@ -1,12 +1,20 @@
-import { Coins, Star, Clock } from 'lucide-react';
+import { Coins, Sprout, Star, Gift } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { PlayerGarden } from '@/types/game';
 import { useAnimations } from '@/contexts/AnimationContext';
 import { FloatingNumber } from '@/components/animations/FloatingNumber';
-import { useEffect, useMemo, useRef } from 'react';
+import { ClaimRewardButton } from '@/components/ads/ClaimRewardButton';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { useUnifiedRewards } from '@/hooks/useUnifiedRewards';
 import { useActiveBoosts } from '@/hooks/useActiveBoosts';
 import { useOptimisticGameData } from '@/hooks/useOptimisticGameData';
 import { gameDataEmitter } from '@/hooks/useGameDataNotifier';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Zap, Clock } from 'lucide-react';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
+import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
 
 interface GameHeaderProps {
@@ -19,7 +27,9 @@ export const GameHeader = ({ garden: originalGarden }: GameHeaderProps) => {
   const garden = optimisticData?.garden || originalGarden;
   const { animations } = useAnimations();
 
-const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
+const { rewardState } = useUnifiedRewards();
+  const { isPremium } = usePremiumStatus();
+  const { boosts, formatTimeRemaining, getTimeRemaining } = useActiveBoosts();
   const mounted = useRef(true);
 
 // Track component mount/unmount to prevent state updates after unmount
@@ -51,7 +61,9 @@ useEffect(() => {
   };
 }, []);
 
-// Calculer l'XP nécessaire pour le prochain niveau
+// Pas besoin de modal state pour le système unifié
+
+  // Calculer l'XP nécessaire pour le prochain niveau
   const getXpForLevel = (level: number) => {
     return Math.pow(level, 2) * 100;
   };
@@ -69,6 +81,44 @@ useEffect(() => {
     return { currentLevel, currentXp, progressPercentage };
   }, [garden?.level, garden?.experience]);
 
+  // Mémoisé pour stabiliser l'état du bouton avec logique plus intelligente
+  const adButtonState = useMemo(() => {
+    // Protection contre les valeurs undefined
+    if (!rewardState) {
+      return {
+        shouldAnimate: false,
+        isDisabled: true,
+        className: 'h-8 px-2.5 border-0 rounded-md flex items-center transition-all duration-300 bg-gradient-to-r from-gray-400 to-gray-300'
+      };
+    }
+
+    // Pour Premium, toujours vérifier la limite même si l'état n'est pas encore chargé
+    if (isPremium) {
+      const dailyLimitReached = (rewardState.dailyCount || 0) >= (rewardState.maxDaily || 5);
+      return {
+        shouldAnimate: !dailyLimitReached,
+        isDisabled: dailyLimitReached,
+        className: `h-8 px-2.5 border-0 rounded-md flex items-center transition-all duration-300 ${
+          dailyLimitReached
+            ? 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400 opacity-50'
+            : 'bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-500 hover:to-amber-500'
+        }`
+      };
+    }
+    
+    // Pour les utilisateurs non-Premium
+    const dailyLimitReached = (rewardState.dailyCount || 0) >= (rewardState.maxDaily || 5);
+    const shouldAnimate = !dailyLimitReached;
+    return {
+      shouldAnimate,
+      isDisabled: dailyLimitReached,
+      className: `h-8 px-2.5 border-0 transition-all duration-300 flex-shrink-0 transform-gpu ${
+        shouldAnimate
+          ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-400/50 plant-ready-bounce hover:scale-105 active:scale-95' 
+          : 'bg-gradient-to-r from-gray-400 to-gray-300 hover:from-gray-500 hover:to-gray-400'
+      }`
+    };
+  }, [rewardState?.dailyCount, rewardState?.maxDaily, isPremium]);
 
   const getBoostIcon = (effectType: string) => {
     switch (effectType) {
@@ -168,6 +218,12 @@ useEffect(() => {
                   {/* XP animations are disabled */}
                 </div>
               </div>
+
+{/* Bouton Publicité / Premium - Unifié avec état stabilisé */}
+              <ClaimRewardButton 
+                variant="compact"
+                className={adButtonState.className}
+              />
             </div>
 
 
@@ -214,6 +270,10 @@ useEffect(() => {
         </div>
       </div>
 
+{/* Modals - using safe state setter and conditional rendering */}
+{mounted.current && (
+   <></>
+)}
     </div>
   );
 };
