@@ -244,26 +244,43 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Boosts actifs - Icônes uniquement */}
+            {/* Boosts actifs - Design élégant et mobile-friendly */}
             {boosts && boosts.length > 0 && (
-              <div className="flex items-center gap-1">
-                {boosts.map((boost) => (
-                  <TooltipProvider key={boost.id}>
-                    <Tooltip>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <TooltipProvider>
+                  {boosts.map((boost) => (
+                    <Tooltip key={boost.id}>
                       <TooltipTrigger asChild>
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-300 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
-                          <span className="text-sm">{getBoostIcon(boost.effect_type)}</span>
+                        <div className="group relative">
+                          <div className="premium-card rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 cursor-pointer hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md">
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
+                              <span className="text-xs drop-shadow-sm">{getBoostIcon(boost.effect_type)}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-orange-600 mobile-text-xs leading-none">
+                                {boost.effect_type === 'growth_speed' || boost.effect_type === 'growth_boost' 
+                                  ? `×${boost.effect_value}` 
+                                  : `×${boost.effect_value}`}
+                              </span>
+                              <span className="text-[0.65rem] text-orange-500/70 leading-none mt-0.5 font-medium">
+                                {formatTimeRemaining(getTimeRemaining(boost.expires_at), false)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="text-xs space-y-0.5">
-                          <p className="font-semibold">{getBoostLabel(boost.effect_type, boost.effect_value)}</p>
-                          <p className="text-muted-foreground">Expire dans {formatTimeRemaining(getTimeRemaining(boost.expires_at))}</p>
+                      <TooltipContent side="bottom" className="premium-card">
+                        <div className="text-xs space-y-1">
+                          <p className="font-bold text-orange-600">{getBoostLabel(boost.effect_type, boost.effect_value)}</p>
+                          <p className="text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Expire dans {formatTimeRemaining(getTimeRemaining(boost.expires_at))}
+                          </p>
                         </div>
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
-                ))}
+                  ))}
+                </TooltipProvider>
               </div>
             )}
           </div>
