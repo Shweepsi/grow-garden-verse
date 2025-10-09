@@ -15,6 +15,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
   const calculations = useUnifiedCalculations();
   const now = useGardenClock();
   const [fastTick, setFastTick] = useState(0);
+  const [slowTick, setSlowTick] = useState(0);
 
   const { timeRemaining, isReady } = useMemo(() => {
     if (!plantedAt) return { timeRemaining: 0, isReady: false };
@@ -37,14 +38,24 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
       timeRemaining: calculations.getTimeRemaining(plantedAt, mockPlot),
       isReady: calculations.isPlantReady(plantedAt, mockPlot)
     };
-  }, [now, fastTick, plantedAt, growthTimeSeconds, plotNumber, calculations]);
+  }, [plantedAt, growthTimeSeconds, plotNumber, calculations, fastTick, slowTick]);
 
-  // Timer rapide pour la dernière minute
+  // Rafraîchissement rapide pour les dernières 60 secondes
   useEffect(() => {
-    if (timeRemaining > 0 && timeRemaining <= 60) {
+    if (timeRemaining > 0 && timeRemaining < 60) {
       const interval = setInterval(() => {
         setFastTick(prev => prev + 1);
       }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timeRemaining]);
+
+  // Rafraîchissement lent pour les timers > 60 secondes
+  useEffect(() => {
+    if (timeRemaining >= 60) {
+      const interval = setInterval(() => {
+        setSlowTick(prev => prev + 1);
+      }, 15000); // 15 secondes
       return () => clearInterval(interval);
     }
   }, [timeRemaining]);
@@ -53,17 +64,19 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
 
   // Classes pour indiquer l'urgence du timer
   const urgencyClass = timeRemaining < 30 ? 'text-orange-600 font-semibold' : 
-                     timeRemaining < 120 ? 'text-yellow-600' : 
-                     'text-gray-600';
+                     timeRemaining < 60 ? 'text-yellow-600' : 
+                     'text-muted-foreground';
 
   return (
     <div className={`flex items-center gap-1 text-xs transition-colors duration-300 ${urgencyClass} ${className}`}>
       <Clock className="h-3 w-3" />
-      <span className="font-medium">{timeRemaining > 0 
-        ? timeRemaining > 60 
-          ? `${Math.floor(timeRemaining / 60)}m`
-          : `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
-        : 'Prêt !'}</span>
+      <span className="font-medium">
+        {timeRemaining > 0 
+          ? timeRemaining < 60 
+            ? `${timeRemaining}s`
+            : `${Math.ceil(timeRemaining / 60)}m`
+          : 'Prêt !'}
+      </span>
     </div>
   );
 };
