@@ -38,7 +38,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
       timeRemaining: calculations.getTimeRemaining(plantedAt, mockPlot),
       isReady: calculations.isPlantReady(plantedAt, mockPlot)
     };
-  }, [now, plantedAt, growthTimeSeconds, plotNumber, calculations, fastTick, slowTick]);
+  }, [plantedAt, growthTimeSeconds, plotNumber, calculations, fastTick, slowTick]);
 
   // Rafraîchissement rapide pour les dernières 60 secondes
   useEffect(() => {
