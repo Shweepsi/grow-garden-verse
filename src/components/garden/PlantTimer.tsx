@@ -74,7 +74,7 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
         {timeRemaining > 0 
           ? timeRemaining < 60 
             ? `${timeRemaining}s`
-            : `${Math.ceil(timeRemaining / 60)}m`
+            : `${Math.floor(timeRemaining / 60)}m`
           : 'Prêt !'}
       </span>
     </div>
