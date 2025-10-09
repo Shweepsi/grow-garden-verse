@@ -1,5 +1,5 @@
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { Clock } from 'lucide-react';
 import { useGardenClock } from '@/contexts/GardenClockContext';
@@ -14,8 +14,6 @@ interface PlantTimerProps {
 export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className = "" }: PlantTimerProps) => {
   const calculations = useUnifiedCalculations();
   const now = useGardenClock();
-  const [fastTick, setFastTick] = useState(0);
-  const [slowTick, setSlowTick] = useState(0);
 
   const { timeRemaining, isReady } = useMemo(() => {
     if (!plantedAt) return { timeRemaining: 0, isReady: false };
@@ -34,37 +32,20 @@ export const PlantTimer = ({ plantedAt, growthTimeSeconds, plotNumber, className
       created_at: new Date().toISOString()
     } as any;
     
+    // Use shared clock to force recompute without local intervals
+    void now;
     return {
       timeRemaining: calculations.getTimeRemaining(plantedAt, mockPlot),
       isReady: calculations.isPlantReady(plantedAt, mockPlot)
     };
-  }, [plantedAt, growthTimeSeconds, plotNumber, calculations, fastTick, slowTick]);
+  }, [plantedAt, growthTimeSeconds, plotNumber, calculations, now]);
 
-  // Rafraîchissement rapide pour les dernières 60 secondes
-  useEffect(() => {
-    if (timeRemaining > 0 && timeRemaining < 60) {
-      const interval = setInterval(() => {
-        setFastTick(prev => prev + 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [timeRemaining]);
-
-  // Rafraîchissement lent pour les timers > 60 secondes
-  useEffect(() => {
-    if (timeRemaining >= 60) {
-      const interval = setInterval(() => {
-        setSlowTick(prev => prev + 1);
-      }, 15000); // 15 secondes
-      return () => clearInterval(interval);
-    }
-  }, [timeRemaining]);
 
   if (!plantedAt || isReady) return null;
 
   // Classes pour indiquer l'urgence du timer
-  const urgencyClass = timeRemaining < 30 ? 'text-orange-600 font-semibold' : 
-                     timeRemaining < 60 ? 'text-yellow-600' : 
+  const urgencyClass = timeRemaining < 30 ? 'text-warning-foreground font-semibold' : 
+                     timeRemaining < 60 ? 'text-warning' : 
                      'text-muted-foreground';
 
   return (
