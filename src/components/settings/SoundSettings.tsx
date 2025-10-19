@@ -16,8 +16,6 @@ export const SoundSettings = () => {
   } = useAudio();
 
   const testSounds: { type: SoundType; label: string; icon: string }[] = [
-    { type: 'plant', label: 'Planter', icon: '🌱' },
-    { type: 'harvest', label: 'Récolter', icon: '🌾' },
     { type: 'coin', label: 'Pièces', icon: '💰' },
     { type: 'purchase', label: 'Achat', icon: '🛒' },
     { type: 'upgrade', label: 'Amélioration', icon: '⬆️' },
