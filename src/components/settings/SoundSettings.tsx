@@ -15,11 +15,13 @@ export const SoundSettings = () => {
     playSound,
   } = useAudio();
 
-  const testSounds: { type: SoundType; label: string }[] = [
-    { type: 'harvest', label: 'Récolte' },
-    { type: 'coin', label: 'Pièces' },
-    { type: 'purchase', label: 'Achat' },
-    { type: 'achievement', label: 'Succès' },
+  const testSounds: { type: SoundType; label: string; icon: string }[] = [
+    { type: 'plant', label: 'Planter', icon: '🌱' },
+    { type: 'harvest', label: 'Récolter', icon: '🌾' },
+    { type: 'coin', label: 'Pièces', icon: '💰' },
+    { type: 'purchase', label: 'Achat', icon: '🛒' },
+    { type: 'upgrade', label: 'Amélioration', icon: '⬆️' },
+    { type: 'error', label: 'Erreur', icon: '❌' },
   ];
 
   return (
@@ -27,42 +29,43 @@ export const SoundSettings = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Volume2 className="h-5 w-5" />
-          Paramètres audio
+          Effets sonores
         </CardTitle>
         <CardDescription>
-          Gérez les effets sonores du jeu
+          Contrôlez le volume et testez les sons du jeu
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Effets sonores */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="sound-enabled" className="text-base">
-                Effets sonores
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Activer les sons de jeu
-              </p>
-            </div>
-            <Switch
-              id="sound-enabled"
-              checked={soundEnabled}
-              onCheckedChange={setSoundEnabled}
-            />
+        {/* Toggle principal */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/20">
+          <div className="space-y-0.5">
+            <Label htmlFor="sound-enabled" className="text-base font-medium">
+              Activer les sons
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Active tous les effets sonores du jeu
+            </p>
           </div>
+          <Switch
+            id="sound-enabled"
+            checked={soundEnabled}
+            onCheckedChange={setSoundEnabled}
+          />
+        </div>
 
-          {soundEnabled && (
-            <div className="space-y-2 pl-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="sound-volume" className="min-w-20">
+        {soundEnabled && (
+          <div className="space-y-4 animate-in fade-in-50 duration-300">
+            {/* Contrôle du volume */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="sound-volume" className="text-sm font-medium flex items-center gap-2">
+                  {soundVolume > 0 ? (
+                    <Volume2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <VolumeX className="h-4 w-4 text-muted-foreground" />
+                  )}
                   Volume: {soundVolume}%
                 </Label>
-                {soundVolume > 0 ? (
-                  <Volume2 className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <VolumeX className="h-4 w-4 text-muted-foreground" />
-                )}
               </div>
               <Slider
                 id="sound-volume"
@@ -73,30 +76,33 @@ export const SoundSettings = () => {
                 onValueChange={(value) => setSoundVolume(value[0])}
                 className="w-full"
               />
+            </div>
 
-              {/* Boutons de test */}
-              <div className="pt-2">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Tester les sons :
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {testSounds.map(({ type, label }) => (
-                    <Button
-                      key={type}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => playSound(type)}
-                      className="gap-2"
-                    >
-                      <Play className="h-3 w-3" />
-                      {label}
-                    </Button>
-                  ))}
-                </div>
+            {/* Section test des sons */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2">
+                <Play className="h-4 w-4 text-primary" />
+                <Label className="text-sm font-medium">
+                  Tester les sons
+                </Label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {testSounds.map(({ type, label, icon }) => (
+                  <Button
+                    key={type}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => playSound(type)}
+                    className="gap-2 h-auto py-3 hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="text-lg">{icon}</span>
+                    <span className="text-xs">{label}</span>
+                  </Button>
+                ))}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
