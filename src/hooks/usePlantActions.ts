@@ -140,11 +140,9 @@ export const usePlantActions = () => {
       // Extract results for consistent level checking
       const finalLevel = result.final_level;
 
-      // Déclencher les animations et sons de récompense de manière asynchrone
+      // Déclencher les animations de récompense de manière asynchrone
       setTimeout(() => {
         triggerCoinAnimation(result.harvest_reward);
-        playSound('harvest');
-        playSound('coin');
         if (result.gem_reward > 0) {
           triggerGemAnimation(result.gem_reward);
           playSound('gems');
@@ -206,6 +204,9 @@ export const usePlantActions = () => {
       };
     },
     onMutate: async (plotNumber: number) => {
+      // Jouer le son de pièces immédiatement au clic
+      playSound('coin');
+      
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['gameData', user?.id] });
 
