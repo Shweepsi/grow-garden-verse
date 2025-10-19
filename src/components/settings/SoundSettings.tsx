@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Music, Play } from 'lucide-react';
+import { Volume2, VolumeX, Play } from 'lucide-react';
 import { useAudio, SoundType } from '@/contexts/AudioContext';
 
 export const SoundSettings = () => {
@@ -12,10 +12,6 @@ export const SoundSettings = () => {
     setSoundEnabled,
     soundVolume,
     setSoundVolume,
-    musicEnabled,
-    setMusicEnabled,
-    musicVolume,
-    setMusicVolume,
     playSound,
   } = useAudio();
 
@@ -34,7 +30,7 @@ export const SoundSettings = () => {
           Paramètres audio
         </CardTitle>
         <CardDescription>
-          Gérez les effets sonores et la musique de fond
+          Gérez les effets sonores du jeu
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -98,50 +94,6 @@ export const SoundSettings = () => {
                   ))}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Musique de fond */}
-        <div className="space-y-4 pt-4 border-t">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="music-enabled" className="text-base flex items-center gap-2">
-                <Music className="h-4 w-4" />
-                Musique de fond
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Activer la musique ambiante
-              </p>
-            </div>
-            <Switch
-              id="music-enabled"
-              checked={musicEnabled}
-              onCheckedChange={setMusicEnabled}
-            />
-          </div>
-
-          {musicEnabled && (
-            <div className="space-y-2 pl-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="music-volume" className="min-w-20">
-                  Volume: {musicVolume}%
-                </Label>
-                {musicVolume > 0 ? (
-                  <Volume2 className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <VolumeX className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-              <Slider
-                id="music-volume"
-                min={0}
-                max={100}
-                step={5}
-                value={[musicVolume]}
-                onValueChange={(value) => setMusicVolume(value[0])}
-                className="w-full"
-              />
             </div>
           )}
         </div>
