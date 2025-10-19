@@ -194,6 +194,9 @@ export class UnifiedCalculationService {
    * Cache management
    */
   private static getCachedValue(key: string): any {
+    // Respect cache disable flag (useful for real-time UI like timers)
+    if (this.CACHE_DISABLED) return null;
+
     const cached = this.calculationCache.get(key);
     if (!cached) return null;
     
@@ -206,6 +209,9 @@ export class UnifiedCalculationService {
   }
 
   private static setCachedValue(key: string, value: any): void {
+    // Respect cache disable flag (avoid caching highly dynamic values like remaining seconds)
+    if (this.CACHE_DISABLED) return;
+
     this.calculationCache.set(key, {
       value,
       timestamp: Date.now()
