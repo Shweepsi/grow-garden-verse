@@ -94,7 +94,7 @@ export const PlotCard = memo(({
     }
     
     return `${baseClasses} border-gray-200/50 hover:border-gray-300/60 hover:bg-white/90 hover:shadow-md`;
-  }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState.status]);
+  }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState.status, canAffordUnlock]);
 
   return (
     <div className={containerClasses} onClick={handleClick} data-plot={plot.plot_number}>
