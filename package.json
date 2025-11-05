@@ -4,19 +4,18 @@
   "private": true,
   "type": "module",
   "description": "Jeu mobile Grow Garden Verse avec Capacitor",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "lint": "eslint .",
-    "preview": "vite preview"
-    "version:sync": "node scripts/sync-versions.js",
-    "version:patch": "node scripts/bump-version.js patch",
-    "version:minor": "node scripts/bump-version.js minor",
-    "version:major": "node scripts/bump-version.js major",
-    "prebuild": "npm run version:sync"
+"scripts": {
+  "dev": "vite",
+  "build": "tsc -b && vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "version:sync": "node scripts/sync-versions.js",
+  "version:patch": "node scripts/bump-version.js patch",
+  "version:minor": "node scripts/bump-version.js minor",
+  "version:major": "node scripts/bump-version.js major",
+  "prebuild": "npm run version:sync"
+}
 
-  },
   "dependencies": {
     "@capacitor-community/admob": "^7.0.3",
     "@capacitor/app": "^7.0.0",
