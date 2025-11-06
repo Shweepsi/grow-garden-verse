@@ -43,6 +43,13 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: 'gradle'
+
       # Cache du build Android
       - name: Cache Android Build
         uses: actions/cache@v3
