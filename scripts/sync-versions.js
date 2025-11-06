@@ -5,8 +5,9 @@
  * Lit la version depuis package.json et met à jour tous les fichiers nécessaires
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // Couleurs pour les logs
 const colors = {
@@ -16,6 +17,8 @@ const colors = {
   red: '\x1b[31m',
   reset: '\x1b[0m'
 };
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);
@@ -120,9 +123,9 @@ function syncVersions() {
   }
 }
 
-// Exécuter si appelé directement
-if (require.main === module) {
+// Exécuter si appelé directement (ESM)
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   syncVersions();
 }
 
-module.exports = { syncVersions, getPackageVersion, calculateVersionCode };
+export { syncVersions, getPackageVersion, calculateVersionCode };
