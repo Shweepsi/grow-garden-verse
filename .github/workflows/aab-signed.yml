@@ -130,7 +130,9 @@ jobs:
       - name: Build signed AAB
         run: |
           cd android
-          ./gradlew bundleRelease --parallel --daemon --build-cache --stacktrace --warning-mode all
+          mkdir -p ../build-logs
+          ./gradlew --version | tee ../build-logs/gradle_version.txt
+          ./gradlew bundleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all | tee ../build-logs/aab_build.log
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -140,11 +142,23 @@ jobs:
       - name: Build signed APK
         run: |
           cd android
-          ./gradlew assembleRelease --parallel --daemon --build-cache --stacktrace --warning-mode all
+          mkdir -p ../build-logs
+          ./gradlew assembleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all | tee ../build-logs/apk_build.log
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-logs
+          path: |
+            build-logs/**
+            android/app/build/outputs/**/logs/**/*.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Move AAB and APK to builds directory
         run: |
