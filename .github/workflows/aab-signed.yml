@@ -50,6 +50,14 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          yes | sdkmanager --licenses
+
       # Cache du build Android
       - name: Cache Android Build
         uses: actions/cache@v3
@@ -86,10 +94,32 @@ jobs:
         run: npm install @capacitor/cli@^7 @capacitor/android@^7 --legacy-peer-deps
 
       - name: Sync versions
-        run: node scripts/sync-versions.js
-
+        run: |
+          if [ -f scripts/sync-versions.js ]; then
+            node scripts/sync-versions.js
+          else
+            echo "scripts/sync-versions.js not found; skipping"
+          fi
       - name: Capacitor sync
         run: npx cap sync
+
+      - name: Verify signing secrets
+        env:
+          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          MISSING=0
+          for var in KEYSTORE_FILE KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!var}" ]; then
+              echo "::error title=Missing secret::${var} is not set"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" = "1" ]; then
+            exit 1
+          fi
 
       - name: Decode keystore
         run: |
@@ -100,7 +130,7 @@ jobs:
       - name: Build signed AAB
         run: |
           cd android
-          ./gradlew bundleRelease --parallel --daemon --build-cache
+          ./gradlew bundleRelease --parallel --daemon --build-cache --stacktrace --warning-mode all
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -110,7 +140,7 @@ jobs:
       - name: Build signed APK
         run: |
           cd android
-          ./gradlew assembleRelease --parallel --daemon --build-cache
+          ./gradlew assembleRelease --parallel --daemon --build-cache --stacktrace --warning-mode all
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
