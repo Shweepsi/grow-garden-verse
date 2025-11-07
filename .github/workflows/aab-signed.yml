@@ -132,7 +132,7 @@ jobs:
           cd android
           mkdir -p ../build-logs
           ./gradlew --version | tee ../build-logs/gradle_version.txt
-          ./gradlew bundleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all | tee ../build-logs/aab_build.log
+          ./gradlew bundleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all --info | tee ../build-logs/aab_build.log
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -143,7 +143,7 @@ jobs:
         run: |
           cd android
           mkdir -p ../build-logs
-          ./gradlew assembleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all | tee ../build-logs/apk_build.log
+          ./gradlew assembleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all --info | tee ../build-logs/apk_build.log
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
