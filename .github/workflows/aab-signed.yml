@@ -129,7 +129,6 @@ jobs:
       # Build AAB optimisé
       - name: Build signed AAB
         run: |
-          set -o pipefail
           cd android
           mkdir -p ../build-logs
           ./gradlew --version | tee ../build-logs/gradle_version.txt
@@ -142,7 +141,6 @@ jobs:
       # Build APK optimisé
       - name: Build signed APK
         run: |
-          set -o pipefail
           cd android
           mkdir -p ../build-logs
           ./gradlew assembleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all --info | tee ../build-logs/apk_build.log
@@ -164,18 +162,9 @@ jobs:
 
       - name: Move AAB and APK to builds directory
         run: |
-          set -euo pipefail
           mkdir -p builds
-          AAB=android/app/build/outputs/bundle/release/app-release.aab
-          APK=android/app/build/outputs/apk/release/app-release.apk
-          if [ ! -f "$AAB" ] || [ ! -f "$APK" ]; then
-            echo "Build outputs not found. Listing outputs directory:"
-            ls -R android/app/build/outputs || true
-            echo "::error title=Missing build outputs::AAB or APK missing. See previous Gradle step logs."
-            exit 1
-          fi
-          mv "$AAB" builds/IdleGrow.aab
-          mv "$APK" builds/IdleGrow.apk
+          mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
+          mv android/app/build/outputs/apk/release/app-release.apk builds/IdleGrow.apk
 
       # Générer un tag basé sur la version du package
       - name: Tag commit
