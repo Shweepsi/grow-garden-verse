@@ -129,11 +129,10 @@ jobs:
       # Build AAB optimisé
       - name: Build signed AAB
         run: |
-          set -o pipefail
           cd android
           mkdir -p ../build-logs
           ./gradlew --version | tee ../build-logs/gradle_version.txt
-          ./gradlew :app:bundleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all --info | tee ../build-logs/aab_build.log
+          ./gradlew bundleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all --info | tee ../build-logs/aab_build.log
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -142,10 +141,9 @@ jobs:
       # Build APK optimisé
       - name: Build signed APK
         run: |
-          set -o pipefail
           cd android
           mkdir -p ../build-logs
-          ./gradlew :app:assembleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all --info | tee ../build-logs/apk_build.log
+          ./gradlew assembleRelease --parallel --no-daemon --build-cache --stacktrace --warning-mode all --info | tee ../build-logs/apk_build.log
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -164,37 +162,9 @@ jobs:
 
       - name: Move AAB and APK to builds directory
         run: |
-          set -euo pipefail
           mkdir -p builds
-          echo "Listing outputs for visibility:"
-          ls -R android/app/build/outputs || true
-
-          # Find AAB (signed preferred)
-          AAB_PATH="$(find android/app/build/outputs/bundle -type f -name '*release*.aab' -print | head -n1 || true)"
-          if [ -n "${AAB_PATH}" ] && [ -f "${AAB_PATH}" ]; then
-            echo "Found AAB: ${AAB_PATH}"
-            mv "${AAB_PATH}" builds/IdleGrow.aab
-          else
-            echo "::error title=AAB not found::No .aab found in outputs/bundle"
-            exit 1
-          fi
-
-          # Find APK (signed preferred; fallback to unsigned)
-          APK_PATH="$(find android/app/build/outputs/apk/release -type f -name '*release*.apk' ! -name '*-unsigned.apk' -print | head -n1 || true)"
-          if [ -z "${APK_PATH}" ]; then
-            APK_PATH="$(find android/app/build/outputs/apk/release -type f -name '*release*-unsigned.apk' -print | head -n1 || true)"
-            if [ -n "${APK_PATH}" ]; then
-              echo "::warning title=Using unsigned APK::Using unsigned APK at ${APK_PATH}"
-            fi
-          fi
-
-          if [ -n "${APK_PATH}" ] && [ -f "${APK_PATH}" ]; then
-            echo "Found APK: ${APK_PATH}"
-            mv "${APK_PATH}" builds/IdleGrow.apk
-          else
-            echo "::error title=APK not found::No .apk found in outputs/apk/release"
-            exit 1
-          fi
+          mv android/app/build/outputs/bundle/release/app-release.aab builds/IdleGrow.aab
+          mv android/app/build/outputs/apk/release/app-release.apk builds/IdleGrow.apk
 
       # Générer un tag basé sur la version du package
       - name: Tag commit
