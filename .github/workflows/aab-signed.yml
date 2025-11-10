@@ -162,27 +162,42 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Move AAB and APK to builds directory
+      - name: Upload Android outputs (debug)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-outputs
+          path: android/app/build/outputs/**
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Collect AAB/APK artifacts
         run: |
-          set -e
+          set -euo pipefail
           mkdir -p builds
           echo "Listing outputs:"
           ls -R android/app/build/outputs || true
 
-          AAB_PATH=$(find android/app/build/outputs -type f -name "*.aab" | head -n 1 || true)
-          APK_PATH=$(find android/app/build/outputs -type f -name "*-release.apk" | head -n 1 || true)
+          # Prefer signed release APK, fallback to unsigned
+          AAB_PATH="$(find android/app/build/outputs -type f -name "*.aab" | head -n 1 || true)"
+          APK_PATH="$(find android/app/build/outputs -type f -name "*-release.apk" ! -name "*unsigned*" | head -n 1 || true)"
+          if [ -z "$APK_PATH" ]; then
+            APK_PATH="$(find android/app/build/outputs -type f -name "*-release-unsigned.apk" | head -n 1 || true)"
+          fi
+
           if [ -z "$AAB_PATH" ]; then
-            echo "::error title=AAB not found::No .aab file found under android/app/build/outputs"
+            echo "::error title=AAB not found::No .aab file under android/app/build/outputs"
             exit 1
           fi
-          if [ -z "$APK_PATH" ]; then
-            echo "::warning title=APK not found::No release APK found; continuing with AAB only"
-          fi
-          echo "Found AAB: $AAB_PATH"
+
+          echo "Using AAB: $AAB_PATH"
           cp "$AAB_PATH" builds/IdleGrow.aab
+
           if [ -n "$APK_PATH" ]; then
-            echo "Found APK: $APK_PATH"
+            echo "Using APK: $APK_PATH"
             cp "$APK_PATH" builds/IdleGrow.apk
+          else
+            echo "::notice title=APK not found::Continuing with AAB only"
           fi
 
       # Générer un tag basé sur la version du package
