@@ -1,5 +1,5 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android' // Added for Kotlin support
+apply plugin: 'kotlin-android'
 
 android {
     namespace "com.shweepsi.idlegrow"
@@ -23,25 +23,42 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '17' // Added to ensure Kotlin consistency
+        jvmTarget = '17'
     }
 
     java {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(17)) // Added for JVM consistency
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }
+    }
+
+    signingConfigs {
+        release {
+            def keystoreFile = file("my-release-key.keystore")
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
+                keyAlias System.getenv("KEY_ALIAS") ?: ""
+                keyPassword System.getenv("KEY_PASSWORD") ?: ""
+            }
         }
     }
 
     buildTypes {
         release {
             minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            
+            def keystoreFile = file("my-release-key.keystore")
+            if (keystoreFile.exists() && System.getenv("KEYSTORE_PASSWORD")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
 
 repositories {
-    // Note: flatDir is retained for Capacitor/Cordova plugins, but consider migrating to Maven
     flatDir {
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
@@ -55,15 +72,13 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-
-    // Updated Google Play Services for AdMob (compatible with API 35)
     implementation 'com.google.android.gms:play-services-ads:23.5.0'
 
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24" // Added for Kotlin support
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
 }
 
 apply from: 'capacitor.build.gradle'
@@ -74,7 +89,5 @@ try {
         apply plugin: 'com.google.gms.google-services'
     }
 } catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+    logger.info("google-services.json not found, google-services plugin not applied.")
 }
-
-apply from: "./signing.gradle"
