@@ -79,8 +79,8 @@ export const PlotCard = memo(({
     
     if (!plot.unlocked) {
       return canAffordUnlock ? 
-        `${baseClasses} border-green-400/60 bg-green-50/40 shadow-green-100/50` :
-        `${baseClasses} border-gray-200/50 opacity-30`;
+        `${baseClasses} border-green-400/60 bg-green-50/40 shadow-green-100/50 opacity-90` :
+        `${baseClasses} border-gray-200/50 opacity-40`;
     }
     
     if (isAutoHarvestPlot) {
@@ -94,7 +94,7 @@ export const PlotCard = memo(({
     }
     
     return `${baseClasses} border-gray-200/50 hover:border-gray-300/60 hover:bg-white/90 hover:shadow-md`;
-  }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState.status, canAffordUnlock]);
+  }, [plot.unlocked, isAutoHarvestPlot, robotAtCapacity, plantState.status]);
 
   return (
     <div className={containerClasses} onClick={handleClick} data-plot={plot.plot_number}>

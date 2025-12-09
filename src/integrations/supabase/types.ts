@@ -627,8 +627,14 @@ export type Database = {
           reward_type: string
         }[]
       }
-      cleanup_expired_effects: { Args: never; Returns: undefined }
-      delete_user_data: { Args: { target_user_id: string }; Returns: undefined }
+      cleanup_expired_effects: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      delete_user_data: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       get_active_effects: {
         Args: { p_user_id: string }
         Returns: {
@@ -649,17 +655,26 @@ export type Database = {
           username: string
         }[]
       }
-      get_plot_unlock_cost: { Args: { plot_number: number }; Returns: number }
+      get_plot_unlock_cost: {
+        Args: { plot_number: number }
+        Returns: number
+      }
       get_robot_plant_for_level: {
         Args: { robot_level: number }
         Returns: string
       }
-      get_user_coins_rank: { Args: { target_user_id: string }; Returns: number }
+      get_user_coins_rank: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
       get_user_harvest_rank: {
         Args: { target_user_id: string }
         Returns: number
       }
-      get_user_level_rank: { Args: { target_user_id: string }; Returns: number }
+      get_user_level_rank: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
       harvest_plant_transaction: {
         Args: {
           p_exp_reward: number
@@ -691,7 +706,10 @@ export type Database = {
         }
         Returns: Json
       }
-      request_account_deletion: { Args: { user_email: string }; Returns: Json }
+      request_account_deletion: {
+        Args: { user_email: string }
+        Returns: Json
+      }
       validate_robot_plant_level: {
         Args: { p_plant_type_id: string; p_robot_level: number }
         Returns: boolean
