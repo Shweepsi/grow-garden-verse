@@ -55,6 +55,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Update Android version
+        run: |
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          echo "Updated to versionCode: ${{ github.run_number }}, versionName: 1.0.${{ github.run_number }}"
+
       - name: Build web assets
         run: npm run build
 
