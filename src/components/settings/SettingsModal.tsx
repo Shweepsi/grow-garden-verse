@@ -26,7 +26,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <FontSizeSelector />
           <div className="pt-4 text-center">
             <span className="text-xs text-muted-foreground">
-              Version {import.meta.env.VITE_APP_VERSION}
+              Version 1.0.0
             </span>
           </div>
         </div>
