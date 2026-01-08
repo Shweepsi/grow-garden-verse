@@ -2,9 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Play } from 'lucide-react';
-import { useAudio, SoundType } from '@/contexts/AudioContext';
+import { Volume2, VolumeX } from 'lucide-react';
+import { useAudio } from '@/contexts/AudioContext';
 
 export const SoundSettings = () => {
   const {
@@ -12,15 +11,7 @@ export const SoundSettings = () => {
     setSoundEnabled,
     soundVolume,
     setSoundVolume,
-    playSound,
   } = useAudio();
-
-  const testSounds: { type: SoundType; label: string; icon: string }[] = [
-    { type: 'coin', label: 'Pièces', icon: '💰' },
-    { type: 'purchase', label: 'Achat', icon: '🛒' },
-    { type: 'upgrade', label: 'Amélioration', icon: '⬆️' },
-    { type: 'error', label: 'Erreur', icon: '❌' },
-  ];
 
   return (
     <Card>
@@ -30,7 +21,7 @@ export const SoundSettings = () => {
           Effets sonores
         </CardTitle>
         <CardDescription>
-          Contrôlez le volume et testez les sons du jeu
+          Contrôlez le volume des sons du jeu
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -74,30 +65,6 @@ export const SoundSettings = () => {
                 onValueChange={(value) => setSoundVolume(value[0])}
                 className="w-full"
               />
-            </div>
-
-            {/* Section test des sons */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-2">
-                <Play className="h-4 w-4 text-primary" />
-                <Label className="text-sm font-medium">
-                  Tester les sons
-                </Label>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {testSounds.map(({ type, label, icon }) => (
-                  <Button
-                    key={type}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => playSound(type)}
-                    className="gap-2 h-auto py-3 hover:bg-primary/10 hover:border-primary/50 transition-colors"
-                  >
-                    <span className="text-lg">{icon}</span>
-                    <span className="text-xs">{label}</span>
-                  </Button>
-                ))}
-              </div>
             </div>
           </div>
         )}
