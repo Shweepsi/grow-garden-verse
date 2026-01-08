@@ -57,9 +57,11 @@ jobs:
 
       - name: Update Android version
         run: |
+          VERSION="1.0.${{ github.run_number }}"
           sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
-          sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
-          echo "Updated to versionCode: ${{ github.run_number }}, versionName: 1.0.${{ github.run_number }}"
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION\"/" android/app/build.gradle
+          sed -i "s/APP_VERSION = \"[^\"]*\"/APP_VERSION = \"$VERSION\"/" src/version.ts
+          echo "Updated to versionCode: ${{ github.run_number }}, versionName: $VERSION"
 
       - name: Build web assets
         run: npm run build
