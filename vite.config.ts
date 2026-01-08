@@ -21,5 +21,6 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     __DEV__: mode === 'development',
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version || '1.0.0'),
   },
 }));
