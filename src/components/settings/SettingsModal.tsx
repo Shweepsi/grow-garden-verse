@@ -7,6 +7,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { FontSizeSelector } from "@/components/accessibility/FontSizeSelector";
 import { SoundSettings } from "@/components/settings/SoundSettings";
+import { APP_VERSION } from "@/version";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <FontSizeSelector />
           <div className="pt-4 text-center">
             <span className="text-xs text-muted-foreground">
-              Version 1.0.0
+              Version {APP_VERSION}
             </span>
           </div>
         </div>
