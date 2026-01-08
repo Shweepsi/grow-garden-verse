@@ -24,6 +24,11 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <SoundSettings />
           <Separator />
           <FontSizeSelector />
+          <div className="pt-4 text-center">
+            <span className="text-xs text-muted-foreground">
+              Version {import.meta.env.VITE_APP_VERSION}
+            </span>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
