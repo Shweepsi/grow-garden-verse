@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap (à activer quand disponible)
+# Sitemap: https://idlegrow.app/sitemap.xml
