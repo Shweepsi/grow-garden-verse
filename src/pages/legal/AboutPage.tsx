@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { APP_VERSION } from '@/version';
 import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 
 export const AboutPage = () => {
@@ -46,7 +47,7 @@ export const AboutPage = () => {
 
           <section className="mb-6">
             <h2 className="text-lg font-semibold mb-3">Version</h2>
-            <p>Version 1.0.0</p>
+            <p>Version {APP_VERSION}</p>
           </section>
 
           <section className="mb-6">
