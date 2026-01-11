@@ -167,7 +167,7 @@ export const PrestigeSystem = ({ garden, onPrestige }: PrestigeSystemProps) => {
                     <li>Niveau → 1</li>
                     <li>Pièces → 100</li>
                     <li>Améliorations → toutes réinitialisées</li>
-                    <li>Parcelles → seule la première reste débloquée</li>
+                    <li>Parcelles → seules les 2 premières restent débloquées</li>
                   </ul>
                   <div className="font-semibold mt-2 text-green-700">
                     ✓ Vous gardez : votre nouveau multiplicateur permanent.

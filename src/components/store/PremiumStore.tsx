@@ -81,7 +81,7 @@ export const PremiumStore = () => {
                 <CardTitle className="flex items-center gap-2">
                   🚀 Early Access Pack
                   <Badge variant="secondary" className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                    POPULAIRE
+                    Populaire
                   </Badge>
                 </CardTitle>
                 <CardDescription>

@@ -44,10 +44,7 @@ useEffect(() => {
 useEffect(() => {
   const handleRewardClaimed = () => {
     // Force component re-render for instant feedback
-    if (mounted.current) {
-      // The optimistic data hook will handle the actual display updates
-      console.log('🎉 Header notified of reward claim - will update display');
-    }
+    // The optimistic data hook will handle the actual display updates
   };
 
   gameDataEmitter.on('reward-claimed', handleRewardClaimed);
