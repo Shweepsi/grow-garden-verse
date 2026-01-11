@@ -15,9 +15,9 @@ export const AchievementTracker = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
-            Achievements
+            Succès
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -36,7 +36,7 @@ export const AchievementTracker = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="h-5 w-5" />
-          Achievements
+          Succès
         </CardTitle>
         <CardDescription>
           {completedCount}/{totalCount} complétés ({Math.round(completionPercentage)}%)
@@ -96,8 +96,8 @@ export const AchievementTracker = () => {
 
         {achievements.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>Aucun achievement disponible</p>
+          <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p>Aucun succès disponible</p>
           </div>
         )}
       </CardContent>
