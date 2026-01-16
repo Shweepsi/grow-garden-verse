@@ -613,20 +613,7 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard_stats: {
-        Row: {
-          coins: number | null
-          created_at: string | null
-          experience: number | null
-          level: number | null
-          premium_status: boolean | null
-          prestige_level: number | null
-          total_harvests: number | null
-          user_id: string | null
-          username: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_ad_reward: {
@@ -652,6 +639,16 @@ export type Database = {
           source: string
         }[]
       }
+      get_leaderboard_coins: {
+        Args: { p_limit?: number }
+        Returns: {
+          coins: number
+          created_at: string
+          premium_status: boolean
+          user_id: string
+          username: string
+        }[]
+      }
       get_leaderboard_data: {
         Args: { p_limit?: number; p_type: string }
         Returns: {
@@ -659,6 +656,27 @@ export type Database = {
           prestige_value: number
           rank_position: number
           stat_value: number
+          username: string
+        }[]
+      }
+      get_leaderboard_harvests: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          premium_status: boolean
+          total_harvests: number
+          user_id: string
+          username: string
+        }[]
+      }
+      get_leaderboard_level: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          experience: number
+          level: number
+          premium_status: boolean
+          user_id: string
           username: string
         }[]
       }

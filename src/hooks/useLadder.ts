@@ -15,36 +15,18 @@ interface LeaderboardPlayer {
   premium_status?: boolean;
 }
 
-// Interface pour les données de la vue leaderboard_stats
-interface LeaderboardStatsRow {
-  user_id: string;
-  total_harvests: number;
-  coins: number;
-  level: number;
-  experience: number;
-  prestige_level: number;
-  premium_status: boolean;
-  created_at: string;
-  username: string | null;
-}
-
 export const useLadder = () => {
   const { user } = useAuth();
 
-  // Classement par récoltes totales - utilise la vue sécurisée
+  // Classement par récoltes totales - utilise la fonction RPC sécurisée
   const { data: harvestLeaders = [], isLoading: harvestLoading } = useQuery({
     queryKey: ['leaderboard', 'harvests'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('leaderboard_stats')
-        .select('user_id, total_harvests, premium_status, created_at, username')
-        .order('total_harvests', { ascending: false })
-        .order('created_at', { ascending: true })
-        .limit(100);
+      const { data, error } = await supabase.rpc('get_leaderboard_harvests', { p_limit: 100 });
 
       if (error) throw error;
 
-      return ((data as LeaderboardStatsRow[]) || []).map(g => ({
+      return (data || []).map((g: { user_id: string; username: string; total_harvests: number; premium_status: boolean }) => ({
         user_id: g.user_id,
         id: g.user_id,
         username: g.username || 'Jardinier Anonyme',
@@ -59,20 +41,15 @@ export const useLadder = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Classement par pièces - utilise la vue sécurisée
+  // Classement par pièces - utilise la fonction RPC sécurisée
   const { data: coinsLeaders = [], isLoading: coinsLoading } = useQuery({
     queryKey: ['leaderboard', 'coins'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('leaderboard_stats')
-        .select('user_id, coins, premium_status, created_at, username')
-        .order('coins', { ascending: false })
-        .order('created_at', { ascending: true })
-        .limit(100);
+      const { data, error } = await supabase.rpc('get_leaderboard_coins', { p_limit: 100 });
 
       if (error) throw error;
 
-      return ((data as LeaderboardStatsRow[]) || []).map(g => ({
+      return (data || []).map((g: { user_id: string; username: string; coins: number; premium_status: boolean }) => ({
         user_id: g.user_id,
         id: g.user_id,
         username: g.username || 'Jardinier Anonyme',
@@ -87,21 +64,15 @@ export const useLadder = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Classement par niveau - utilise la vue sécurisée
+  // Classement par niveau - utilise la fonction RPC sécurisée
   const { data: levelLeaders = [], isLoading: levelLoading } = useQuery({
     queryKey: ['leaderboard', 'level'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('leaderboard_stats')
-        .select('user_id, level, experience, premium_status, created_at, username')
-        .order('level', { ascending: false })
-        .order('experience', { ascending: false })
-        .order('created_at', { ascending: true })
-        .limit(100);
+      const { data, error } = await supabase.rpc('get_leaderboard_level', { p_limit: 100 });
 
       if (error) throw error;
 
-      return ((data as LeaderboardStatsRow[]) || []).map(g => ({
+      return (data || []).map((g: { user_id: string; username: string; level: number; experience: number; premium_status: boolean }) => ({
         user_id: g.user_id,
         id: g.user_id,
         username: g.username || 'Jardinier Anonyme',
