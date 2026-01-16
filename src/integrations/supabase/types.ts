@@ -613,7 +613,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_stats: {
+        Row: {
+          coins: number | null
+          created_at: string | null
+          experience: number | null
+          level: number | null
+          premium_status: boolean | null
+          prestige_level: number | null
+          total_harvests: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_ad_reward: {
