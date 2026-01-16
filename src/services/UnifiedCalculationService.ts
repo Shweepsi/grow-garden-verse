@@ -1,5 +1,10 @@
 import { PlantType, GardenPlot, PlayerGarden } from '@/types/game';
 import { ValidationCacheService } from './ValidationCacheService';
+import { 
+  ROBOT_BASE_INCOME, 
+  ROBOT_LEVEL_EXPONENT, 
+  ROBOT_MAX_PERMANENT_MULTIPLIER 
+} from '@/constants';
 
 /**
  * Unified calculation service - Single source of truth for all game calculations
@@ -151,13 +156,16 @@ export class UnifiedCalculationService {
 
   /**
    * CORE CALCULATION: Robot passive income
+   * Rebalanced to be ~30-50% of active income instead of 580%
    */
   static getRobotPassiveIncome(robotLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
     const plantLevel = Math.max(1, Math.min(robotLevel, 10));
-    const baseIncome = 75; // Increased base coefficient
-    const levelMultiplier = Math.pow(plantLevel, 1.3); // Reduced exponent for better balance
+    const levelMultiplier = Math.pow(plantLevel, ROBOT_LEVEL_EXPONENT);
     
-    const result = Math.floor(baseIncome * levelMultiplier * harvestMultiplier * permanentMultiplier);
+    // Cap permanent multiplier for robot to prevent runaway passive income
+    const cappedPermanentMultiplier = Math.min(permanentMultiplier, ROBOT_MAX_PERMANENT_MULTIPLIER);
+    
+    const result = Math.floor(ROBOT_BASE_INCOME * levelMultiplier * harvestMultiplier * cappedPermanentMultiplier);
     return Math.min(result, 2000000000);
   }
 
