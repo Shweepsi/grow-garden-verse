@@ -81,7 +81,7 @@ export const BottomNavigation = () => {
                     </div>
                   )}
                   
-                  <span className={`mobile-text-xs font-medium transition-all duration-300 text-center leading-tight ${
+                  <span className={`text-[0.6rem] xs:mobile-text-xs font-medium transition-all duration-300 text-center leading-tight truncate max-w-full ${
                     isActive ? 'font-bold' : ''
                   }`}>
                     {label}
