@@ -165,14 +165,14 @@ useEffect(() => {
           {/* Statistiques */}
           <div className="space-y-1.5">
             {/* Ligne 1: Coins, Gemmes, Niveau */}
-            <div className="flex items-center space-x-1.5">
+            <div className="flex items-center space-x-1 xs:space-x-1.5">
               {/* Coins avec zone d'animation */}
-              <div className="relative group flex-1">
-                <div className="premium-card rounded-lg px-2 py-1 flex items-center space-x-1.5 shimmer">
-                  <div className="w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                    <Coins className="h-2.5 w-2.5 text-white" />
+              <div className="relative group flex-1 min-w-0">
+                <div className="premium-card rounded-lg px-1.5 xs:px-2 py-1 flex items-center space-x-1 xs:space-x-1.5 shimmer">
+                  <div className="w-4 h-4 xs:w-5 xs:h-5 shrink-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                    <Coins className="h-2 w-2 xs:h-2.5 xs:w-2.5 text-white" />
                   </div>
-                  <span className="font-bold text-yellow-700 mobile-text-sm">
+                  <span className="font-bold text-yellow-700 text-[0.65rem] xs:mobile-text-sm truncate">
                     {(garden?.coins || 0) >= 1000000 ? `${((garden?.coins || 0) / 1000000).toFixed(1)}M` : (garden?.coins || 0) >= 1000 ? `${((garden?.coins || 0) / 1000).toFixed(1)}K` : (garden?.coins || 0).toLocaleString()}
                   </span>
                 </div>
@@ -184,12 +184,12 @@ useEffect(() => {
               </div>
 
               {/* Gemmes */}
-              <div className="relative group flex-1">
-                <div className="premium-card rounded-lg px-2 py-1 flex items-center space-x-1.5">
-                  <div className="w-5 h-5 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">💎</span>
+              <div className="relative group flex-1 min-w-0">
+                <div className="premium-card rounded-lg px-1.5 xs:px-2 py-1 flex items-center space-x-1 xs:space-x-1.5">
+                  <div className="w-4 h-4 xs:w-5 xs:h-5 shrink-0 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-[0.6rem] xs:text-xs">💎</span>
                   </div>
-                  <span className="font-bold text-purple-700 mobile-text-sm">
+                  <span className="font-bold text-purple-700 text-[0.65rem] xs:mobile-text-sm truncate">
                     {(garden?.gems || 0).toLocaleString()}
                   </span>
                 </div>
@@ -201,12 +201,12 @@ useEffect(() => {
               </div>
               
               {/* Niveau */}
-              <div className="relative group flex-1">
-                <div className="premium-card rounded-lg px-2 py-1 flex items-center space-x-1.5">
-                  <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                    <Star className="h-2.5 w-2.5 text-white" />
+              <div className="relative group flex-1 min-w-0">
+                <div className="premium-card rounded-lg px-1.5 xs:px-2 py-1 flex items-center space-x-1 xs:space-x-1.5">
+                  <div className="w-4 h-4 xs:w-5 xs:h-5 shrink-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                    <Star className="h-2 w-2 xs:h-2.5 xs:w-2.5 text-white" />
                   </div>
-                  <span className="font-bold text-blue-700 mobile-text-sm">
+                  <span className="font-bold text-blue-700 text-[0.65rem] xs:mobile-text-sm truncate">
                     Niv. {xpStats.currentLevel}
                   </span>
                 </div>
@@ -216,7 +216,7 @@ useEffect(() => {
                 </div>
               </div>
 
-{/* Bouton Publicité / Premium - Unifié avec état stabilisé */}
+              {/* Bouton Publicité / Premium - Unifié avec état stabilisé */}
               <ClaimRewardButton 
                 variant="compact"
                 className={adButtonState.className}

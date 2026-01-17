@@ -100,9 +100,9 @@ export const PlotCard = memo(({
     <div className={containerClasses} onClick={handleClick} data-plot={plot.plot_number}>
       <div className={cardClasses}>
         {!plot.unlocked ? (
-          <div className="text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg flex items-center justify-center mb-2 mx-auto transition-transform duration-200 group-hover:scale-110">
-              <Lock className="h-5 w-5 text-gray-600" />
+          <div className="text-center min-w-0">
+            <div className="w-8 h-8 xs:w-10 xs:h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg flex items-center justify-center mb-2 mx-auto transition-transform duration-200 group-hover:scale-110">
+              <Lock className="h-4 w-4 xs:h-5 xs:w-5 shrink-0 text-gray-600" />
             </div>
             
             <Button 
@@ -117,12 +117,12 @@ export const PlotCard = memo(({
             </Button>
           </div>
         ) : (
-          <div className="text-center h-full flex flex-col justify-center w-full relative z-10">
+          <div className="text-center h-full flex flex-col justify-center w-full relative z-10 min-w-0">
             {isAutoHarvestPlot ? (
               // Affichage spécial pour la parcelle d'auto-récolte
               <>
-                <div className={`w-10 h-10 bg-gradient-to-br ${robotAtCapacity ? 'from-yellow-400 to-orange-500' : 'from-blue-400 to-blue-500'} rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300`}>
-                  <span className="text-lg">🤖</span>
+                <div className={`w-8 h-8 xs:w-10 xs:h-10 bg-gradient-to-br ${robotAtCapacity ? 'from-yellow-400 to-orange-500' : 'from-blue-400 to-blue-500'} rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300`}>
+                  <span className="text-base xs:text-lg">🤖</span>
                 </div>
                 <p className={`mobile-text-sm ${robotAtCapacity ? 'text-yellow-700' : 'text-blue-700'} font-semibold mb-1`}>Robot Auto</p>
                 {plantType ? (
@@ -140,8 +140,8 @@ export const PlotCard = memo(({
               </>
             ) : plantState.status === 'empty' ? (
               <>
-                <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300">
-                  <Sprout className="h-5 w-5 text-white" />
+                <div className="w-8 h-8 xs:w-10 xs:h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300">
+                  <Sprout className="h-4 w-4 xs:h-5 xs:w-5 shrink-0 text-white" />
                 </div>
                 <p className="mobile-text-sm text-green-700 font-semibold mb-1">Planter</p>
                 <p className="mobile-text-xs text-gray-600">
