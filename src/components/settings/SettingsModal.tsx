@@ -5,6 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { AnimationSettings } from "@/components/settings/AnimationSettings";
 import { FontSizeSelector } from "@/components/accessibility/FontSizeSelector";
 import { GridLayoutSelector } from "@/components/settings/GridLayoutSelector";
 import { SoundSettings } from "@/components/settings/SoundSettings";
@@ -24,6 +25,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         </DialogHeader>
         <div className="py-4 space-y-6 overflow-y-auto flex-1 min-h-0">
           <SoundSettings />
+          <Separator />
+          <AnimationSettings />
           <Separator />
           <GridLayoutSelector />
           <Separator />

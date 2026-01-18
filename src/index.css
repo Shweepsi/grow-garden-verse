@@ -649,3 +649,27 @@ img[alt*="Logo"] {
 /* Explicit utility if we want to use  */
 /* it directly in markup.              */
 .min-h-dvh { min-height: 100dvh; }
+
+/***************************************
+ * REDUCED MOTION PREFERENCE
+ * Applied when user enables "reduce 
+ * animations" in settings
+ ***************************************/
+.reduce-motion,
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Respect system preference as fallback */
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.force-motion),
+  :root:not(.force-motion) * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
