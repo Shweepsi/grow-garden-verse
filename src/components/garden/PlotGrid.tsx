@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { GardenPlot, PlantType } from '@/types/game';
 import { PlotCard } from './PlotCard';
@@ -10,7 +9,6 @@ import { usePlantStates } from '@/hooks/usePlantStates';
 import { toast } from 'sonner';
 import { useUnifiedCalculations } from '@/hooks/useUnifiedCalculations';
 import { useGameMultipliers } from '@/hooks/useGameMultipliers';
-import { useGridLayout } from '@/hooks/useGridLayout';
 
 interface PlotGridProps {
   plots: GardenPlot[];
@@ -33,7 +31,6 @@ export const PlotGrid = ({
   
   const { plantDirect, isPlantingPlot } = useDirectPlanting();
   const { getCombinedBoostMultiplier } = useGameMultipliers();
-  const { gridLayout } = useGridLayout();
   const { plantStates, getPlantState } = usePlantStates(plots, plantTypes);
   const { 
     hasPassiveRobot, 
@@ -122,18 +119,9 @@ export const PlotGrid = ({
     });
   }, [plots, hasPassiveRobot, robotPlantType, plantTypeMap, maxAccumulationReached, getPlantState]);
 
-  // Determine grid classes based on user preference
-  const gridClasses = useMemo(() => {
-    if (gridLayout === '4x4') {
-      return 'grid-cols-3 sm:grid-cols-4';
-    }
-    // 3x3 layout: stays 3 columns until large screens
-    return 'grid-cols-3 lg:grid-cols-4';
-  }, [gridLayout]);
-
   return (
     <>
-      <div className={`grid ${gridClasses} gap-2 sm:gap-3 md:gap-4 p-2 sm:p-4 md:p-6`}>
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 p-2 sm:p-4 md:p-6">
         {plotsData.map(({ plot, plantType, plantState, isAutoHarvestPlot, robotAtCapacity }) => (
           <PlotCard
             key={plot.id}

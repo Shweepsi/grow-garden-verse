@@ -7,7 +7,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { AnimationSettings } from "@/components/settings/AnimationSettings";
 import { FontSizeSelector } from "@/components/accessibility/FontSizeSelector";
-import { GridLayoutSelector } from "@/components/settings/GridLayoutSelector";
 import { SoundSettings } from "@/components/settings/SoundSettings";
 import { APP_VERSION } from "@/version";
 
@@ -27,8 +26,6 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <SoundSettings />
           <Separator />
           <AnimationSettings />
-          <Separator />
-          <GridLayoutSelector />
           <Separator />
           <FontSizeSelector />
           <div className="pt-4 text-center">
