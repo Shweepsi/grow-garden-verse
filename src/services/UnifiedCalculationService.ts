@@ -156,16 +156,25 @@ export class UnifiedCalculationService {
 
   /**
    * CORE CALCULATION: Robot passive income
-   * Rebalanced to be ~30-50% of active income instead of 580%
+   * Uses soft cap with progressive scaling for high prestige levels
+   * - Prestige 1-10: Full multiplier applied
+   * - Prestige 11+: Soft cap + 50% of excess
    */
   static getRobotPassiveIncome(robotLevel: number, harvestMultiplier: number = 1, permanentMultiplier: number = 1): number {
     const plantLevel = Math.max(1, Math.min(robotLevel, 10));
     const levelMultiplier = Math.pow(plantLevel, ROBOT_LEVEL_EXPONENT);
     
-    // Cap permanent multiplier for robot to prevent runaway passive income
-    const cappedPermanentMultiplier = Math.min(permanentMultiplier, ROBOT_MAX_PERMANENT_MULTIPLIER);
+    // Progressive soft cap for permanent multiplier
+    // Full effect up to soft cap, then 50% of excess beyond
+    const softCap = ROBOT_MAX_PERMANENT_MULTIPLIER;
+    let effectiveMultiplier = permanentMultiplier;
     
-    const result = Math.floor(ROBOT_BASE_INCOME * levelMultiplier * harvestMultiplier * cappedPermanentMultiplier);
+    if (permanentMultiplier > softCap) {
+      const excess = permanentMultiplier - softCap;
+      effectiveMultiplier = softCap + (excess * 0.5);
+    }
+    
+    const result = Math.floor(ROBOT_BASE_INCOME * levelMultiplier * harvestMultiplier * effectiveMultiplier);
     return Math.min(result, 2000000000);
   }
 

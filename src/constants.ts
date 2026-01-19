@@ -34,6 +34,6 @@ export const PRESTIGE_RESET_XP = 0;
 
 // Configuration du robot passif
 export const ROBOT_MAX_ACCUMULATION_HOURS = 6; // Temps maximum d'accumulation du robot
-export const ROBOT_BASE_INCOME = 15; // Revenu de base par minute (réduit de 75 → 15)
-export const ROBOT_LEVEL_EXPONENT = 1.15; // Exposant de progression (réduit de 1.3 → 1.15)
-export const ROBOT_MAX_PERMANENT_MULTIPLIER = 3; // Plafond du multiplicateur prestige pour le robot
+export const ROBOT_BASE_INCOME = 25; // Revenu de base par minute (augmenté pour meilleure progression)
+export const ROBOT_LEVEL_EXPONENT = 1.25; // Exposant de progression par niveau
+export const ROBOT_MAX_PERMANENT_MULTIPLIER = 10; // Soft cap du multiplicateur prestige (au-delà: 50% du surplus)
